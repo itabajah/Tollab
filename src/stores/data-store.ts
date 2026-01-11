@@ -57,7 +57,7 @@ interface DataState {
   getOverdueHomework: () => { homework: Homework; course: Course }[];
 
   // Semester actions
-  addSemester: (name: string) => string;
+  addSemester: (name: string, code?: string) => string;
   updateSemester: (id: string, updates: Partial<Semester>) => void;
   deleteSemester: (id: string) => void;
   setActiveSemester: (id: string | null) => void;
@@ -158,7 +158,7 @@ export const useDataStore = create<DataState>()(
       },
 
       // Semester actions
-      addSemester: (name: string) => {
+      addSemester: (name: string, code?: string) => {
         const id = uuid();
         set((state) => ({
           data: {
@@ -168,6 +168,7 @@ export const useDataStore = create<DataState>()(
               {
                 id,
                 name,
+                code, // Cheesefork semester code (e.g., "202501")
                 courses: [],
                 calendarSettings: { ...DEFAULT_CALENDAR_SETTINGS },
               },

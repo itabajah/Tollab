@@ -7,6 +7,7 @@ export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+export { Badge, badgeVariants } from './ui/badge';
 
 // App Components
 export { Header } from './header';
@@ -14,6 +15,7 @@ export { HeaderTicker } from './header-ticker';
 export { SemesterSelector } from './semester-selector';
 export { CourseList } from './course-list';
 export { CourseCard } from './course-card';
+export { CourseSearch } from './course-search';
 export { WeeklyCalendar } from './weekly-calendar';
 export { HomeworkSidebar } from './homework-sidebar';
 export { CourseModal } from './course-modal';

@@ -1,7 +1,8 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Calendar, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -10,7 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { useDataStore, useUIStore } from '@/stores';
+import { useSemesters } from '@/hooks/use-cheesefork';
+import { formatSemesterCode } from '@/lib/cheesefork';
 import { isRTL, type Locale } from '@/i18n';
 
 export function SemesterSelector() {
@@ -20,9 +29,29 @@ export function SemesterSelector() {
 
   const { data, activeSemesterId, setActiveSemester, addSemester, deleteSemester } = useDataStore();
   const { openConfirmModal, openPromptModal } = useUIStore();
+  
+  // Fetch available semesters from Cheesefork
+  const { semesters: cheeseforkSemesters, loading: semestersLoading, currentSemesterCode } = useSemesters();
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   const semesters = data.semesters;
   const currentSemester = semesters.find((s) => s.id === activeSemesterId) || semesters[0];
+
+  // Get formatted semester name based on locale
+  const formatSemester = (code: string) => {
+    return formatSemesterCode(code, locale as 'en' | 'he' | 'ar');
+  };
+
+  // Filter out semesters that are already added
+  const availableSemesters = useMemo(() => {
+    const existingNames = new Set(semesters.map((s) => s.name.toLowerCase()));
+    return cheeseforkSemesters.filter((s) => {
+      const enName = formatSemesterCode(s.code, 'en').toLowerCase();
+      const heName = formatSemesterCode(s.code, 'he').toLowerCase();
+      const arName = formatSemesterCode(s.code, 'ar').toLowerCase();
+      return !existingNames.has(enName) && !existingNames.has(heName) && !existingNames.has(arName);
+    });
+  }, [cheeseforkSemesters, semesters]);
 
   // Generate default semester name based on current date
   const generateDefaultSemesterName = () => {
@@ -50,6 +79,12 @@ export function SemesterSelector() {
     }
     
     return `${semesterType} ${academicYear}`;
+  };
+
+  const handleQuickAddSemester = (code: string) => {
+    const name = formatSemester(code);
+    addSemester(name, code);
+    setQuickAddOpen(false);
   };
 
   const handleAddSemester = () => {
@@ -107,10 +142,68 @@ export function SemesterSelector() {
         </SelectContent>
       </Select>
 
-      <Button variant="outline" size="icon" onClick={handleAddSemester} title={t('semester.add')}>
-        <Plus className="h-4 w-4" />
-        <span className="sr-only">{t('semester.add')}</span>
-      </Button>
+      {/* Quick-add from Cheesefork semesters */}
+      <Popover open={quickAddOpen} onOpenChange={setQuickAddOpen}>
+        <PopoverTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            title={t('semester.add')}
+            disabled={semestersLoading}
+          >
+            {semestersLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            <span className="sr-only">{t('semester.add')}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-2" align={dir === 'rtl' ? 'end' : 'start'} dir={dir}>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground mb-2">
+              {t('semester.add')}
+            </p>
+            {availableSemesters.length > 0 ? (
+              <>
+                {availableSemesters.slice(0, 5).map((sem) => (
+                  <Button
+                    key={sem.code}
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      'w-full justify-start gap-2',
+                      sem.code === currentSemesterCode && 'bg-primary/10 text-primary'
+                    )}
+                    onClick={() => handleQuickAddSemester(sem.code)}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    {formatSemester(sem.code)}
+                    {sem.code === currentSemesterCode && (
+                      <span className="text-xs text-muted-foreground">
+                        ({t('common.today').split(' ')[0]})
+                      </span>
+                    )}
+                  </Button>
+                ))}
+                <div className="border-t my-2" />
+              </>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2"
+              onClick={() => {
+                setQuickAddOpen(false);
+                handleAddSemester();
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              {t('semester.customName')}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
 
       {currentSemester && (
         <Button

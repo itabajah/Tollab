@@ -79,6 +79,7 @@ export interface CalendarSettings {
 export interface Semester {
   id: string;
   name: string; // e.g., "Winter 2024-2025"
+  code?: string; // Cheesefork semester code (e.g., "202401")
   courses: Course[];
   calendarSettings: CalendarSettings;
 }

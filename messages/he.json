@@ -20,7 +20,8 @@
     "tomorrow": "מחר",
     "points": "נ״ז",
     "grade": "ציון",
-    "link": "קישור"
+    "link": "קישור",
+    "more": "עוד"
   },
   "nav": {
     "cloudSync": "סנכרון ענן",
@@ -46,7 +47,8 @@
     "deleteMessage": "האם אתה בטוח שברצונך למחוק את \"{name}\"? פעולה זו לא ניתנת לביטול.",
     "winter": "חורף",
     "spring": "אביב",
-    "summer": "קיץ"
+    "summer": "קיץ",
+    "customName": "שם מותאם אישית..."
   },
   "course": {
     "title": "קורסים",
@@ -78,6 +80,18 @@
     "moedA": "מועד א׳",
     "moedB": "מועד ב׳",
     "passed": "עבר",
+    "failed": "נכשל",
+    "noResults": "לא נמצאו קורסים",
+    "coursesFound": "קורסים נמצאו",
+    "total": "סה״כ",
+    "added": "נוסף",
+    "startTyping": "התחל להקליד כדי לחפש קורסים...",
+    "points": "נ״ז",
+    "lecture": "הרצאה",
+    "tutorial": "תרגול",
+    "lab": "מעבדה",
+    "other": "אחר"
+  },
     "failed": "נכשל"
   },
   "schedule": {

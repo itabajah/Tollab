@@ -20,7 +20,8 @@
     "tomorrow": "Tomorrow",
     "points": "CP",
     "grade": "Grade",
-    "link": "Link"
+    "link": "Link",
+    "more": "more"
   },
   "nav": {
     "cloudSync": "Cloud Sync",
@@ -46,7 +47,8 @@
     "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "winter": "Winter",
     "spring": "Spring",
-    "summer": "Summer"
+    "summer": "Summer",
+    "customName": "Custom name..."
   },
   "course": {
     "title": "Courses",
@@ -78,7 +80,17 @@
     "moedA": "Moed A",
     "moedB": "Moed B",
     "passed": "Passed",
-    "failed": "Failed"
+    "failed": "Failed",
+    "noResults": "No courses found",
+    "coursesFound": "courses found",
+    "total": "total",
+    "added": "Added",
+    "startTyping": "Start typing to search courses...",
+    "points": "CP",
+    "lecture": "Lecture",
+    "tutorial": "Tutorial",
+    "lab": "Lab",
+    "other": "Other"
   },
   "schedule": {
     "title": "Weekly Schedule",
