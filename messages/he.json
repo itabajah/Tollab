@@ -180,10 +180,15 @@
     "languageAr": "العربية",
     "appearance": "תצוגה",
     "profile": "פרופיל",
+    "profileName": "שם פרופיל",
     "faculty": "פקולטה",
     "targetCredits": "יעד נקודות זכות",
     "showCompleted": "הצג פריטים שהושלמו",
-    "showWatched": "הצג הקלטות שנצפו"
+    "showWatched": "הצג הקלטות שנצפו",
+    "colorTheme": "ערכת צבעים",
+    "colorful": "צבעוני",
+    "singleColor": "צבע בודד",
+    "monochrome": "מונוכרום"
   },
   "onboarding": {
     "welcome": "ברוכים הבאים לטולאב",

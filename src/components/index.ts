@@ -23,3 +23,4 @@ export { ConfirmDialog } from './confirm-dialog';
 export { PromptDialog } from './prompt-dialog';
 export { Onboarding } from './onboarding';
 export { DegreeProgress } from './degree-progress';
+export { SettingsModal } from './settings-modal';

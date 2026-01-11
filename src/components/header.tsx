@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
-import { Moon, Sun, Monitor, Cloud, CloudOff, Loader2, User, LogOut, RefreshCw, Globe } from 'lucide-react';
+import { Moon, Sun, Monitor, Cloud, CloudOff, Loader2, User, LogOut, RefreshCw, Globe, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useDataStore } from '@/stores';
+import { useDataStore, useUIStore } from '@/stores';
 import { useFirebaseSync } from '@/hooks';
 import { HeaderTicker } from './header-ticker';
 import { cn } from '@/lib/utils';
@@ -197,6 +197,17 @@ export function Header() {
           >
             {mounted && <ThemeIcon className="h-5 w-5" />}
             <span className="sr-only">{t('nav.theme')}</span>
+          </Button>
+
+          {/* Settings */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => useUIStore.getState().openSettingsModal()}
+            title={t('settings.title')}
+          >
+            <Settings className="h-5 w-5" />
+            <span className="sr-only">{t('settings.title')}</span>
           </Button>
         </div>
       </div>

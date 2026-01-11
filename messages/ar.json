@@ -180,10 +180,15 @@
     "languageAr": "العربية",
     "appearance": "المظهر",
     "profile": "الملف الشخصي",
+    "profileName": "اسم الملف الشخصي",
     "faculty": "الكلية",
     "targetCredits": "هدف نقاط الائتمان",
     "showCompleted": "إظهار العناصر المكتملة",
-    "showWatched": "إظهار التسجيلات المشاهدة"
+    "showWatched": "إظهار التسجيلات المشاهدة",
+    "colorTheme": "سمة الألوان",
+    "colorful": "ملون",
+    "singleColor": "لون واحد",
+    "monochrome": "أحادي اللون"
   },
   "onboarding": {
     "welcome": "مرحباً بك في طلّاب",

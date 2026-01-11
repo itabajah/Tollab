@@ -178,10 +178,15 @@
     "languageAr": "العربية",
     "appearance": "Appearance",
     "profile": "Profile",
+    "profileName": "Profile Name",
     "faculty": "Faculty",
     "targetCredits": "Target Credits",
     "showCompleted": "Show completed items",
-    "showWatched": "Show watched recordings"
+    "showWatched": "Show watched recordings",
+    "colorTheme": "Color Theme",
+    "colorful": "Colorful",
+    "singleColor": "Single Color",
+    "monochrome": "Monochrome"
   },
   "onboarding": {
     "welcome": "Welcome to Tollab",

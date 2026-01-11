@@ -12,6 +12,7 @@ import { Onboarding } from '@/components/onboarding';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PromptDialog } from '@/components/prompt-dialog';
 import { CourseModal } from '@/components/course-modal';
+import { SettingsModal } from '@/components/settings-modal';
 import { useProfileStore } from '@/stores';
 import { isRTL, type Locale } from '@/i18n';
 
@@ -78,6 +79,7 @@ export default function Home() {
       <ConfirmDialog />
       <PromptDialog />
       <CourseModal />
+      <SettingsModal />
     </div>
   );
 }

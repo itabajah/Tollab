@@ -33,6 +33,7 @@ interface UIState {
   // Modal state
   activeModal: ModalType;
   modalData: ConfirmModalData | PromptModalData | CourseModalData | null;
+  settingsModalOpen: boolean;
 
   // Course modal specific state
   activeCourseId: string | null;
@@ -57,6 +58,8 @@ interface UIState {
   openConfirmModal: (data: ConfirmModalData) => void;
   openPromptModal: (data: PromptModalData) => void;
   openCourseModal: (course: Course, initialTab?: 'recordings' | 'homework' | 'details') => void;
+  openSettingsModal: () => void;
+  closeSettingsModal: () => void;
 
   // Course modal actions
   setActiveCourseId: (id: string | null) => void;
@@ -82,6 +85,7 @@ export const useUIStore = create<UIState>()((set) => ({
   // Initial state
   activeModal: null,
   modalData: null,
+  settingsModalOpen: false,
   activeCourseId: null,
   activeRecordingTabId: null,
   editingScheduleItem: null,
@@ -129,6 +133,9 @@ export const useUIStore = create<UIState>()((set) => ({
       activeRecordingTabId: course.recordings.tabs[0]?.id || null,
     });
   },
+
+  openSettingsModal: () => set({ settingsModalOpen: true }),
+  closeSettingsModal: () => set({ settingsModalOpen: false }),
 
   // Course modal actions
   setActiveCourseId: (id) => set({ activeCourseId: id }),
