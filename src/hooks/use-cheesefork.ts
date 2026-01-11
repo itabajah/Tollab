@@ -92,6 +92,8 @@ export function useCourses(semesterCode: string | null) {
     }
 
     async function loadCourses() {
+      if (!semesterCode) return;
+      
       try {
         setLoading(true);
         setError(null);
@@ -107,7 +109,7 @@ export function useCourses(semesterCode: string | null) {
         let promise = loadingPromises.get(semesterCode);
         if (!promise) {
           promise = fetchCourses(semesterCode).finally(() => {
-            loadingPromises.delete(semesterCode);
+            loadingPromises.delete(semesterCode!);
           });
           loadingPromises.set(semesterCode, promise);
         }

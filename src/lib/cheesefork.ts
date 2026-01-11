@@ -163,7 +163,7 @@ export async function fetchAvailableSemesters(): Promise<CheeseforkSemester[]> {
       // Convert SAP semester format (200=Winter, 201=Spring, 202=Summer) to our format
       const seasonCode = String(sem.semester - 200 + 1).padStart(2, '0');
       const code = `${sem.year}${seasonCode}`;
-      const season = seasonCode === '01' ? 'winter' : seasonCode === '02' ? 'spring' : 'summer';
+      const season: CheeseforkSemester['season'] = seasonCode === '01' ? 'winter' : seasonCode === '02' ? 'spring' : 'summer';
 
       return {
         code,
@@ -369,6 +369,3 @@ export const TECHNION_FACULTIES: Record<string, { en: string; he: string; ar: st
   chemical: { en: 'Chemical Engineering', he: 'הנדסה כימית', ar: 'الهندسة الكيميائية' },
   food: { en: 'Biotechnology & Food Engineering', he: 'ביוטכנולוגיה והנדסת מזון', ar: 'هندسة التقنيات الحيوية والغذاء' },
 };
-
-// Export types
-export type { SemesterInfo };

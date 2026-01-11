@@ -43,8 +43,6 @@ export function WeeklyCalendar() {
     return items;
   }, [conflicts]);
 
-  const [currentTime, setCurrentTime] = useState(new Date());
-
   // Day names based on locale
   const dayNames = useMemo(() => [
     t('days.sunday'),

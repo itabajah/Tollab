@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useCourseCatalog } from '@/hooks/use-cheesefork';
-import { isRTL } from '@/i18n/routing';
+import { isRTL, type Locale } from '@/i18n/routing';
 import type { CheeseforkCourse, CheeseforkScheduleItem } from '@/lib/cheesefork';
 
 interface CourseSearchProps {
@@ -38,7 +38,7 @@ export function CourseSearch({
   className,
 }: CourseSearchProps) {
   const t = useTranslations();
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
   const dir = isRTL(locale) ? 'rtl' : 'ltr';
 
   const [open, setOpen] = useState(false);
