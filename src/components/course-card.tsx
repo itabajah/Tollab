@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { ChevronUp, ChevronDown, BookOpen, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Course } from '@/types';
-import { useDataStore, useUIStore } from '@/stores';
+import { useUIStore } from '@/stores';
 import { cn } from '@/lib/utils';
+import { isRTL, type Locale } from '@/i18n';
 
 interface CourseCardProps {
   course: Course;
@@ -13,6 +15,7 @@ interface CourseCardProps {
   totalCourses: number;
   onReorderUp: () => void;
   onReorderDown: () => void;
+  hasConflict?: boolean;
 }
 
 export function CourseCard({
@@ -21,8 +24,18 @@ export function CourseCard({
   totalCourses,
   onReorderUp,
   onReorderDown,
+  hasConflict = false,
 }: CourseCardProps) {
+  const t = useTranslations();
+  const locale = useLocale() as Locale;
+  const dir = isRTL(locale) ? 'rtl' : 'ltr';
   const { openCourseModal } = useUIStore();
+
+  // Check if course is passed (grade >= 55)
+  const isPassed = useMemo(() => {
+    const grade = parseFloat(course.grade);
+    return !isNaN(grade) && grade >= 55;
+  }, [course.grade]);
 
   // Calculate progress
   const progress = useMemo(() => {
@@ -64,17 +77,23 @@ export function CourseCard({
     <div
       className={cn(
         'group relative rounded-lg border bg-card p-4 transition-all hover:shadow-md cursor-pointer',
-        'hover:border-primary/50'
+        'hover:border-primary/50',
+        hasConflict && 'border-red-500'
       )}
       style={{
-        borderRightWidth: '4px',
-        borderRightColor: course.color || 'hsl(var(--primary))',
+        borderRightWidth: dir === 'rtl' ? '4px' : undefined,
+        borderLeftWidth: dir === 'ltr' ? '4px' : undefined,
+        borderRightColor: dir === 'rtl' ? (course.color || 'hsl(var(--primary))') : undefined,
+        borderLeftColor: dir === 'ltr' ? (course.color || 'hsl(var(--primary))') : undefined,
       }}
       onClick={handleClick}
-      dir="rtl"
+      dir={dir}
     >
       {/* Reorder buttons */}
-      <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className={cn(
+        "absolute top-1/2 -translate-y-1/2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity",
+        dir === 'rtl' ? 'left-2' : 'right-2'
+      )}>
         <Button
           variant="ghost"
           size="icon"
@@ -86,7 +105,7 @@ export function CourseCard({
           disabled={index === 0}
         >
           <ChevronUp className="h-4 w-4" />
-          <span className="sr-only">הזז למעלה</span>
+          <span className="sr-only">{t('course.moveUp')}</span>
         </Button>
         <Button
           variant="ghost"
@@ -99,19 +118,24 @@ export function CourseCard({
           disabled={index === totalCourses - 1}
         >
           <ChevronDown className="h-4 w-4" />
-          <span className="sr-only">הזז למטה</span>
+          <span className="sr-only">{t('course.moveDown')}</span>
         </Button>
       </div>
 
       {/* Course info */}
-      <div className="pr-2">
-        <h3 className="font-semibold text-lg leading-tight mb-1">{course.name}</h3>
+      <div className={dir === 'rtl' ? 'pr-2' : 'pl-2'}>
+        <h3 className={cn(
+          "font-semibold text-lg leading-tight mb-1",
+          hasConflict && "text-red-600 dark:text-red-400"
+        )}>
+          {course.name}
+        </h3>
 
         {/* Course metadata */}
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground mb-3">
           {course.number && <span>{course.number}</span>}
           {course.lecturer && <span>{course.lecturer}</span>}
-          {course.points && <span>{course.points} נ״ז</span>}
+          {course.points && <span>{course.points} {t('common.points')}</span>}
         </div>
 
         {/* Progress bars */}
@@ -126,7 +150,7 @@ export function CourseCard({
                   style={{ width: `${progress.recordingsProgress}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground w-12 text-left">
+              <span className={cn("text-xs text-muted-foreground w-12", dir === 'rtl' ? 'text-left' : 'text-right')}>
                 {progress.watchedRecordings}/{progress.totalRecordings}
               </span>
             </div>
@@ -142,7 +166,7 @@ export function CourseCard({
                   style={{ width: `${progress.homeworkProgress}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground w-12 text-left">
+              <span className={cn("text-xs text-muted-foreground w-12", dir === 'rtl' ? 'text-left' : 'text-right')}>
                 {progress.completedHomework}/{progress.totalHomework}
               </span>
             </div>
@@ -151,8 +175,13 @@ export function CourseCard({
 
         {/* Grade badge */}
         {course.grade && (
-          <div className="absolute top-3 left-10">
-            <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+          <div className={cn("absolute top-3", dir === 'rtl' ? 'left-10' : 'right-10')}>
+            <span className={cn(
+              "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+              isPassed 
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+            )}>
               {course.grade}
             </span>
           </div>

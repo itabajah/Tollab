@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDataStore, useUIStore } from '@/stores';
-import { DAYS_OF_WEEK_HE, Course, ScheduleItem } from '@/types';
+import { Course, ScheduleItem } from '@/types';
 import { cn } from '@/lib/utils';
+import { isRTL, type Locale } from '@/i18n';
 
 interface CalendarEvent {
   course: Course;
@@ -15,6 +17,10 @@ interface CalendarEvent {
 }
 
 export function WeeklyCalendar() {
+  const t = useTranslations();
+  const locale = useLocale() as Locale;
+  const dir = isRTL(locale) ? 'rtl' : 'ltr';
+
   const { getActiveSemester } = useDataStore();
   const { calendarSingleDayView, calendarActiveDay, setCalendarActiveDay, toggleCalendarSingleDayView } = useUIStore();
 
@@ -23,6 +29,17 @@ export function WeeklyCalendar() {
   const courses = semester?.courses || [];
 
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Day names based on locale
+  const dayNames = useMemo(() => [
+    t('days.sunday'),
+    t('days.monday'),
+    t('days.tuesday'),
+    t('days.wednesday'),
+    t('days.thursday'),
+    t('days.friday'),
+    t('days.saturday'),
+  ], [t]);
 
   // Update current time every minute
   useEffect(() => {
@@ -64,7 +81,6 @@ export function WeeklyCalendar() {
         const endMinutes = endH * 60 + endM;
 
         const calendarStartMinutes = calendarSettings.startHour * 60;
-        const minutesPerHour = 60;
         const pixelsPerMinute = 48 / 60; // 48px per hour (h-12)
 
         const top = (startMinutes - calendarStartMinutes) * pixelsPerMinute;
@@ -115,30 +131,30 @@ export function WeeklyCalendar() {
 
   if (!semester) {
     return (
-      <div className="flex items-center justify-center h-64 text-muted-foreground" dir="rtl">
-        בחר סמסטר כדי לצפות במערכת
+      <div className="flex items-center justify-center h-64 text-muted-foreground" dir={dir}>
+        {t('schedule.selectSemester')}
       </div>
     );
   }
 
   return (
-    <div className="border rounded-lg bg-card overflow-hidden" dir="rtl">
+    <div className="border rounded-lg bg-card overflow-hidden" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b bg-muted/30">
         <h3 className="font-semibold flex items-center gap-2">
           <Clock className="h-4 w-4" />
-          מערכת שעות
+          {t('schedule.title')}
         </h3>
 
         {/* Mobile day navigation */}
         <div className="flex items-center gap-1 md:hidden">
-          <Button variant="ghost" size="icon" onClick={handlePrevDay}>
+          <Button variant="ghost" size="icon" onClick={dir === 'rtl' ? handleNextDay : handlePrevDay}>
             <ChevronRight className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium w-16 text-center">
-            {DAYS_OF_WEEK_HE[calendarActiveDay]}
+            {dayNames[calendarActiveDay]}
           </span>
-          <Button variant="ghost" size="icon" onClick={handleNextDay}>
+          <Button variant="ghost" size="icon" onClick={dir === 'rtl' ? handlePrevDay : handleNextDay}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
@@ -149,16 +165,17 @@ export function WeeklyCalendar() {
         <div className="min-w-[600px]">
           {/* Days header */}
           <div className="grid border-b" style={{ gridTemplateColumns: `60px repeat(${visibleDays.length}, 1fr)` }}>
-            <div className="p-2 text-center text-sm font-medium text-muted-foreground border-l"></div>
+            <div className={cn("p-2 text-center text-sm font-medium text-muted-foreground", dir === 'rtl' ? 'border-l' : 'border-r')}></div>
             {visibleDays.map((day) => (
               <div
                 key={day}
                 className={cn(
-                  'p-2 text-center text-sm font-medium border-l',
+                  'p-2 text-center text-sm font-medium',
+                  dir === 'rtl' ? 'border-l' : 'border-r',
                   day === today && 'bg-primary/10 text-primary'
                 )}
               >
-                {DAYS_OF_WEEK_HE[day]}
+                {dayNames[day]}
               </div>
             ))}
           </div>
@@ -172,11 +189,11 @@ export function WeeklyCalendar() {
                 className="grid border-b"
                 style={{ gridTemplateColumns: `60px repeat(${visibleDays.length}, 1fr)`, height: '48px' }}
               >
-                <div className="p-1 text-xs text-muted-foreground text-center border-l flex items-start justify-center pt-0">
+                <div className={cn("p-1 text-xs text-muted-foreground text-center flex items-start justify-center pt-0", dir === 'rtl' ? 'border-l' : 'border-r')}>
                   {String(hour).padStart(2, '0')}:00
                 </div>
                 {visibleDays.map((day) => (
-                  <div key={day} className="border-l relative" />
+                  <div key={day} className={cn("relative", dir === 'rtl' ? 'border-l' : 'border-r')} />
                 ))}
               </div>
             ))}
@@ -229,7 +246,7 @@ export function WeeklyCalendar() {
                 style={{ top: `${currentTimePosition}px` }}
               >
                 <div className="relative h-0.5 bg-red-500">
-                  <div className="absolute right-14 -top-1.5 w-3 h-3 rounded-full bg-red-500" />
+                  <div className={cn("absolute -top-1.5 w-3 h-3 rounded-full bg-red-500", dir === 'rtl' ? 'right-14' : 'left-14')} />
                 </div>
               </div>
             )}
