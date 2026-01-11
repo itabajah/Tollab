@@ -21,7 +21,9 @@
     "points": "CP",
     "grade": "Grade",
     "link": "Link",
-    "more": "more"
+    "more": "more",
+    "back": "Back",
+    "next": "Next"
   },
   "nav": {
     "cloudSync": "Cloud Sync",
@@ -188,7 +190,21 @@
     "selectDegree": "Select your degree path",
     "targetCredits": "Set your target credit points",
     "getStarted": "Get Started",
-    "skip": "Skip for now"
+    "skip": "Skip for now",
+    "stepFaculty": "Select Your Faculty",
+    "stepDegree": "Choose Your Degree",
+    "stepGoal": "Set Your Goal",
+    "facultyDescription": "Which faculty are you studying in?",
+    "degreeDescription": "What degree are you pursuing?",
+    "goalDescription": "How many credit points do you need to graduate?",
+    "startYear": "Start Year",
+    "cpGoal": "Credit Points Goal",
+    "commonGoals": "Common goals",
+    "skipForNow": "Skip for now",
+    "degreeBachelor": "Bachelor's",
+    "degreeMaster": "Master's",
+    "degreePhd": "PhD",
+    "degreeOther": "Other"
   },
   "faculties": {
     "cs": "Computer Science",

@@ -21,7 +21,9 @@
     "points": "נ״ז",
     "grade": "ציון",
     "link": "קישור",
-    "more": "עוד"
+    "more": "עוד",
+    "back": "חזור",
+    "next": "הבא"
   },
   "nav": {
     "cloudSync": "סנכרון ענן",
@@ -190,7 +192,21 @@
     "selectDegree": "בחר את מסלול הלימודים",
     "targetCredits": "הגדר יעד נקודות זכות",
     "getStarted": "בואו נתחיל",
-    "skip": "דלג לעת עתה"
+    "skip": "דלג לעת עתה",
+    "stepFaculty": "בחר פקולטה",
+    "stepDegree": "בחר תואר",
+    "stepGoal": "הגדר יעד",
+    "facultyDescription": "באיזו פקולטה אתה לומד?",
+    "degreeDescription": "איזה תואר אתה לומד?",
+    "goalDescription": "כמה נקודות זכות צריך לסיום התואר?",
+    "startYear": "שנת התחלה",
+    "cpGoal": "יעד נקודות זכות",
+    "commonGoals": "יעדים נפוצים",
+    "skipForNow": "דלג לעת עתה",
+    "degreeBachelor": "תואר ראשון",
+    "degreeMaster": "תואר שני",
+    "degreePhd": "דוקטורט",
+    "degreeOther": "אחר"
   },
   "faculties": {
     "cs": "מדעי המחשב",

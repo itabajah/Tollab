@@ -9,12 +9,14 @@ interface ProfileState {
 
   // Getters
   getActiveProfile: () => Profile | null;
+  isOnboardingComplete: () => boolean;
 
   // Actions
   addProfile: (name: string) => string;
-  updateProfile: (id: string, name: string) => void;
+  updateProfile: (id: string, updates: Partial<Profile>) => void;
   deleteProfile: (id: string) => void;
   setActiveProfile: (id: string) => void;
+  completeOnboarding: (data: { faculty: string; degree: string; cpGoal: number; startYear: number }) => void;
 
   // Initialize default profile if none exists
   initializeProfiles: () => void;
@@ -32,6 +34,11 @@ export const useProfileStore = create<ProfileState>()(
         return profiles.find((p) => p.id === activeProfileId) || null;
       },
 
+      isOnboardingComplete: () => {
+        const profile = get().getActiveProfile();
+        return profile?.onboardingComplete ?? false;
+      },
+
       addProfile: (name: string) => {
         const id = uuid();
         set((state) => ({
@@ -41,10 +48,10 @@ export const useProfileStore = create<ProfileState>()(
         return id;
       },
 
-      updateProfile: (id: string, name: string) => {
+      updateProfile: (id: string, updates: Partial<Profile>) => {
         set((state) => ({
           profiles: state.profiles.map((p) =>
-            p.id === id ? { ...p, name } : p
+            p.id === id ? { ...p, ...updates } : p
           ),
         }));
       },
@@ -66,12 +73,25 @@ export const useProfileStore = create<ProfileState>()(
         set({ activeProfileId: id });
       },
 
+      completeOnboarding: (data: { faculty: string; degree: string; cpGoal: number; startYear: number }) => {
+        const profile = get().getActiveProfile();
+        if (profile) {
+          set((state) => ({
+            profiles: state.profiles.map((p) =>
+              p.id === profile.id
+                ? { ...p, ...data, onboardingComplete: true }
+                : p
+            ),
+          }));
+        }
+      },
+
       initializeProfiles: () => {
         const { profiles } = get();
         if (profiles.length === 0) {
           const id = uuid();
           set({
-            profiles: [{ id, name: 'פרופיל ראשי' }],
+            profiles: [{ id, name: 'Main Profile' }],
             activeProfileId: id,
           });
         }

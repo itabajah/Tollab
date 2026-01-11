@@ -21,3 +21,5 @@ export { HomeworkSidebar } from './homework-sidebar';
 export { CourseModal } from './course-modal';
 export { ConfirmDialog } from './confirm-dialog';
 export { PromptDialog } from './prompt-dialog';
+export { Onboarding } from './onboarding';
+export { DegreeProgress } from './degree-progress';

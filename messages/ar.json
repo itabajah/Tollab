@@ -21,7 +21,9 @@
     "points": "ن.أ",
     "grade": "العلامة",
     "link": "رابط",
-    "more": "المزيد"
+    "more": "المزيد",
+    "back": "رجوع",
+    "next": "التالي"
   },
   "nav": {
     "cloudSync": "مزامنة السحابة",
@@ -190,7 +192,21 @@
     "selectDegree": "اختر مسار دراستك",
     "targetCredits": "حدد هدف نقاط الائتمان",
     "getStarted": "ابدأ الآن",
-    "skip": "تخطي الآن"
+    "skip": "تخطي الآن",
+    "stepFaculty": "اختر الكلية",
+    "stepDegree": "اختر الشهادة",
+    "stepGoal": "حدد الهدف",
+    "facultyDescription": "في أي كلية تدرس؟",
+    "degreeDescription": "ما الشهادة التي تسعى للحصول عليها؟",
+    "goalDescription": "كم نقطة ائتمان تحتاج للتخرج؟",
+    "startYear": "سنة البدء",
+    "cpGoal": "هدف نقاط الائتمان",
+    "commonGoals": "أهداف شائعة",
+    "skipForNow": "تخطي الآن",
+    "degreeBachelor": "بكالوريوس",
+    "degreeMaster": "ماجستير",
+    "degreePhd": "دكتوراه",
+    "degreeOther": "أخرى"
   },
   "faculties": {
     "cs": "علوم الحاسوب",

@@ -100,6 +100,11 @@ export interface Settings {
 export interface Profile {
   id: string;
   name: string;
+  faculty?: string; // Faculty key (e.g., 'cs', 'ee')
+  degree?: string; // Degree type (e.g., 'bachelor', 'master', 'phd')
+  cpGoal?: number; // Credit points goal
+  startYear?: number; // Year started studying
+  onboardingComplete?: boolean;
 }
 
 // App data structure (stored in localStorage/Firebase)
