@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import { Header } from '@/components/header';
 import { SemesterSelector } from '@/components/semester-selector';
 import { CourseList } from '@/components/course-list';
@@ -10,9 +11,12 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PromptDialog } from '@/components/prompt-dialog';
 import { CourseModal } from '@/components/course-modal';
 import { useProfileStore } from '@/stores';
+import { isRTL, type Locale } from '@/i18n';
 
 export default function Home() {
   const { initializeProfiles } = useProfileStore();
+  const locale = useLocale() as Locale;
+  const dir = isRTL(locale) ? 'rtl' : 'ltr';
 
   // Initialize profiles on mount
   useEffect(() => {
@@ -20,7 +24,7 @@ export default function Home() {
   }, [initializeProfiles]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" dir={dir}>
       <Header />
 
       <main className="flex-1 container mx-auto px-4 py-6">

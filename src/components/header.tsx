@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Moon, Sun, Monitor, Cloud, CloudOff, Loader2, User, LogOut, RefreshCw } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
+import { useRouter, usePathname } from 'next/navigation';
+import { Moon, Sun, Monitor, Cloud, CloudOff, Loader2, User, LogOut, RefreshCw, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,8 +16,15 @@ import { useDataStore } from '@/stores';
 import { useFirebaseSync } from '@/hooks';
 import { HeaderTicker } from './header-ticker';
 import { cn } from '@/lib/utils';
+import { isRTL, type Locale, routing } from '@/i18n';
 
 export function Header() {
+  const t = useTranslations();
+  const locale = useLocale() as Locale;
+  const router = useRouter();
+  const pathname = usePathname();
+  const dir = isRTL(locale) ? 'rtl' : 'ltr';
+
   const { data, updateSettings } = useDataStore();
   const { theme } = data.settings;
   const {
@@ -56,15 +65,32 @@ export function Header() {
     updateSettings({ theme: nextTheme });
   };
 
+  const switchLocale = (newLocale: Locale) => {
+    // Get the path without locale prefix
+    const segments = pathname.split('/');
+    if (routing.locales.includes(segments[1] as Locale)) {
+      segments[1] = newLocale;
+    } else {
+      segments.unshift('', newLocale);
+    }
+    router.push(segments.join('/') || '/');
+  };
+
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
+
+  const localeLabels: Record<Locale, string> = {
+    en: 'English',
+    he: 'עברית',
+    ar: 'العربية'
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between px-4" dir="rtl">
+      <div className="container flex h-14 items-center justify-between px-4" dir={dir}>
         {/* Logo */}
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold tracking-tight">
-            <span className="text-primary">טולאב</span>
+            <span className="text-primary">{t('app.name')}</span>
           </h1>
         </div>
 
@@ -77,6 +103,27 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* Language Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Globe className="h-5 w-5" />
+                <span className="sr-only">{t('settings.language')}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={dir === 'rtl' ? 'start' : 'end'}>
+              {routing.locales.map((loc) => (
+                <DropdownMenuItem
+                  key={loc}
+                  onClick={() => switchLocale(loc)}
+                  className={cn(locale === loc && 'bg-accent')}
+                >
+                  {localeLabels[loc]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {/* Cloud Sync */}
           {isConfigured && (
             <DropdownMenu>
@@ -96,10 +143,10 @@ export function Header() {
                   ) : (
                     <CloudOff className="h-5 w-5 text-muted-foreground" />
                   )}
-                  <span className="sr-only">סנכרון ענן</span>
+                  <span className="sr-only">{t('nav.cloudSync')}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
+              <DropdownMenuContent align={dir === 'rtl' ? 'start' : 'end'}>
                 {isAuthenticated && user ? (
                   <>
                     <div className="px-2 py-1.5 text-sm">
@@ -117,24 +164,24 @@ export function Header() {
                       </div>
                       {lastSynced && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          סנכרון אחרון: {new Date(lastSynced).toLocaleTimeString('he-IL')}
+                          {t('nav.lastSync', { time: new Date(lastSynced).toLocaleTimeString(locale) })}
                         </p>
                       )}
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={forceSync} disabled={isSyncing}>
-                      <RefreshCw className="ml-2 h-4 w-4" />
-                      סנכרן עכשיו
+                      <RefreshCw className={cn("h-4 w-4", dir === 'rtl' ? 'ml-2' : 'mr-2')} />
+                      {t('nav.syncNow')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={signOut}>
-                      <LogOut className="ml-2 h-4 w-4" />
-                      התנתק
+                      <LogOut className={cn("h-4 w-4", dir === 'rtl' ? 'ml-2' : 'mr-2')} />
+                      {t('nav.signOut')}
                     </DropdownMenuItem>
                   </>
                 ) : (
                   <DropdownMenuItem onClick={signIn}>
-                    <Cloud className="ml-2 h-4 w-4" />
-                    התחבר עם Google
+                    <Cloud className={cn("h-4 w-4", dir === 'rtl' ? 'ml-2' : 'mr-2')} />
+                    {t('nav.signInGoogle')}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -146,10 +193,10 @@ export function Header() {
             variant="ghost"
             size="icon"
             onClick={cycleTheme}
-            title={`ערכת נושא: ${theme === 'light' ? 'בהיר' : theme === 'dark' ? 'כהה' : 'מערכת'}`}
+            title={`${t('nav.theme')}: ${theme === 'light' ? t('nav.themeLight') : theme === 'dark' ? t('nav.themeDark') : t('nav.themeSystem')}`}
           >
             {mounted && <ThemeIcon className="h-5 w-5" />}
-            <span className="sr-only">החלף ערכת נושא</span>
+            <span className="sr-only">{t('nav.theme')}</span>
           </Button>
         </div>
       </div>

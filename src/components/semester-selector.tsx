@@ -1,6 +1,7 @@
 'use client';
 
-import { Plus, Trash2, ChevronDown } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
+import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -10,25 +11,56 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDataStore, useUIStore } from '@/stores';
-import { SEMESTER_TYPES } from '@/types';
+import { isRTL, type Locale } from '@/i18n';
 
 export function SemesterSelector() {
+  const t = useTranslations();
+  const locale = useLocale() as Locale;
+  const dir = isRTL(locale) ? 'rtl' : 'ltr';
+
   const { data, activeSemesterId, setActiveSemester, addSemester, deleteSemester } = useDataStore();
   const { openConfirmModal, openPromptModal } = useUIStore();
 
   const semesters = data.semesters;
   const currentSemester = semesters.find((s) => s.id === activeSemesterId) || semesters[0];
 
+  // Generate default semester name based on current date
+  const generateDefaultSemesterName = () => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    
+    // Winter: Oct-Feb, Spring: Mar-Jun, Summer: Jul-Sep
+    let semesterType: string;
+    let academicYear: string;
+    
+    if (month >= 10 || month <= 2) {
+      // Winter semester
+      semesterType = t('semester.winter');
+      const startYear = month >= 10 ? year : year - 1;
+      academicYear = `${startYear}/${startYear + 1}`;
+    } else if (month >= 3 && month <= 6) {
+      // Spring semester
+      semesterType = t('semester.spring');
+      academicYear = `${year - 1}/${year}`;
+    } else {
+      // Summer semester
+      semesterType = t('semester.summer');
+      academicYear = `${year - 1}/${year}`;
+    }
+    
+    return `${semesterType} ${academicYear}`;
+  };
+
   const handleAddSemester = () => {
-    const currentYear = new Date().getFullYear();
-    const defaultName = `${SEMESTER_TYPES[0]} ${currentYear}-${currentYear + 1}`;
+    const defaultName = generateDefaultSemesterName();
 
     openPromptModal({
-      title: 'סמסטר חדש',
-      message: 'הזן שם לסמסטר החדש',
-      placeholder: 'לדוגמה: חורף 2024-2025',
+      title: t('semester.newTitle'),
+      message: t('semester.newMessage'),
+      placeholder: t('semester.newPlaceholder'),
       defaultValue: defaultName,
-      confirmLabel: 'צור סמסטר',
+      confirmLabel: t('common.create'),
       onConfirm: (name) => {
         if (name.trim()) {
           addSemester(name.trim());
@@ -41,9 +73,9 @@ export function SemesterSelector() {
     if (!currentSemester) return;
 
     openConfirmModal({
-      title: 'מחיקת סמסטר',
-      message: `האם אתה בטוח שברצונך למחוק את "${currentSemester.name}"? פעולה זו לא ניתנת לביטול.`,
-      confirmLabel: 'מחק',
+      title: t('semester.deleteTitle'),
+      message: t('semester.deleteMessage', { name: currentSemester.name }),
+      confirmLabel: t('common.delete'),
       variant: 'destructive',
       onConfirm: () => {
         deleteSemester(currentSemester.id);
@@ -52,18 +84,18 @@ export function SemesterSelector() {
   };
 
   return (
-    <div className="flex items-center gap-2" dir="rtl">
+    <div className="flex items-center gap-2" dir={dir}>
       <Select
         value={currentSemester?.id || ''}
         onValueChange={(value) => setActiveSemester(value)}
       >
         <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="בחר סמסטר" />
+          <SelectValue placeholder={t('semester.select')} />
         </SelectTrigger>
         <SelectContent>
           {semesters.length === 0 ? (
             <SelectItem value="empty" disabled>
-              אין סמסטרים
+              {t('semester.noSemesters')}
             </SelectItem>
           ) : (
             semesters.map((semester) => (
@@ -75,9 +107,9 @@ export function SemesterSelector() {
         </SelectContent>
       </Select>
 
-      <Button variant="outline" size="icon" onClick={handleAddSemester} title="הוסף סמסטר">
+      <Button variant="outline" size="icon" onClick={handleAddSemester} title={t('semester.add')}>
         <Plus className="h-4 w-4" />
-        <span className="sr-only">הוסף סמסטר</span>
+        <span className="sr-only">{t('semester.add')}</span>
       </Button>
 
       {currentSemester && (
@@ -85,11 +117,11 @@ export function SemesterSelector() {
           variant="outline"
           size="icon"
           onClick={handleDeleteSemester}
-          title="מחק סמסטר"
+          title={t('semester.delete')}
           className="text-destructive hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
-          <span className="sr-only">מחק סמסטר</span>
+          <span className="sr-only">{t('semester.delete')}</span>
         </Button>
       )}
     </div>

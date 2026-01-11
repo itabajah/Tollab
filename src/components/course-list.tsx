@@ -1,12 +1,17 @@
 'use client';
 
+import { useTranslations, useLocale } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from './course-card';
 import { useDataStore, useUIStore } from '@/stores';
-import { Course } from '@/types';
+import { isRTL, type Locale } from '@/i18n';
 
 export function CourseList() {
+  const t = useTranslations();
+  const locale = useLocale() as Locale;
+  const dir = isRTL(locale) ? 'rtl' : 'ltr';
+
   const { getActiveSemester, addCourse, reorderCourses } = useDataStore();
   const { openPromptModal } = useUIStore();
 
@@ -17,10 +22,10 @@ export function CourseList() {
     if (!semester) return;
 
     openPromptModal({
-      title: 'קורס חדש',
-      message: 'הזן את שם הקורס',
-      placeholder: 'לדוגמה: מבוא למדעי המחשב',
-      confirmLabel: 'צור קורס',
+      title: t('course.newTitle'),
+      message: t('course.newMessage'),
+      placeholder: t('course.newPlaceholder'),
+      confirmLabel: t('common.create'),
       onConfirm: (name) => {
         if (name.trim()) {
           addCourse(semester.id, {
@@ -39,8 +44,8 @@ export function CourseList() {
             homework: [],
             recordings: {
               tabs: [
-                { id: 'lectures', name: 'הרצאות', items: [] },
-                { id: 'tutorials', name: 'תרגולים', items: [] },
+                { id: 'lectures', name: t('recordings.title'), items: [] },
+                { id: 'tutorials', name: t('schedule.tutorial'), items: [] },
               ],
             },
           });
@@ -62,32 +67,32 @@ export function CourseList() {
 
   if (!semester) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center" dir="rtl">
-        <p className="text-muted-foreground mb-4">אין סמסטר פעיל</p>
-        <p className="text-sm text-muted-foreground">צור סמסטר חדש כדי להתחיל</p>
+      <div className="flex flex-col items-center justify-center py-12 text-center" dir={dir}>
+        <p className="text-muted-foreground mb-4">{t('course.noActiveSemester')}</p>
+        <p className="text-sm text-muted-foreground">{t('course.createSemesterFirst')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">קורסים</h2>
+        <h2 className="text-lg font-semibold">{t('course.title')}</h2>
         <Button onClick={handleAddCourse} size="sm">
-          <Plus className="h-4 w-4 ml-1" />
-          קורס חדש
+          <Plus className={`h-4 w-4 ${dir === 'rtl' ? 'ml-1' : 'mr-1'}`} />
+          {t('course.newCourse')}
         </Button>
       </div>
 
       {/* Course list */}
       {courses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
-          <p className="text-muted-foreground mb-2">אין קורסים עדיין</p>
-          <p className="text-sm text-muted-foreground mb-4">הוסף קורס ראשון כדי להתחיל</p>
+          <p className="text-muted-foreground mb-2">{t('course.noCourses')}</p>
+          <p className="text-sm text-muted-foreground mb-4">{t('course.addFirst')}</p>
           <Button onClick={handleAddCourse} variant="outline">
-            <Plus className="h-4 w-4 ml-1" />
-            הוסף קורס
+            <Plus className={`h-4 w-4 ${dir === 'rtl' ? 'ml-1' : 'mr-1'}`} />
+            {t('course.add')}
           </Button>
         </div>
       ) : (
