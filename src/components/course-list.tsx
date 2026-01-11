@@ -168,15 +168,20 @@ export function CourseList() {
       ) : (
         <div className="grid gap-3">
           {courses.map((course, index) => (
-            <CourseCard
+            <div
               key={course.id}
-              course={course}
-              index={index}
-              totalCourses={courses.length}
-              hasConflict={hasConflict(course.id)}
-              onReorderUp={() => handleReorder(index, 'up')}
-              onReorderDown={() => handleReorder(index, 'down')}
-            />
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
+              <CourseCard
+                course={course}
+                index={index}
+                totalCourses={courses.length}
+                hasConflict={hasConflict(course.id)}
+                onReorderUp={() => handleReorder(index, 'up')}
+                onReorderDown={() => handleReorder(index, 'down')}
+              />
+            </div>
           ))}
         </div>
       )}

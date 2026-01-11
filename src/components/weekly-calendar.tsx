@@ -154,7 +154,7 @@ export function WeeklyCalendar() {
   }
 
   return (
-    <div className="border rounded-lg bg-card overflow-hidden" dir={dir}>
+    <div className="border rounded-lg bg-card overflow-hidden animate-fade-in" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b bg-muted/30">
         <h3 className="font-semibold flex items-center gap-2">

@@ -137,11 +137,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
         {/* Card */}
-        <div className="bg-card border rounded-xl p-6 shadow-lg">
+        <div className="bg-card border rounded-xl p-6 shadow-lg animate-fade-in-up">
           {/* Step content */}
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-1">{steps[step].title}</h2>
-            <p className="text-sm text-muted-foreground">
+          <div className="mb-6" key={step}>
+            <h2 className="text-xl font-semibold mb-1 animate-fade-in">{steps[step].title}</h2>
+            <p className="text-sm text-muted-foreground animate-fade-in" style={{ animationDelay: '0.1s' }}>
               {step === 0 && t('onboarding.facultyDescription')}
               {step === 1 && t('onboarding.degreeDescription')}
               {step === 2 && t('onboarding.goalDescription')}

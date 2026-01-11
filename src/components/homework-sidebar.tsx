@@ -161,7 +161,7 @@ export function HomeworkSidebar() {
   };
 
   return (
-    <div className="h-full flex flex-col" dir={dir}>
+    <div className="h-full flex flex-col animate-fade-in" dir={dir}>
       {/* Header */}
       <div className="p-4 border-b">
         <h2 className="font-semibold text-lg flex items-center gap-2">

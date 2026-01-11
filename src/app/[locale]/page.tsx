@@ -51,19 +51,23 @@ export default function Home() {
           {/* Main content area */}
           <div className="flex-1 space-y-6">
             {/* Semester selector */}
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center animate-fade-in">
               <SemesterSelector />
             </div>
 
             {/* Weekly calendar */}
-            <WeeklyCalendar />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <WeeklyCalendar />
+            </div>
 
             {/* Course list */}
-            <CourseList />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <CourseList />
+            </div>
           </div>
 
           {/* Sidebar */}
-          <aside className="w-full lg:w-80 shrink-0 space-y-4">
+          <aside className="w-full lg:w-80 shrink-0 space-y-4 animate-slide-in-right">
             {/* Degree Progress */}
             <DegreeProgress />
 

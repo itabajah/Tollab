@@ -76,8 +76,8 @@ export function CourseCard({
   return (
     <div
       className={cn(
-        'group relative rounded-lg border bg-card p-4 transition-all hover:shadow-md cursor-pointer',
-        'hover:border-primary/50',
+        'group relative rounded-lg border bg-card p-4 cursor-pointer card-hover',
+        'hover:border-primary/50 transition-all duration-200',
         hasConflict && 'border-red-500'
       )}
       style={{

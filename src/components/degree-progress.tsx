@@ -86,7 +86,7 @@ export function DegreeProgress() {
       : 'bg-primary';
 
   return (
-    <div className="border rounded-lg bg-card p-4 space-y-4" dir={dir}>
+    <div className="border rounded-lg bg-card p-4 space-y-4 animate-fade-in-up" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="font-semibold flex items-center gap-2">
