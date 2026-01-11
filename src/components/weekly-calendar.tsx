@@ -2,9 +2,10 @@
 
 import { useMemo, useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDataStore, useUIStore } from '@/stores';
+import { useScheduleConflicts } from '@/hooks';
 import { Course, ScheduleItem } from '@/types';
 import { cn } from '@/lib/utils';
 import { isRTL, type Locale } from '@/i18n';
@@ -14,6 +15,7 @@ interface CalendarEvent {
   schedule: ScheduleItem;
   top: number;
   height: number;
+  hasConflict: boolean;
 }
 
 export function WeeklyCalendar() {
@@ -23,10 +25,23 @@ export function WeeklyCalendar() {
 
   const { getActiveSemester } = useDataStore();
   const { calendarSingleDayView, calendarActiveDay, setCalendarActiveDay, toggleCalendarSingleDayView } = useUIStore();
+  const { conflicts } = useScheduleConflicts();
 
   const semester = getActiveSemester();
   const calendarSettings = semester?.calendarSettings || { startHour: 8, endHour: 20, visibleDays: [0, 1, 2, 3, 4, 5] };
   const courses = semester?.courses || [];
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Create set of schedule items that have conflicts
+  const conflictingItems = useMemo(() => {
+    const items = new Set<string>();
+    for (const conflict of conflicts) {
+      items.add(`${conflict.slot1.courseId}-${conflict.slot1.itemId}`);
+      items.add(`${conflict.slot2.courseId}-${conflict.slot2.itemId}`);
+    }
+    return items;
+  }, [conflicts]);
 
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -86,17 +101,20 @@ export function WeeklyCalendar() {
         const top = (startMinutes - calendarStartMinutes) * pixelsPerMinute;
         const height = (endMinutes - startMinutes) * pixelsPerMinute;
 
+        const itemKey = `${course.id}-${schedule.id}`;
+
         result[schedule.day].push({
           course,
           schedule,
           top,
           height: Math.max(height, 24), // Minimum height
+          hasConflict: conflictingItems.has(itemKey),
         });
       }
     }
 
     return result;
-  }, [courses, calendarSettings]);
+  }, [courses, calendarSettings, conflictingItems]);
 
   // Current time indicator position
   const currentTimePosition = useMemo(() => {
@@ -211,17 +229,19 @@ export function WeeklyCalendar() {
                       key={`${event.course.id}-${event.schedule.id}-${idx}`}
                       className={cn(
                         'absolute inset-x-1 rounded-md p-1 text-xs overflow-hidden pointer-events-auto cursor-pointer',
-                        'hover:ring-2 hover:ring-primary transition-shadow'
+                        'hover:ring-2 hover:ring-primary transition-shadow',
+                        event.hasConflict && 'ring-2 ring-destructive ring-offset-1'
                       )}
                       style={{
                         top: `${event.top}px`,
                         height: `${event.height}px`,
                         backgroundColor: event.course.color || 'hsl(var(--primary))',
                       }}
-                      title={`${event.course.name}\n${event.schedule.start} - ${event.schedule.end}`}
+                      title={`${event.course.name}\n${event.schedule.start} - ${event.schedule.end}${event.hasConflict ? `\n⚠️ ${t('schedule.conflict')}` : ''}`}
                     >
-                      <div className="font-medium truncate text-gray-900">
-                        {event.course.name}
+                      <div className="font-medium truncate text-gray-900 flex items-center gap-1">
+                        {event.hasConflict && <AlertTriangle className="h-3 w-3 text-destructive flex-shrink-0" />}
+                        <span className="truncate">{event.course.name}</span>
                       </div>
                       {event.height > 30 && (
                         <div className="text-gray-700 truncate">

@@ -7,3 +7,4 @@ export {
   clearCheeseforkCache,
   preloadCourses,
 } from './use-cheesefork';
+export { useScheduleConflicts } from './use-schedule-conflicts';
