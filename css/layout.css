@@ -12,9 +12,52 @@
     height: 100%;
 }
 
+/* Split.js Parent Container */
+.split-parent {
+    display: flex;
+    flex-direction: row;
+    gap: 0; /* Remove gap when using Split.js gutter */
+}
+
+/* Split.js Gutter (Draggable Handle) */
+.gutter {
+    background-color: var(--border-secondary, #e1e1e1);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    cursor: col-resize !important;
+    transition: background-color 0.15s;
+    flex-shrink: 0;
+    z-index: 99;
+}
+
+.gutter:hover {
+    background-color: var(--border-primary, #cdcdcd);
+}
+
+.gutter.gutter-horizontal {
+    width: 10px;
+    margin: 0 5px;
+}
+
+/* Split panes - let Split.js control widths via inline styles */
+.split-parent > #split-0,
+.split-parent > #split-1 {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+}
+
+/* Dark mode gutter styling */
+body.dark-mode .gutter {
+    background-color: var(--border-secondary, #3a3a3a);
+}
+
+body.dark-mode .gutter:hover {
+    background-color: var(--border-primary, #525252);
+}
+
 .container {
-    flex: 3;
-    /* Existing styles override */
+    /* Let Split.js control width - no flex value */
     max-width: none;
     width: auto;
     margin: 0;
