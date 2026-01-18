@@ -35,8 +35,8 @@
 }
 
 .gutter.gutter-horizontal {
-    width: 10px;
-    margin: 0 5px;
+    width: 4px;
+    margin: 0 2px;
 }
 
 /* Split panes - let Split.js control widths via inline styles */
