@@ -672,7 +672,8 @@
         // Initialize Split.js after all scripts are loaded
         (function() {
             const STORAGE_KEY = 'tollab-split-sizes';
-            const defaultSizes = [25, 75];
+            // Default: balanced layout with slightly more space for calendar
+            const defaultSizes = [65, 35];
             
             // Restore sizes from localStorage or use defaults
             let savedSizes = defaultSizes;
@@ -689,7 +690,8 @@
             if (typeof Split !== 'undefined') {
                 Split(['#split-0', '#split-1'], {
                     sizes: savedSizes,
-                    minSize: [300, 600],
+                    minSize: [580, 400],  // Left min 580px, right min 400px
+                    //  (limits max slide)
                     gutterSize: 4,
                     cursor: 'col-resize',
                     onDragEnd: function(sizes) {
