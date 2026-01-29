@@ -35,16 +35,3 @@ jobs:
             echo "Warning: Potential sensitive data found in source files."
             exit 1
           fi
-
-  deploy-preview:
-    name: Deploy Preview
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    needs: [build]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Deploy to GitHub Pages Preview
-        run: echo "Preview deployment would go here for PR #${{ github.event.number }}"
