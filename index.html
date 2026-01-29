@@ -669,8 +669,15 @@
     <!-- Split.js for resizable panes -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
     <script>
-        // Initialize Split.js after all scripts are loaded
+        // Initialize Split.js after all scripts are loaded (desktop only)
         (function() {
+            // Only enable split pane on desktop (screen width > 1024px)
+            const MOBILE_BREAKPOINT = 1024;
+            if (window.innerWidth <= MOBILE_BREAKPOINT) {
+                console.info('[Split] Disabled on mobile view');
+                return;
+            }
+            
             const STORAGE_KEY = 'tollab-split-sizes';
             // Default: balanced layout with slightly more space for calendar
             const defaultSizes = [65, 35];
