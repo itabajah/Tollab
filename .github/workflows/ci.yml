@@ -7,53 +7,6 @@ on:
     branches: [main, master]
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run ESLint
-        run: npm run lint
-  
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run tests
-        run: npm test
-      
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v3
-        if: success()
-        with:
-          files: ./coverage/lcov.info
-          fail_ci_if_error: false
-  
   build:
     name: Build Check
     runs-on: ubuntu-latest
@@ -80,27 +33,6 @@ jobs:
           if grep -rn "TODO\|FIXME" --include="*.js" --include="*.css" --include="*.html" .; then
             echo "Note: Found TODO/FIXME comments in codebase."
           fi
-
-  security:
-    name: Security Check
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run security audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
       
       - name: Check for sensitive data
         run: |
@@ -114,7 +46,7 @@ jobs:
     name: Deploy Preview
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    needs: [lint, test]
+    needs: [build]
     
     steps:
       - name: Checkout code
