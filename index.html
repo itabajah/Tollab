@@ -17,8 +17,8 @@
     <link rel="stylesheet" href="css/utils.css">
 </head>
 <body>
-    <div class="app-layout">
-        <div class="container">
+    <div class="app-layout split-parent">
+        <div id="split-0" class="container">
             <header>
                 <div class="brand">
                     <h1>Tollab</h1>
@@ -74,7 +74,7 @@
         </button>
     </div>
 
-    <div class="calendar-container">
+    <div id="split-1" class="calendar-container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <h2 style="margin: 0; font-size: 20px; font-weight: 300;">Weekly Schedule</h2>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -666,6 +666,45 @@
     <script src="js/import-export.js"></script>
     <script src="js/events.js"></script>
     <script src="js/main.js"></script>
+    <!-- Split.js for resizable panes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
+    <script>
+        // Initialize Split.js after all scripts are loaded
+        (function() {
+            const STORAGE_KEY = 'tollab-split-sizes';
+            const defaultSizes = [25, 75];
+            
+            // Restore sizes from localStorage or use defaults
+            let savedSizes = defaultSizes;
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    savedSizes = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.warn('[Split] Could not parse saved sizes:', e);
+            }
+            
+            // Initialize Split.js
+            if (typeof Split !== 'undefined') {
+                Split(['#split-0', '#split-1'], {
+                    sizes: savedSizes,
+                    minSize: [300, 600],
+                    gutterSize: 4,
+                    cursor: 'col-resize',
+                    onDragEnd: function(sizes) {
+                        // Persist sizes to localStorage
+                        try {
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(sizes));
+                        } catch (e) {
+                            console.warn('[Split] Could not save sizes:', e);
+                        }
+                    }
+                });
+                console.info('[Split] Resizable panes initialized');
+            }
+        })();
+    </script>
 
     <footer class="site-footer">
         <p>Made by <a href="https://www.linkedin.com/in/ibraheem-tabajah/" target="_blank">Ibrahim Tabajah</a></p>
