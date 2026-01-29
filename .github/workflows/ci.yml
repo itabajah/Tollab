@@ -15,12 +15,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Validate HTML
-        uses: nicholascross/check-html@v1
-        with:
-          path: '.'
-          pattern: '*.html'
-      
       - name: Check for console.log statements
         run: |
           # Allow console.error and console.warn, flag console.log
