@@ -4,18 +4,16 @@
  */
 
 .calendar-container {
-    /* Let Split.js control width - no flex value */
+    flex: 2;
     background: var(--bg-secondary);
     border-radius: 2px;
     padding: 25px;
     border: 1px solid var(--border-primary);
-    min-width: 0; /* Allow shrinking */
-    width: 100%;
+    min-width: 350px;
     height: 100%;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-sizing: border-box;
 }
 
 /* Calendar scroll wrapper - for horizontal scrolling on mobile */
@@ -24,8 +22,6 @@
     overflow-y: visible;
     margin: 0 -25px;
     padding: 0 25px;
-    width: calc(100% + 50px); /* Account for negative margins */
-    box-sizing: border-box;
 }
 
 /* Full width in single day mode */
@@ -40,13 +36,11 @@
 /* Weekly Schedule Grid */
 .weekly-schedule {
     display: grid;
-    grid-template-columns: 40px repeat(6, minmax(0, 1fr)); /* Time col + 6 fluid days */
+    grid-template-columns: 40px repeat(6, 1fr); /* Time col + 6 days (Sun-Fri) */
     gap: 2px;
     background: var(--border-primary);
     border: 1px solid var(--border-primary);
     font-size: 10px;
-    width: 100%;
-    box-sizing: border-box;
 }
 
 .schedule-header {
