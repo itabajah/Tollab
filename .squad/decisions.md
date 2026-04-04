@@ -139,6 +139,25 @@
 **Why:** Verify test coverage meets migration standards.
 **Impact:** PR #49 APPROVED by Yasmin. All review concerns addressed. Ready for merge.
 
+### 2026-04-05T00:00:00Z: Wave 4 Services Architecture
+**By:** Hana (Firebase Integration) + Rami (Services Dev — External)
+**What:** Wave 4 services layer delivered: Firebase modular SDK (3 files: config, auth, sync, 371 lines) + external API services (5 files: cors-proxy, youtube, panopto, technion-catalog, cheesefork, 1,250 lines). Firebase three-layer architecture: config root → auth/sync leaf nodes, zero cross-contamination, auth state flows through caller (not direct sync coupling). External APIs use hardcoded proxy URLs (no injection vectors), target URL encoding, regex extraction with strict charsets (YouTube video ID: `[a-zA-Z0-9_-]{11}`, Panopto UUID: `[a-f0-9-]{36}`). Echo prevention via dual-layer (clientId persistent + writeId per-write). User isolation: `tollab/users/{uid}/data` Firebase path, only authenticated users can access their own data.
+**Why:** Services layer foundation for Wave 5 component integration. Firebase separation enables testability and clarity of concerns. Hardcoded URL pattern prevents SSRF/injection. Dual-layer echo prevention prevents feedback loops in real-time sync. Security reviews (Jad) confirm no injection vectors, XSS-safe, proper Firebase isolation.
+**Impact:** PR #50 approved by Zara (architecture) and Jad (security), squash-merged to squad-branch. Wave 5 components can now import from `@/services/` and consume typed returns.
+**Non-blocking recommendations:** (1) Add runtime shape validation for CloudPayload (defense-in-depth); (2) Validate `url` field from Panopto clipboard at component layer.
+
+### 2026-04-05T00:00:00Z: PR #50 Review — Wave 4 Services (Zara)
+**By:** Zara (Architecture)
+**What:** Architecture review of PR #50 (wave-4-services) confirms clean service boundaries (Firebase vs external APIs vs storage), acyclic dependency graph (types ← constants ← utils ← services, zero store/component imports), proper Firebase three-layer separation (config → auth/sync, auth independent from sync, `firebase-sync` takes userId parameter not direct auth coupling), error handling consistent across all 8 services (try/catch + logging + graceful degradation), minimal inter-service coupling (cors-proxy is only shared infrastructure). Dependency graph verified with ripgrep — no circular imports. Firebase path scoping secure (uid from Firebase SDK opaque string, not user input). All external API URLs hardcoded constants in `@/constants/api.ts` (not user-injectable).
+**Why:** Architectural validation ensures scaling, maintainability, security across wave-4 services and future integration layers.
+**Impact:** PR #50 APPROVED by Zara. Non-blocking observations: (1) duplicate auth wrappers (consolidation opportunity); (2) `AppData` interface location (minor DRY); (3) `technion-catalog` bare fetch asymmetry (correct but notable); (4) element shape validation in `cheesefork` (LOW risk); (5) `JSON.parse` error handling in Panopto (caller responsibility).
+
+### 2026-04-05T00:00:00Z: PR #50 Review — Wave 4 Services (Jad)
+**By:** Jad (Security Reviewer)
+**What:** Security review of PR #50 (wave-4-services) confirms: Firebase auth scoped to GoogleAuthProvider (no privilege escalation), auth state from SDK (no desync), graceful offline degradation, no token exposure. Firebase sync path construction secure (uid opaque from Firebase, no traversal), user isolation correct (each reads/writes only `tollab/users/{uid}/data`), echo prevention sound (dual-layer clientId + writeId), payload atomic via `set()`. CORS proxy URLs hardcoded constants (not injectable), targets `encodeURIComponent()`-encoded, no SSRF risk (client-side only), timeout + rate-limit protection. URL validation enforced (http/https, max 2048, `new URL()` parsing). YouTube extracts playlist ID → reconstructs canonical URL (user URL never passed to fetch). Panopto extracts/validates folder ID (UUID hex) + domain. Technion uses hardcoded GitHub base. No `dangerouslySetInnerHTML`, `innerHTML`, `DOMParser`, `eval()`, `Function()`, `document.write()` anywhere in `src/`. Preact JSX auto-escapes. ICS parser extracts only known fields (no HTML). Panopto clipboard JSON.parse with key allowlist. Panopto HTML regex-only extraction (no DOM parsing, filters script-like patterns). All data injection vectors neutralized (type safety, string escaping, no code paths).
+**Why:** Security-critical gateway to external APIs and user data sync. Proper input validation, path isolation, and XSS prevention required.
+**Impact:** PR #50 APPROVED by Jad (no blocking security issues). Non-blocking: (1) Runtime shape guard for CloudPayload (defense-in-depth vs tampered cloud data — LOW risk due to Firebase Security Rules); (2) Component-layer URL validation for Panopto clipboard output (prevent `javascript:` protocol — LOW risk, depends on URL consumption).
+
 ## Governance
 
 - All meaningful changes require team consensus
