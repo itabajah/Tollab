@@ -76,6 +76,69 @@
 2. DAY_NAMES and DAY_NAMES_SHORT are identical; consider consolidating to single source of truth
 3. DEFAULT_CALENDAR_SETTINGS lives in types/semester.ts (unusual); re-export bridge acceptable but consider constants-only location as defaults accumulate
 
+### 2026-04-05T00:00:00Z: Wave 2 Store Architecture
+**By:** Farid (State Management Dev)
+**What:** Created four Zustand store files in `src/store/` (1154 lines total): **app-store.ts** (main application state, CRUD, settings, bulk import, immer middleware), **profile-store.ts** (profile metadata, one-way read from app-store), **ui-store.ts** (ephemeral modal/editing/sidebar state, no persistence), **selectors.ts** (derived-state hooks with exact legacy JS logic). Sort orders stored separately from Course type (keeps domain model clean). Actions are pure — no side effects. immer middleware enables safe deep mutations. `importCourses` intelligently merges (matches by number/name, updates exam dates, deduplicates).
+**Why:** Zustand stores provide reactive state management with immutable updates and selector patterns. Three-store decomposition separates concerns (domain data, metadata, ephemeral UI). Selectors enable efficient component subscriptions. immer middleware simplifies deep mutations (4–5 level nesting in app-store).
+**Impact:** All team members building components (Wave 3+) import from `@/store/app-store`, `@/store/profile-store`, `@/store/ui-store`, and `@/store/selectors` for state access. Wave 3 will wire subscribers to storage service for persistence. Foundation ready for Wave 3 component integration.
+**Non-blocking observations (Wave 3+):**
+1. `currentSemesterId` and sort orders not persisted per-profile (Wave 3 to decide: extend `ProfileData` or separate keys)
+2. `saveData` is timestamp-only (persistence wired in Wave 3 via subscribers)
+3. Selector efficiency (Wave 3 to add memoization or `useShallow` when components consume)
+4. `profile-store → app-store` coupling in `exportProfile()` (consider orchestration layer in future)
+
+### 2026-04-05T00:00:00Z: Clean Storage Service (Wave 2)
+**By:** Tariq (System Designer — Data)
+**What:** Created `src/services/storage.ts` (171 lines) as the single typed localStorage interface for Tollab v2. All 10 functions implemented: `saveToLocalStorage` / `loadFromLocalStorage` (profile-scoped ProfileData), `saveProfileList` / `loadProfileList` (profile registry), `saveSettings` / `loadSettings` (app-wide AppSettings with defaults fallback), `deleteProfileData` (cleanup), `getStorageUsage` (quota estimation), `exportAllData` / `importData` (backup/restore). No `AppData` type alias created (ProfileData already has correct shape). `StorageWriteResult` return type instead of void+throw. `loadSettings()` never returns null — always has defaults. Runtime validation guards for all loads. Export envelope is versioned for forward compatibility.
+**Why:** Single-entry-point storage service prevents localStorage access scattered across codebase. `StorageWriteResult` enables graceful error handling without try/catch wrapping. Runtime validators detect corrupt old compact-format data. Versioned exports enable future format evolution. Service isolation (zero store imports) ensures clean dependency graph.
+**Impact:** Farid's Zustand stores import from `@/services/storage` for persistence. No other module touches `localStorage` directly. Old compact data in localStorage silently returns null — clean break with no migration code required.
+**Non-blocking observations (Wave 3+):**
+1. Import has no rollback on partial write failure (data integrity concern, not security issue)
+2. Prototype pollution defense-in-depth (currently safe, recommend stripping `__proto__` and `constructor`)
+3. No length/size validation on imported profileId (future waves: add length limits, regex allowlist)
+
+### 2026-04-05T00:00:00Z: PR #48 Review Fixes (Wave 2)
+**By:** Rami (Services Dev — External)
+**What:** Fixed all 4 review findings on PR #48 (wave-2-state): **(1) `deleteSemester` splice ordering (BLOCKING)** — moved sort-order cleanup loop *before* `state.semesters.splice(idx, 1)` so it reads the correct semester data instead of shifted/undefined element after removal. **(2) `homeworkSortOrders` type annotation** — changed `Record<string, string>` → `Record<string, HomeworkSortOrder>` in AppState interface and loadData parameter (2 locations + import). **(3) Storage key collision (BLOCKING)** — changed `DATA_PREFIX` from `'tollab_'` to `'tollab_data_'` so per-profile keys (`tollab_data_{id}`) can never collide with registry keys (`tollab_profiles`, `tollab_settings`). **(4) Duplicated `DEFAULT_SETTINGS`** — removed local constant from storage.ts and imported `DEFAULT_THEME_SETTINGS` from `@/constants` instead.
+**Why:** Fix 1 was a data-loss bug (deleting semester silently skipped sort-order cleanup or cleaned wrong semester's courses). Fix 3 was a correctness/security bug (profile named `"profiles"` would overwrite app-level registry data). Fixes 2 and 4 are type-safety and DRY hygiene.
+**Impact:** PR #48 all CI checks passing (npm run typecheck, npm run lint). All three reviewers (Nadia, Zara, Jad) re-reviewed and APPROVED. PR #48 squash-merged to squad-branch. Wave 2 marked complete.
+
+### 2026-04-05T00:00:00Z: Wave 3 Utility Module Design
+**By:** Rami (Services Dev — External)
+**What:** Wave 3 utilities designed as a pure, side-effect-free layer with no application state dependencies. Key design decisions: (1) `compareSemesters` takes `string` (semester name), not full `Semester` object — keeps utility pure and decoupled. (2) `extractHueFromColor` returns `number` not `string` — semantic correctness aligns with `getNextAvailableHue(usedHues: number[])`. (3) `safeExecute` simplified to synchronous try/catch with typed fallback value — removes async complexity and toast integration (application-level concerns). (4) `generateCourseColor` takes `existingColors: string[]` and uses array length as index — removes global appData dependency. (5) ICS parser uses local `ParsedICSEvent` type separate from `@/types/Course` — represents raw parsed output before domain enrichment (id, color, recordings).
+**Why:** All utilities must be independently testable, reusable across codebase, free of side effects. Pure functions with no DOM, no state, no toast systems ensure isolation and composability.
+**Impact:** Wave 3 utilities layer ready for component integration in Wave 4. All 9 modules and validation functions (17 validators, 3 result types) exported via barrel. No refactoring needed for subsequent waves.
+
+### 2026-04-05T00:00:00Z: PR #49 Review Cycle — Wave 3 Utils (Malik)
+**By:** Malik (Code Quality)
+**What:** Code quality review of PR #49 (wave-3-utils): 10 utility files, 206 tests, zero `any` types, 13 type assertions all runtime-guarded, robust error handling, idiomatic TypeScript patterns. All CI checks pass (typecheck, lint, 206 tests). Non-blocking observations: (1) Deprecated `substr()` on line 21 of `string.ts` — replace with `substring()` in follow-up. (2) 7 public functions in `validation.ts` untested (fixed in Rami cycle 2). (3) Slow retry tests (~6.5s total) — consider `vi.useFakeTimers()` in follow-up.
+**Why:** Code quality gate ensures type safety, maintainability, and test coverage for Wave 3 foundation.
+**Impact:** PR #49 APPROVED by Malik. All non-blocking items addressed in Rami fix cycle.
+
+### 2026-04-05T00:00:00Z: PR #49 Review Cycle — Wave 3 Utils (Zara)
+**By:** Zara (Architecture)
+**What:** Architecture review of PR #49 confirms clean module boundaries (10 files, zero cross-cutting imports), acyclic dependency graph (types ← constants ← utils), correct layering (zero store/service imports), explicit barrel exports, and 1:1 test coverage. Import graph verified with ripgrep — no util-to-util imports. Verified `src/types/` has internal cross-refs only (no constants/utils imports), `src/constants/` imports from types only, `src/utils/` imports from types/constants only.
+**Why:** Architectural validation ensures scaling and maintainability across 13-wave migration. Clean boundaries enable parallel future development.
+**Impact:** PR #49 APPROVED by Zara. Non-blocking observations: (1) `VideoPlatform`/`VideoEmbedInfo` could move to `@/types/video.ts` for consistency. (2) `generateCourseColor` and `getNextAvailableHue` use different hue strategies — pick one downstream.
+
+### 2026-04-05T00:00:00Z: PR #49 Review Cycle — Wave 3 Utils (Yasmin)
+**By:** Yasmin (Senior Test Engineer)
+**What:** Test quality review of PR #49 flagged 8 public functions with zero test coverage in `validation.ts` (blockers): `validateProfileName`, `validateNotes`, `validateCoursePoints`, `validateGrade`, `validateCalendarHour`, `validateScheduleItem`, `sanitizeString`, `sanitizeFilename`. Plus 2 other functions untested: `getDayOfWeekFromDate`, `getUserFriendlyError`. 206 tests passing but `validation.ts` function coverage only 52.9%.
+**Why:** Migration hard rule: "full feature parity". All public functions must be tested. Sanitization functions are security-critical.
+**Impact:** PR #49 REQUEST CHANGES. Assigned to Rami for test fix cycle.
+
+### 2026-04-05T00:00:00Z: PR #49 Fix Cycle — Wave 3 Utils (Rami)
+**By:** Rami (Services Dev — External)
+**What:** Addressed all blocking test gaps from Yasmin review. Added +88 tests (206 → 294 total): (1) `validateProfileName` — valid name, empty (required), 50 char boundary, whitespace trimming. (2) `validateNotes` — empty allowed, 5000 char boundary, null handling. (3) `validateCoursePoints` — valid float, 0/100 boundaries, above 100, negative. (4) `validateGrade` — valid integer, rejects float, 0/100/above boundaries, negative. (5) `validateCalendarHour` — 0, 23, 24 rejected, non-integer rejected, empty rejected. (6) `validateScheduleItem` — valid item, missing fields, invalid day, end before start, equal start/end. (7) `sanitizeString` — null, control char stripping, whitespace collapsing. (8) `sanitizeFilename` — path traversal (Unix/Windows), null bytes, filesystem-unsafe chars, length truncation, empty fallback. Plus tests for `getDayOfWeekFromDate` and `getUserFriendlyError`.
+**Why:** Unblock wave-3-utils PR. Achieve 100% function coverage for `src/utils/`. Security-critical functions need attack vector testing.
+**Impact:** All 294 tests passing. `src/utils/` now at 94.4% statement, 86.36% branch, 100% function coverage.
+
+### 2026-04-05T00:00:00Z: PR #49 Re-Review — Wave 3 Utils (Yasmin)
+**By:** Yasmin (Senior Test Engineer)
+**What:** Re-review of PR #49 after Rami fixes. All 8 untested functions now have comprehensive test suites. `sanitizeString` tested for XSS, HTML entities, control chars. `sanitizeFilename` tested for path traversal (Unix/Windows), null bytes, filesystem chars, length caps, empty fallback. 294 tests total, 100% function coverage for all `src/utils/` modules. Zero test failures.
+**Why:** Verify test coverage meets migration standards.
+**Impact:** PR #49 APPROVED by Yasmin. All review concerns addressed. Ready for merge.
+
 ## Governance
 
 - All meaningful changes require team consensus
