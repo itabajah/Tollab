@@ -61,6 +61,16 @@ export function CourseCard({ course, index, totalCourses }: CourseCardProps) {
     pushModal('course-modal');
   }, [course.id, openCourseModal, pushModal]);
 
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleClick();
+      }
+    },
+    [handleClick],
+  );
+
   const handleMoveUp = useCallback(
     (e: MouseEvent) => {
       e.stopPropagation();
@@ -87,6 +97,7 @@ export function CourseCard({ course, index, totalCourses }: CourseCardProps) {
       class="course-card"
       style={borderStyle}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
     >

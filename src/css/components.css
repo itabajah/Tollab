@@ -30,6 +30,10 @@
     color: var(--text-primary);
 }
 
+.add-course-icon {
+    font-size: 18px;
+}
+
 select {
     padding: 8px 10px;
     border: 1px solid var(--border-secondary);
@@ -65,6 +69,13 @@ select {
     overflow-y: auto;
     min-height: 0;
     padding-right: 5px;
+}
+
+.course-list-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-style: italic;
 }
 
 .course-card {
@@ -250,6 +261,13 @@ select {
     padding-top: 8px;
 }
 
+.course-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+}
+
 .course-title {
     font-size: 18px;
     font-weight: 600;
@@ -294,6 +312,7 @@ input[type="date"], input[type="time"] {
 }
 
 input[type="range"]#course-color-hue.full-spectrum,
+input[type="range"]#cm-color-hue.full-spectrum,
 input[type="range"]#base-color-hue {
     -webkit-appearance: none;
     appearance: none;
@@ -325,7 +344,16 @@ input[type="range"]#course-color-hue {
     outline: none;
 }
 
+input[type="range"]#cm-color-hue {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 4px;
+    outline: none;
+}
+
 input[type="range"]#course-color-hue::-webkit-slider-thumb,
+input[type="range"]#cm-color-hue::-webkit-slider-thumb,
 input[type="range"]#base-color-hue::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -339,6 +367,7 @@ input[type="range"]#base-color-hue::-webkit-slider-thumb {
 }
 
 input[type="range"]#course-color-hue::-moz-range-thumb,
+input[type="range"]#cm-color-hue::-moz-range-thumb,
 input[type="range"]#base-color-hue::-moz-range-thumb {
     width: 18px;
     height: 18px;
@@ -416,6 +445,25 @@ input:focus, textarea:focus {
     color: var(--error-border);
     font-size: 12px;
     margin-top: 4px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 2px;
+    font-size: 15px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.form-error {
+    color: var(--error-border);
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 10px;
 }
 
 /* Schedule builder */
