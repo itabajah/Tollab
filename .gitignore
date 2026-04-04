@@ -15,3 +15,10 @@ npm-debug.log*
 
 # Firebase runtime config (local dev only; deploy generates this from GitHub Secrets)
 js/firebase-config.js
+# Squad: ignore runtime state (logs, inbox, sessions)
+.squad/orchestration-log/
+.squad/log/
+.squad/decisions/inbox/
+.squad/sessions/
+# Squad: SubSquad activation file (local to this machine)
+.squad-workstream
