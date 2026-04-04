@@ -10,4 +10,13 @@
 
 ## Learnings
 
-(No learnings yet — project starting.)
+### 2025-07-25 — Wave 0 Tooling Review (PR #46)
+- Reviewed and **APPROVED** the Wave 0 tooling setup
+- **tsconfig.json** is properly strict: `strict: true`, `noUncheckedIndexedAccess: true`, `exactOptionalPropertyTypes: false`, `jsxImportSource: "preact"`
+- Path alias `@/*` → `./src/*` is configured in both tsconfig and vite.config.ts
+- ESLint uses flat config (v9+) with `@typescript-eslint` parser and plugin
+- Vitest is configured inline in vite.config.ts with jsdom environment, co-located test pattern `src/**/*.{test,spec}.{ts,tsx}`
+- CI gates: lint → typecheck → test → build on PRs to squad-branch
+- Deploy workflow is correctly disabled (`if: false`) during migration
+- All 7 CSS files preserved from legacy app
+- Note for Wave 1: will need `vite-env.d.ts` when importing non-TS assets
