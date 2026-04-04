@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "max_agents": 25,
+  "universe_source": "user-defined",
+  "notes": "Names specified by user in PRD — culturally resonant Arabic names matching Tollab (students)"
+}

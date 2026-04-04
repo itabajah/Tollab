@@ -6,13 +6,27 @@ How to decide who handles what.
 
 | Work Type | Route To | Examples |
 |-----------|----------|----------|
-| {domain 1} | {Name} | {example tasks} |
-| {domain 2} | {Name} | {example tasks} |
-| {domain 3} | {Name} | {example tasks} |
-| Code review | {Name} | Review PRs, check quality, suggest improvements |
-| Testing | {Name} | Write tests, find edge cases, verify fixes |
-| Scope & priorities | {Name} | What to build next, trade-offs, decisions |
+| Architecture, wave planning, triage | Amir | Architecture decisions, wave sequencing, issue creation, sign-off |
+| Type system, interfaces, ADRs | Nadia | TypeScript interfaces, constants, validation types, store contracts |
+| Storage schema, data model | Tariq | localStorage format, Firebase data model, serialization |
+| Layout, courses, homework UI | Layla | Header, CourseList, CourseCard, HomeworkSidebar, App.tsx, cleanup |
+| Recordings, item-logic UI | Omar | RecordingsPanel, RecordingItem, VideoPreview, CourseModal, FetchVideosModal |
+| Calendar, ticker | Dina | WeeklySchedule, TimeGrid, EventChip, HeaderTicker, ticker templates |
+| Settings, modals, toast, theme | Sami | SettingsModal, Toast, ConfirmDialog, Button, theme system |
+| State management, Zustand | Farid | app-store, profile-store, ui-store, selectors, window.* cleanup |
+| Firebase, auth, sync | Hana | firebase-auth.ts, firebase-sync.ts, SyncConflictModal |
+| External APIs, utilities | Rami | CORS proxy, YouTube, Panopto, Cheesefork, Technion, utils/* |
+| Integration tests | Yasmin | tests/integration/*, test strategy, coverage analysis |
+| Unit tests | Karim | tests/unit/*, migrate existing tests, edge cases |
+| E2E tests | Lina | tests/e2e/*, Playwright, full user flow tests |
+| Architecture review | Zara | Module boundaries, circular deps, store review, performance audit |
+| Code quality review | Malik | TypeScript best practices, no any, patterns, error handling |
+| UI fidelity review | Noura | Pixel-perfect comparison, visual regressions, CSS review |
+| Security review | Jad | Firebase rules, XSS, CORS, sanitization, URL validation |
+| Build, CI/CD, config | Khalil | Vite, GitHub Actions, tsconfig, ESLint, Prettier, package.json |
+| Documentation | Rana | DOCUMENTATION.md, TSDoc, onboarding, contributing guidelines |
 | Session logging | Scribe | Automatic — never needs routing |
+| Work monitoring | Ralph | Backlog scan, issue triage, PR status, continuous pipeline |
 
 ## Issue Routing
 
