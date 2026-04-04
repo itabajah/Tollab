@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "entries": [
+    {"persistent_name": "Amir", "role": "Tech Lead / Architect", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Nadia", "role": "System Designer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Tariq", "role": "System Designer (Data)", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Layla", "role": "Senior Frontend Dev", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Omar", "role": "Senior Frontend Dev", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Dina", "role": "Frontend Dev (Calendar & Ticker)", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Sami", "role": "Frontend Dev (Settings & Modals)", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Farid", "role": "State Management Dev", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Hana", "role": "Services Dev (Firebase)", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Rami", "role": "Services Dev (External)", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Yasmin", "role": "Senior Test Engineer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Karim", "role": "Test Engineer (Unit)", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Lina", "role": "E2E Test Engineer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Zara", "role": "Architecture Reviewer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Malik", "role": "Code Quality Reviewer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Noura", "role": "UI Fidelity Reviewer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Jad", "role": "Security Reviewer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Khalil", "role": "DevOps / CI Engineer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"},
+    {"persistent_name": "Rana", "role": "Technical Writer", "universe": "user-defined", "created_at": "2026-04-04T21:44:00Z", "legacy_named": true, "status": "active"}
+  ]
+}
