@@ -158,6 +158,36 @@
 **Why:** Security-critical gateway to external APIs and user data sync. Proper input validation, path isolation, and XSS prevention required.
 **Impact:** PR #50 APPROVED by Jad (no blocking security issues). Non-blocking: (1) Runtime shape guard for CloudPayload (defense-in-depth vs tampered cloud data — LOW risk due to Firebase Security Rules); (2) Component-layer URL validation for Panopto clipboard output (prevent `javascript:` protocol — LOW risk, depends on URL consumption).
 
+### 2026-04-06T00:00:00Z: Wave 5 Component Integration & UI Rendering
+**By:** Sami (Component Dev) + Layla (Layout Dev)
+**What:** Wave 5 delivered 30 files (+1,665 lines) across Toast system (4 files, 241 lines), Modal system (5 files including useFocusTrap hook, 321 lines), UI primitives (4 files, 183 lines), and layout components (5 files, 217 lines). Toast: auto-dismiss with configurable duration (default 4s, error 6s), max 5 visible, progress bar, hover pause/resume, SVG icons. Modals: focus trap with Tab cycling + previous-focus restore, nested modal support with scroll-lock awareness, AlertDialog/ConfirmDialog/PromptDialog variants. UI primitives: Button/IconButton/Select/Checkbox with zero inline styles, proper a11y (aria-busy, required labels). Layout: Header (theme toggle, settings), MainLayout (two-column responsive), Footer, HeaderTicker (skeleton), SemesterControls. All components typed (zero `any`), proper Preact patterns (useCallback/useRef), no onclick strings.
+**Why:** Component layer bridges state (Wave 2 stores) and services (Wave 4 Firebase/APIs) to application UI. Pixel-perfect legacy fidelity required per migration rules.
+**Impact:** PR #51 delivered with 3-reviewer cycle. Malik (round 1) flagged 2 blockers (focus trap missing in 3 dialogs, 6 static inline styles). Noura approved (zero visual regressions). Omar fixed both blockers (useFocusTrap hook, CSS classes). Malik (round 2) approved. PR #51 squash-merged to squad-branch. Wave 5 complete.
+
+### 2026-04-06T00:00:00Z: PR #51 Review — Wave 5 Components (Malik Round 1)
+**By:** Malik (Code Quality)
+**What:** Code quality review of PR #51 (wave-5-core-ui): 14 component files, 4 CSS files, typecheck ✅, lint ✅ (0 errors, 22 pre-existing warnings in services), build ✅ 369ms. Two **blocking issues**: (B1) ConfirmDialog, PromptDialog, AlertDialog lack focus trap — Modal.tsx has correct Tab cycling + previous-focus restore + scroll lock, but dialogs re-implement overlay logic without it (WCAG 2.1 SC 2.4.3 violation). (B2) Six static inline styles in Header.tsx (2) and MainLayout.tsx (4) violate project CSS-class-only rule (exception: Toast.tsx:145 dynamic animationDuration is acceptable). Five non-blocking: (N1) `dangerouslySetInnerHTML` for SVG (safe but non-idiomatic), (N2) dead `toastsRef`, (N3) `aria-hidden` contradicts `aria-live`, (N4) inconsistent `class` vs `className`, (N5) scroll-lock cleanup fragile. Positive: zero `any`, no onclick strings, proper typing, clean patterns, toast provider/modal arch sound, toast max-visible caps, a11y intent strong.
+**Why:** Code quality gate for component tier. Focus trap is accessibility requirement. Inline styles violate established project convention.
+**Impact:** PR #51 REQUEST CHANGES. Required fixes: implement shared useFocusTrap hook, apply to 3 dialogs, move 6 inline styles to CSS. Assigned to Omar.
+
+### 2026-04-06T00:00:00Z: PR #51 Review — Wave 5 Components (Noura)
+**By:** Noura (UI Fidelity)
+**What:** Fidelity review of PR #51 confirms pixel-perfect legacy match: Header structure ✅ (brand, h1, subtitle, controls, theme toggle, settings), MainLayout layout ✅ (two-column 3:1 ratio, responsive at ≤900px), HeaderTicker ✅ (status landmark, ticker text animation, badge), Toast system ✅ (all 8 CSS variants verified, durations match legacy, max 5 visible, progress bar, icons), Modal system ✅ (Modal/AlertDialog/ConfirmDialog/PromptDialog all classes matched in modals.css + toast.css), UI primitives ✅ (Button variants, IconButton, Select, Checkbox). Zero missing CSS classes. All responsive breakpoints preserved.
+**Why:** Visual fidelity required per migration rules. CSS class inventory must match legacy.
+**Impact:** PR #51 APPROVED by Noura. Zero visual regressions detected.
+
+### 2026-04-06T00:00:00Z: PR #51 Fix — Wave 5 Components (Omar)
+**By:** Omar (Services Dev)
+**What:** Resolved Malik blocking issues: (B1) Created `useFocusTrap` hook (`src/components/modals/useFocusTrap.ts`) with Tab cycling (last→first), Shift+Tab reverse (first→last), previous-focus restoration, scroll-lock multi-modal awareness. Applied hook to ConfirmDialog, PromptDialog, AlertDialog. Each now auto-focuses primary action on open. (B2) Removed 6 static inline styles: Header.tsx cloud-status span (2 styles) → CSS classes, MainLayout.tsx "+" span (1) → CSS class, MainLayout.tsx flex layout (4 instances on headers/wrappers) → CSS classes. All preserved via new `.cloud-status-text`, `.add-course-icon`, `.schedule-header`, `.homework-header` classes. Verification: typecheck ✅, lint ✅, build ✅.
+**Why:** Unblock Wave 5 merge. Accessibility compliance (WCAG 2.1 SC 2.4.3). Code style consistency.
+**Impact:** Both blockers resolved. Ready for Malik re-review.
+
+### 2026-04-06T00:00:00Z: PR #51 Re-Review — Wave 5 Components (Malik Round 2)
+**By:** Malik (Code Quality)
+**What:** Re-review of PR #51 after Omar fixes. (B1) Focus trap fully resolved: useFocusTrap hook correctly implements Tab wrapping, Shift+Tab reverse, saves/restores activeElement, manages scroll lock. All 3 dialogs (AlertDialog, ConfirmDialog, PromptDialog) use hook. Auto-focus on open via requestAnimationFrame. (B2) Inline styles fully resolved: Header.tsx 0 inline styles, MainLayout.tsx 0 inline styles. All CSS classes properly delegated. Build passes: typecheck ✅, lint ✅, build ✅ (43 modules).
+**Why:** Verify blockers resolved per quality standards.
+**Impact:** PR #51 APPROVED by Malik. Both blocking issues fully resolved. Ready to merge.
+
 ## Governance
 
 - All meaningful changes require team consensus
