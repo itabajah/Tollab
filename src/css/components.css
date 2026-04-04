@@ -398,6 +398,96 @@ input:focus, textarea:focus {
     color: white;
 }
 
+/* ========================================
+   Course Modal — Form helpers
+   ======================================== */
+
+.form-row {
+    display: flex;
+    gap: 10px;
+}
+
+.form-row > .form-group {
+    flex: 1;
+}
+
+.error-text {
+    display: block;
+    color: var(--error-border);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Schedule builder */
+.schedule-slot-list {
+    margin-bottom: 10px;
+}
+
+.schedule-slot-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.schedule-slot-label {
+    flex: 1;
+}
+
+.schedule-slot-remove {
+    border: none;
+    background: none;
+    color: var(--error-border);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.schedule-add-row {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.schedule-add-row select {
+    width: 120px;
+}
+
+.schedule-add-row input[type="time"] {
+    width: 100px;
+}
+
+.schedule-add-row .btn-secondary {
+    padding: 8px 12px;
+}
+
+.schedule-time-separator {
+    align-self: center;
+    color: var(--text-secondary);
+}
+
+/* Color picker row */
+.color-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.color-picker-row input[type="range"] {
+    flex: 1;
+    cursor: pointer;
+}
+
+.color-preview-swatch {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
 /* Lecture List in Modal */
 .lecture-list {
     list-style: none;
