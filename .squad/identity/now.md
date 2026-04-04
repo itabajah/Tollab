@@ -1,9 +1,7 @@
----
-updated_at: 2026-04-04T21:14:24.359Z
-focus_area: Initial setup
-active_issues: []
----
+# Current Focus
 
-# What We're Focused On
+**Wave 0: Foundation — Tooling, CI**
 
-Getting started. Updated by coordinator at session start.
+The team is starting the Tollab v2 TypeScript migration. First priority is project tooling setup (Vite, TypeScript, Preact, ESLint, Prettier) and CI pipeline (GitHub Actions).
+
+**Active agents:** Amir (issue creation), Khalil (tooling setup), Nadia + Tariq (review)
