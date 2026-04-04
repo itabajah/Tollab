@@ -5,9 +5,8 @@
  * Every function is pure beyond its localStorage side-effect.
  */
 
-import { STORAGE_KEYS } from '@/constants/storage-keys';
+import { DEFAULT_THEME_SETTINGS, STORAGE_KEYS } from '@/constants';
 import type { AppSettings, Profile, ProfileData } from '@/types';
-import { ColorTheme, ThemeMode } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Result types
@@ -38,15 +37,6 @@ export interface ImportResult {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
-
-/** Default application settings (applied when none are stored). */
-const DEFAULT_SETTINGS: Readonly<AppSettings> = Object.freeze({
-  theme: ThemeMode.Light,
-  showCompleted: true,
-  showWatchedRecordings: false,
-  colorTheme: ColorTheme.Colorful,
-  baseColorHue: 200,
-});
 
 /** Approximate localStorage quota in bytes (5 MB is the common browser default). */
 const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
@@ -178,7 +168,7 @@ export function saveSettings(settings: AppSettings): StorageWriteResult {
 export function loadSettings(): AppSettings {
   const data = safeGetItem<unknown>(STORAGE_KEYS.SETTINGS);
   if (data !== null && isValidSettings(data)) return data;
-  return { ...DEFAULT_SETTINGS };
+  return { ...DEFAULT_THEME_SETTINGS };
 }
 
 /**
