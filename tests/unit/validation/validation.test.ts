@@ -3,12 +3,20 @@ import {
   validateString,
   validateCourseName,
   validateHomeworkTitle,
+  validateProfileName,
+  validateNotes,
   validateUrl,
   validateVideoUrl,
   validateNumber,
+  validateCoursePoints,
+  validateGrade,
+  validateCalendarHour,
   validateDate,
   validateTime,
   validateImportedData,
+  validateScheduleItem,
+  sanitizeString,
+  sanitizeFilename,
 } from '@/utils/validation';
 
 // ---------------------------------------------------------------------------
@@ -436,5 +444,431 @@ describe('validateImportedData', () => {
   it('accepts empty semesters array', () => {
     const r = validateImportedData({ semesters: [] });
     expect(r.valid).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateProfileName
+// ---------------------------------------------------------------------------
+describe('validateProfileName', () => {
+  it('validates a normal profile name', () => {
+    const r = validateProfileName('My Profile');
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe('My Profile');
+  });
+
+  it('rejects empty name (required)', () => {
+    const r = validateProfileName('');
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects name exceeding 50 characters', () => {
+    const r = validateProfileName('A'.repeat(51));
+    expect(r.valid).toBe(false);
+  });
+
+  it('passes name at exactly 50 characters', () => {
+    const r = validateProfileName('A'.repeat(50));
+    expect(r.valid).toBe(true);
+  });
+
+  it('trims whitespace and validates', () => {
+    const r = validateProfileName('  Profile One  ');
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe('Profile One');
+  });
+
+  it('handles null input', () => {
+    const r = validateProfileName(null as unknown as string);
+    expect(r.valid).toBe(false);
+  });
+
+  it('handles undefined input', () => {
+    const r = validateProfileName(undefined as unknown as string);
+    expect(r.valid).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateNotes
+// ---------------------------------------------------------------------------
+describe('validateNotes', () => {
+  it('allows empty notes', () => {
+    const r = validateNotes('');
+    expect(r.valid).toBe(true);
+  });
+
+  it('validates normal notes text', () => {
+    const r = validateNotes('Some notes about the course');
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe('Some notes about the course');
+  });
+
+  it('rejects notes exceeding 5000 characters', () => {
+    const r = validateNotes('x'.repeat(5001));
+    expect(r.valid).toBe(false);
+  });
+
+  it('passes notes at exactly 5000 characters', () => {
+    const r = validateNotes('x'.repeat(5000));
+    expect(r.valid).toBe(true);
+  });
+
+  it('handles null input', () => {
+    const r = validateNotes(null as unknown as string);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe('');
+  });
+
+  it('handles undefined input', () => {
+    const r = validateNotes(undefined as unknown as string);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe('');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateCoursePoints
+// ---------------------------------------------------------------------------
+describe('validateCoursePoints', () => {
+  it('validates a valid float', () => {
+    const r = validateCoursePoints(3.5);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(3.5);
+  });
+
+  it('allows 0 (boundary)', () => {
+    const r = validateCoursePoints(0);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(0);
+  });
+
+  it('allows 100 (boundary)', () => {
+    const r = validateCoursePoints(100);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(100);
+  });
+
+  it('rejects above 100', () => {
+    const r = validateCoursePoints(101);
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects negative values', () => {
+    const r = validateCoursePoints(-1);
+    expect(r.valid).toBe(false);
+  });
+
+  it('allows empty (not required)', () => {
+    const r = validateCoursePoints('' as unknown as number);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBeNull();
+  });
+
+  it('handles null input', () => {
+    const r = validateCoursePoints(null as unknown as number);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateGrade
+// ---------------------------------------------------------------------------
+describe('validateGrade', () => {
+  it('validates a valid integer grade', () => {
+    const r = validateGrade(85);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(85);
+  });
+
+  it('rejects a float grade', () => {
+    const r = validateGrade(85.5);
+    expect(r.valid).toBe(false);
+  });
+
+  it('allows 0 (boundary)', () => {
+    const r = validateGrade(0);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(0);
+  });
+
+  it('allows 100 (boundary)', () => {
+    const r = validateGrade(100);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(100);
+  });
+
+  it('rejects above 100', () => {
+    const r = validateGrade(101);
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects negative values', () => {
+    const r = validateGrade(-1);
+    expect(r.valid).toBe(false);
+  });
+
+  it('allows empty (not required)', () => {
+    const r = validateGrade('' as unknown as number);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBeNull();
+  });
+
+  it('handles null input', () => {
+    const r = validateGrade(null as unknown as number);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateCalendarHour
+// ---------------------------------------------------------------------------
+describe('validateCalendarHour', () => {
+  it('validates hour 0 (midnight)', () => {
+    const r = validateCalendarHour(0);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(0);
+  });
+
+  it('validates hour 23', () => {
+    const r = validateCalendarHour(23);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(23);
+  });
+
+  it('validates a mid-range hour', () => {
+    const r = validateCalendarHour(12);
+    expect(r.valid).toBe(true);
+    expect(r.value).toBe(12);
+  });
+
+  it('rejects hour 24 (out of range)', () => {
+    const r = validateCalendarHour(24);
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects negative hour', () => {
+    const r = validateCalendarHour(-1);
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects non-integer', () => {
+    const r = validateCalendarHour(8.5);
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects empty (required field)', () => {
+    const r = validateCalendarHour('' as unknown as number);
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects null (required field)', () => {
+    const r = validateCalendarHour(null as unknown as number);
+    expect(r.valid).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateScheduleItem
+// ---------------------------------------------------------------------------
+describe('validateScheduleItem', () => {
+  it('validates a correct schedule item', () => {
+    const r = validateScheduleItem({ day: 1, start: '08:00', end: '10:00' });
+    expect(r.valid).toBe(true);
+    expect(r.value).toEqual({ day: 1, start: '08:00', end: '10:00' });
+  });
+
+  it('rejects null input', () => {
+    const r = validateScheduleItem(null);
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('Invalid schedule item');
+  });
+
+  it('rejects non-object input', () => {
+    const r = validateScheduleItem('not-an-object');
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects invalid day (7)', () => {
+    const r = validateScheduleItem({ day: 7, start: '08:00', end: '10:00' });
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('day');
+  });
+
+  it('rejects negative day', () => {
+    const r = validateScheduleItem({ day: -1, start: '08:00', end: '10:00' });
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects end time before start time', () => {
+    const r = validateScheduleItem({ day: 0, start: '14:00', end: '10:00' });
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('End time must be after start time');
+  });
+
+  it('rejects equal start and end time', () => {
+    const r = validateScheduleItem({ day: 0, start: '10:00', end: '10:00' });
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('End time must be after start time');
+  });
+
+  it('rejects invalid time format', () => {
+    const r = validateScheduleItem({ day: 0, start: 'abc', end: '10:00' });
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('start time');
+  });
+
+  it('rejects missing start time', () => {
+    const r = validateScheduleItem({ day: 0, end: '10:00' });
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects missing end time', () => {
+    const r = validateScheduleItem({ day: 0, start: '08:00' });
+    expect(r.valid).toBe(false);
+  });
+
+  it('rejects missing day', () => {
+    const r = validateScheduleItem({ start: '08:00', end: '10:00' });
+    expect(r.valid).toBe(false);
+  });
+
+  it('validates day 0 (Sunday) and day 6 (Saturday)', () => {
+    expect(validateScheduleItem({ day: 0, start: '08:00', end: '09:00' }).valid).toBe(true);
+    expect(validateScheduleItem({ day: 6, start: '08:00', end: '09:00' }).valid).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sanitizeString
+// ---------------------------------------------------------------------------
+describe('sanitizeString', () => {
+  it('returns empty string for null', () => {
+    expect(sanitizeString(null)).toBe('');
+  });
+
+  it('returns empty string for undefined', () => {
+    expect(sanitizeString(undefined)).toBe('');
+  });
+
+  it('strips control characters', () => {
+    // Control chars are removed, not replaced with spaces
+    expect(sanitizeString('hello\x00world\x07test')).toBe('helloworldtest');
+  });
+
+  it('preserves normal text unchanged', () => {
+    expect(sanitizeString('Hello World')).toBe('Hello World');
+  });
+
+  it('collapses multiple spaces to single space', () => {
+    expect(sanitizeString('hello    world')).toBe('hello world');
+  });
+
+  it('collapses 3+ newlines to double newline', () => {
+    expect(sanitizeString('line1\n\n\n\nline2')).toBe('line1\n\nline2');
+  });
+
+  it('preserves double newlines', () => {
+    expect(sanitizeString('line1\n\nline2')).toBe('line1\n\nline2');
+  });
+
+  it('trims leading and trailing whitespace', () => {
+    expect(sanitizeString('  hello  ')).toBe('hello');
+  });
+
+  it('handles empty string', () => {
+    expect(sanitizeString('')).toBe('');
+  });
+
+  it('coerces numbers to string', () => {
+    expect(sanitizeString(42)).toBe('42');
+  });
+
+  it('strips mixed control characters and normalizes whitespace', () => {
+    expect(sanitizeString('\x01hello\x02   \x03world\x04')).toBe('hello world');
+  });
+
+  it('does not strip normal tabs and newlines used in content', () => {
+    // Tab (\x09) and newline (\x0A) and carriage return (\x0D) are NOT in the stripped range
+    expect(sanitizeString('hello\tworld')).toBe('hello\tworld');
+  });
+
+  it('handles script tag content as plain text (no HTML parsing)', () => {
+    const result = sanitizeString('<script>alert("xss")</script>');
+    expect(result).toBe('<script>alert("xss")</script>');
+  });
+
+  it('handles HTML entities as plain text', () => {
+    expect(sanitizeString('&amp; &lt; &gt;')).toBe('&amp; &lt; &gt;');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sanitizeFilename
+// ---------------------------------------------------------------------------
+describe('sanitizeFilename', () => {
+  it('returns "export" for null', () => {
+    expect(sanitizeFilename(null)).toBe('export');
+  });
+
+  it('returns "export" for undefined', () => {
+    expect(sanitizeFilename(undefined)).toBe('export');
+  });
+
+  it('returns "export" for empty string', () => {
+    expect(sanitizeFilename('')).toBe('export');
+  });
+
+  it('preserves a clean filename', () => {
+    expect(sanitizeFilename('my-report')).toBe('my-report');
+  });
+
+  it('replaces path separator characters', () => {
+    const result = sanitizeFilename('../../etc/passwd');
+    // Slashes are replaced with _, dots are preserved (not in banned set)
+    expect(result).not.toContain('/');
+    expect(result).not.toContain('\\');
+  });
+
+  it('replaces special chars (<>:"|?*)', () => {
+    expect(sanitizeFilename('file<>:"|?*.txt')).not.toMatch(/[<>:"|?*]/);
+  });
+
+  it('collapses consecutive underscores', () => {
+    const result = sanitizeFilename('file:::name');
+    expect(result).not.toContain('__');
+  });
+
+  it('strips leading and trailing underscores', () => {
+    const result = sanitizeFilename(':filename:');
+    expect(result).not.toMatch(/^_/);
+    expect(result).not.toMatch(/_$/);
+  });
+
+  it('truncates at 100 characters', () => {
+    const longName = 'a'.repeat(150);
+    const result = sanitizeFilename(longName);
+    expect(result.length).toBeLessThanOrEqual(100);
+  });
+
+  it('returns "export" when sanitized result is empty', () => {
+    // All chars are invalid → replaced → collapsed → stripped → empty
+    expect(sanitizeFilename(':::')).toBe('export');
+  });
+
+  it('strips control characters from filename', () => {
+    const result = sanitizeFilename('file\x00name\x1F.txt');
+    expect(result).not.toMatch(/[\x00-\x1F]/);
+  });
+
+  it('handles filename with spaces (preserved)', () => {
+    expect(sanitizeFilename('my file name')).toBe('my file name');
+  });
+
+  it('handles Windows path traversal', () => {
+    const result = sanitizeFilename('..\\..\\system32\\config');
+    expect(result).not.toContain('\\');
   });
 });

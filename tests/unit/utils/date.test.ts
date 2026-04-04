@@ -4,6 +4,7 @@ import {
   parseICSDate,
   getCurrentWeekRange,
   isDateInCurrentWeek,
+  getDayOfWeekFromDate,
 } from '@/utils/date';
 
 describe('convertDateFormat', () => {
@@ -141,5 +142,39 @@ describe('isDateInCurrentWeek', () => {
 
   it('returns false for invalid date string', () => {
     expect(isDateInCurrentWeek('not-a-date')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getDayOfWeekFromDate
+// ---------------------------------------------------------------------------
+describe('getDayOfWeekFromDate', () => {
+  it('returns correct day index for a known Sunday', () => {
+    // 2024-10-20 is a Sunday
+    expect(getDayOfWeekFromDate('2024-10-20')).toBe(0);
+  });
+
+  it('returns correct day index for a known Wednesday', () => {
+    // 2024-10-23 is a Wednesday
+    expect(getDayOfWeekFromDate('2024-10-23')).toBe(3);
+  });
+
+  it('returns correct day index for a known Saturday', () => {
+    // 2024-10-26 is a Saturday
+    expect(getDayOfWeekFromDate('2024-10-26')).toBe(6);
+  });
+
+  it('returns -1 for empty string', () => {
+    expect(getDayOfWeekFromDate('')).toBe(-1);
+  });
+
+  it('returns NaN-based result for invalid date string', () => {
+    // new Date('not-a-date').getDay() returns NaN
+    const result = getDayOfWeekFromDate('not-a-date');
+    expect(result).toBeNaN();
+  });
+
+  it('handles null input by returning -1', () => {
+    expect(getDayOfWeekFromDate(null as unknown as string)).toBe(-1);
   });
 });
