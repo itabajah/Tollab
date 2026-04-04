@@ -17,6 +17,7 @@ import type {
   CalendarSettings,
   Course,
   Homework,
+  HomeworkSortOrder,
   RecordingItem,
   RecordingSortOrder,
   ScheduleSlot,
@@ -50,7 +51,7 @@ interface AppState {
   /** Per-course, per-tab recording sort orders. */
   recordingSortOrders: Record<string, Record<string, RecordingSortOrder>>;
   /** Per-course homework sort orders. */
-  homeworkSortOrders: Record<string, string>;
+  homeworkSortOrders: Record<string, HomeworkSortOrder>;
 }
 
 interface AppActions {
@@ -161,7 +162,7 @@ interface AppActions {
     currentSemesterId?: string | null;
     lastModified?: string;
     recordingSortOrders?: Record<string, Record<string, RecordingSortOrder>>;
-    homeworkSortOrders?: Record<string, string>;
+    homeworkSortOrders?: Record<string, HomeworkSortOrder>;
   }) => void;
 }
 
@@ -229,9 +230,8 @@ export const useAppStore = create<AppStore>()(
       set((state) => {
         const idx = state.semesters.findIndex((s) => s.id === id);
         if (idx === -1) return;
-        state.semesters.splice(idx, 1);
 
-        // Clean up sort orders for courses in the deleted semester
+        // Clean up sort orders BEFORE splicing so we still have the semester reference
         const semester = state.semesters[idx];
         if (semester) {
           for (const course of semester.courses) {
@@ -239,6 +239,8 @@ export const useAppStore = create<AppStore>()(
             delete state.homeworkSortOrders[course.id];
           }
         }
+
+        state.semesters.splice(idx, 1);
 
         if (state.currentSemesterId === id) {
           state.currentSemesterId = state.semesters[0]?.id ?? null;
