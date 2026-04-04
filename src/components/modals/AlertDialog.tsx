@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'preact/hooks';
+import { useFocusTrap } from './useFocusTrap';
 
 /** Reuse the same SVG icons as the toast system for alert types. */
 const ALERT_ICONS: Record<string, string> = {
@@ -35,28 +36,25 @@ export function AlertDialog({
   onResolve,
 }: AlertDialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const { handleTabKey } = useFocusTrap(modalRef, isOpen);
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => confirmBtnRef.current?.focus());
     }
-    return () => {
-      const activeModals = document.querySelectorAll('.modal-overlay.active');
-      if (activeModals.length <= 1) {
-        document.body.style.overflow = '';
-      }
-    };
   }, [isOpen]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Enter') {
         onResolve();
+        return;
       }
+      handleTabKey(e);
     },
-    [onResolve],
+    [onResolve, handleTabKey],
   );
 
   const handleOverlayClick = useCallback(
@@ -78,6 +76,7 @@ export function AlertDialog({
       onKeyDown={handleKeyDown}
     >
       <div
+        ref={modalRef}
         className={`modal alert-dialog-modal alert-dialog-${type}`}
         role="alertdialog"
         aria-modal="true"

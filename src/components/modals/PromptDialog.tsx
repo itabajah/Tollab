@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { useFocusTrap } from './useFocusTrap';
 
 interface PromptDialogProps {
   isOpen: boolean;
@@ -36,26 +37,21 @@ export function PromptDialog({
   onResolve,
 }: PromptDialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(defaultValue);
   const [error, setError] = useState<string | null>(null);
+  const { handleTabKey } = useFocusTrap(modalRef, isOpen);
 
   useEffect(() => {
     if (isOpen) {
       setValue(defaultValue);
       setError(null);
-      document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
       });
     }
-    return () => {
-      const activeModals = document.querySelectorAll('.modal-overlay.active');
-      if (activeModals.length <= 1) {
-        document.body.style.overflow = '';
-      }
-    };
   }, [isOpen, defaultValue]);
 
   const submit = useCallback(() => {
@@ -86,11 +82,14 @@ export function PromptDialog({
       if (e.key === 'Enter') {
         e.preventDefault();
         submit();
+        return;
       } else if (e.key === 'Escape') {
         cancel();
+        return;
       }
+      handleTabKey(e);
     },
-    [submit, cancel],
+    [submit, cancel, handleTabKey],
   );
 
   const handleOverlayClick = useCallback(
@@ -115,7 +114,7 @@ export function PromptDialog({
       onClick={handleOverlayClick}
       onKeyDown={handleKeyDown}
     >
-      <div className="modal prompt-dialog-modal" role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={modalRef} className="modal prompt-dialog-modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
         </div>

@@ -38,7 +38,7 @@ export function MainLayout({ courseListSlot, sidebarSlot }: MainLayoutProps) {
               class="add-course-row-btn"
               title="Add Course"
             >
-              <span style="font-size: 18px;">+</span> Add Course
+              <span class="add-course-icon">+</span> Add Course
             </button>
           </>
         )}
@@ -48,8 +48,8 @@ export function MainLayout({ courseListSlot, sidebarSlot }: MainLayoutProps) {
       <div class="calendar-container">
         {sidebarSlot ?? (
           <>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-              <h2 style="margin: 0; font-size: 20px; font-weight: 300;">
+            <div class="schedule-section-header">
+              <h2 class="schedule-section-title">
                 Weekly Schedule
               </h2>
             </div>
@@ -59,8 +59,8 @@ export function MainLayout({ courseListSlot, sidebarSlot }: MainLayoutProps) {
               </div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px;">
-              <h3 style="margin: 0; font-size: 16px; text-transform: uppercase; color: var(--text-secondary);">
+            <div class="homework-section-header">
+              <h3 class="homework-section-title">
                 Homework
               </h3>
             </div>
