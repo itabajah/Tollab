@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'preact/hooks';
+import { useFocusTrap } from './useFocusTrap';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -27,30 +28,28 @@ export function ConfirmDialog({
   onResolve,
 }: ConfirmDialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const { handleTabKey } = useFocusTrap(modalRef, isOpen);
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => confirmBtnRef.current?.focus());
     }
-    return () => {
-      const activeModals = document.querySelectorAll('.modal-overlay.active');
-      if (activeModals.length <= 1) {
-        document.body.style.overflow = '';
-      }
-    };
   }, [isOpen]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onResolve(false);
+        return;
       } else if (e.key === 'Enter') {
         onResolve(true);
+        return;
       }
+      handleTabKey(e);
     },
-    [onResolve],
+    [onResolve, handleTabKey],
   );
 
   const handleOverlayClick = useCallback(
@@ -69,7 +68,7 @@ export function ConfirmDialog({
       onClick={handleOverlayClick}
       onKeyDown={handleKeyDown}
     >
-      <div className="modal confirm-dialog-modal" role="alertdialog" aria-modal="true" aria-label={title}>
+      <div ref={modalRef} className="modal confirm-dialog-modal" role="alertdialog" aria-modal="true" aria-label={title}>
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
         </div>

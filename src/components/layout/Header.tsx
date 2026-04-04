@@ -108,7 +108,7 @@ export function Header() {
       <div class="header-controls">
         <span
           id="cloud-header-text"
-          style="font-size: 12px; color: var(--text-tertiary);"
+          class="cloud-status-text"
         >
           {cloudStatusLabel(theme)}
         </span>

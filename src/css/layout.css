@@ -84,6 +84,44 @@ body.dark-mode h1 {
     margin-bottom: -3px;
 }
 
+.cloud-status-text {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.add-course-icon {
+    font-size: 18px;
+}
+
+.schedule-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.schedule-section-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 300;
+}
+
+.homework-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 30px 0 15px;
+}
+
+.homework-section-title {
+    margin: 0;
+    font-size: 16px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
 .icon-btn {
     background: transparent;
     border: none;
