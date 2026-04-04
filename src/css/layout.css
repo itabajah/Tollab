@@ -108,6 +108,12 @@ body.dark-mode h1 {
     font-weight: 300;
 }
 
+.schedule-section-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .homework-section-header {
     display: flex;
     justify-content: space-between;

@@ -28,3 +28,19 @@
 - Idiomatic TS: generics, type guards, discriminated unions, pure functions
 - Non-blocking: deprecated `substr()`, 7 untested wrapper functions, slow retry tests, silent catch in ICS parser
 **Decision file:** `.squad/decisions/inbox/malik-wave3-review.md`
+
+### 2026-04-06: PR #51 — Wave 5 Core UI Components
+**Verdict:** 🔴 REQUEST CHANGES
+**Scope:** 17 component files + 4 barrel indexes across `src/components/` (layout, modals, toast, ui)
+**CI:** typecheck ✅ | lint ✅ | build ✅
+**Blocking issues:**
+- B1: Missing focus trap in AlertDialog, ConfirmDialog, PromptDialog — only Modal.tsx has it; dialogs re-implement overlay/keyboard without Tab cycling (WCAG 2.1 SC 2.4.3 violation)
+- B2: 6 static inline styles in Header.tsx and MainLayout.tsx — violates project rule "all styling via CSS classes"
+**Non-blocking findings:**
+- N1: `dangerouslySetInnerHTML` for SVG icons in Toast/AlertDialog — safe but non-idiomatic vs JSX components in Header
+- N2: Dead `toastsRef` in ToastContext.tsx — assigned but never read
+- N3: `aria-hidden="true"` on HeaderTicker viewport contradicts parent `aria-live="polite"`
+- N4: Inconsistent `class` (layout) vs `className` (modals/toast) across sibling directories
+- N5: Fragile scroll-lock cleanup using DOM query count instead of ref-counting
+**Positives:** Zero `any` types, no onclick strings, proper props typing, clean toast provider pattern, good focus trap in Modal.tsx, proper timer cleanup, strong accessibility intent
+**Decision file:** `.squad/decisions/inbox/malik-wave5-review.md`

@@ -8,6 +8,8 @@ import {
   MainLayout,
   SemesterControls,
 } from '@/components/layout';
+import { CourseList } from '@/components/courses';
+import { AddSemesterModal } from '@/components/modals';
 
 // TODO: Import ToastContainer from Sami's toast system when ready (Wave 5)
 
@@ -33,20 +35,12 @@ export function App() {
             <Header />
             <HeaderTicker />
             <SemesterControls />
-            <div id="course-list" class="course-list">
-              {/* Course cards rendered by Wave 7+ components */}
-            </div>
-            <button
-              id="add-course-fab"
-              class="add-course-row-btn"
-              title="Add Course"
-            >
-              <span style="font-size: 18px;">+</span> Add Course
-            </button>
+            <CourseList />
           </>
         }
       />
       <Footer />
+      <AddSemesterModal />
       {/* <ToastContainer /> — will be added when Sami's toast system lands */}
     </>
   );
