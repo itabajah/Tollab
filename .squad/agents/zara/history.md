@@ -10,4 +10,4 @@
 
 ## Learnings
 
-(No learnings yet — project starting.)
+- **Wave 0 review (PR #46):** Tooling foundation is solid. Strict TS config (`strict: true` + `noUncheckedIndexedAccess`) is the right call for a migration. Vite+Vitest co-located config is clean. CI has all 4 gates (lint, typecheck, test, build) on PRs to squad-branch. Deploy is safely disabled with `if: false`. Legacy `.eslintrc.js` coexists with new flat config — non-blocking but should be cleaned up. All pipeline gates pass locally.
