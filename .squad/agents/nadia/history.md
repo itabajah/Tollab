@@ -51,3 +51,26 @@
   - `PROTECTED_TAB_IDS` typed as `ReadonlySet<string>` (can't freeze a Set but it's const-bound)
   - All `Object.freeze()` + `as const` for maximum immutability
 - `npm run typecheck` ✅ `npm run lint` ✅
+
+### 2025-07-25 — Wave 2 Store Review (PR #48)
+- Reviewed Zustand stores (app-store, profile-store, ui-store), selectors, and storage service
+- **REQUEST CHANGES** — 1 bug, 2 type-system issues:
+  1. **Bug:** `deleteSemester` splices the array *before* reading the deleted semester for sort-order cleanup — cleans up wrong courses or nothing
+  2. **Type gap:** `homeworkSortOrders` typed as `Record<string, string>` instead of `Record<string, HomeworkSortOrder>`, forcing unsafe casts in selectors
+  3. **Duplication:** `storage.ts` defines its own `DEFAULT_SETTINGS` identical to `DEFAULT_THEME_SETTINGS` from `@/constants` — drift risk
+- Verified: zero `any` types, clean JSON only (no compact format), all Wave 1 types imported and used correctly, immer mutations idiomatic
+- Non-blocking: `currentSemesterId` and sort orders not in `ProfileData` (lost on reload); `saveData` is timestamp-only marker (needs subscriber wiring in Wave 3)
+- `npm run typecheck` ✅ `npm run lint` ✅
+
+### 2025-07-25 — Wave 3 Validation Migration
+- Created **`src/utils/validation.ts`** (533 lines) — full migration of `js/validation.js`
+- **17 exported functions:** validateString, validateCourseName, validateHomeworkTitle, validateProfileName, validateNotes, validateUrl, validateVideoUrl, validateNumber, validateCoursePoints, validateGrade, validateCalendarHour, validateDate, validateTime, validateImportedData, validateScheduleItem, sanitizeString, sanitizeFilename
+- **8 exported types:** StringValidationOptions, NumberValidationOptions, UrlValidationOptions, DateValidationOptions, TimeValidationOptions, ImportedSemester, ImportedData, ImportedDataResult
+- All validators return `ValidationResult<T>` from `@/types`; specialized return types where needed (`VideoUrlResult`, `DateValidationResult`, `ImportedDataResult`)
+- All regex patterns preserved from original via `VALIDATION_PATTERNS` constants
+- All error messages match original JS exactly
+- Added date round-trip validation to catch invalid calendar dates (e.g. Feb 29 on non-leap years) — original JS had this gap
+- `validateProfileName` simplified to format-only validation; uniqueness checking deferred to store layer per new architecture
+- Function signatures match original JS calling convention (options object as 2nd arg, no fieldName) — preserves backward compatibility with existing tests (71/71 pass)
+- Zero `any` types, zero lint warnings
+- `npm run typecheck` ✅ `npm run lint` ✅ `npm run test` (validation) ✅ 71/71
