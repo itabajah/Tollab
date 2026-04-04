@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   extractErrorCode,
+  getUserFriendlyError,
   isRetryableError,
   calculateBackoffDelay,
   withRetry,
@@ -171,5 +172,46 @@ describe('safeExecute', () => {
       throw new Error('boom');
     }, null);
     expect(result).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getUserFriendlyError
+// ---------------------------------------------------------------------------
+describe('getUserFriendlyError', () => {
+  it('returns correct message for NETWORK_ERROR', () => {
+    expect(getUserFriendlyError('NETWORK_ERROR')).toBe(
+      'Unable to connect. Please check your internet connection.',
+    );
+  });
+
+  it('returns correct message for TIMEOUT', () => {
+    expect(getUserFriendlyError('TIMEOUT')).toBe('Request timed out. Please try again.');
+  });
+
+  it('returns correct message for PERMISSION_DENIED', () => {
+    expect(getUserFriendlyError('PERMISSION_DENIED')).toBe(
+      "You don't have permission to perform this action.",
+    );
+  });
+
+  it('returns correct message for QUOTA_EXCEEDED', () => {
+    expect(getUserFriendlyError('QUOTA_EXCEEDED')).toBe(
+      'Storage quota exceeded. Please delete some data.',
+    );
+  });
+
+  it('returns correct message for UNAUTHENTICATED', () => {
+    expect(getUserFriendlyError('UNAUTHENTICATED')).toBe('Please sign in to continue.');
+  });
+
+  it('returns fallback message for unknown code', () => {
+    expect(getUserFriendlyError('TOTALLY_UNKNOWN_CODE')).toBe(
+      'Something went wrong. Please try again.',
+    );
+  });
+
+  it('returns fallback message for empty string', () => {
+    expect(getUserFriendlyError('')).toBe('Something went wrong. Please try again.');
   });
 });
