@@ -20,3 +20,34 @@
 - Deploy workflow is correctly disabled (`if: false`) during migration
 - All 7 CSS files preserved from legacy app
 - Note for Wave 1: will need `vite-env.d.ts` when importing non-TS assets
+
+### 2025-07-25 — Wave 1 Type System & Constants (Closes #20, #21)
+- Created **10 type files** in `src/types/`:
+  - `semester.ts` — `Semester`, `CalendarSettings`, `DEFAULT_CALENDAR_SETTINGS`
+  - `course.ts` — `Course`, `CourseRecordings`, `ExamEntry`, `ScheduleSlot`
+  - `recording.ts` — `RecordingTab`, `RecordingItem`
+  - `homework.ts` — `Homework`, `HomeworkLink`
+  - `profile.ts` — `Profile`, `ProfileData`
+  - `settings.ts` — `AppSettings`, `ColorTheme` (enum), `ThemeMode` (enum), `RecordingSortOrder`, `HomeworkSortOrder`
+  - `validation.ts` — `ValidationResult<T>`, `DateValidationResult`, `VideoUrlResult`, `ImportValidationResult`
+  - `toast.ts` — `ToastType` (enum), `ToastOptions`
+  - `ticker.ts` — `TickerCategory`, `TickerKind`, `TickerContext`, `TickerTemplateVars`, `TickerTemplateMap`
+  - `sync.ts` — `FirebaseSyncState` (enum), `SyncConflictInfo`, `CloudPayload`, `CloudProfileEntry`
+  - `index.ts` — Barrel re-export
+- Created **9 constants files** in `src/constants/`:
+  - `sort-orders.ts` — `SORT_ORDERS`, `RECORDING_SORT_ORDERS`, `HOMEWORK_SORT_ORDERS`
+  - `calendar.ts` — `DAY_NAMES`, `DAY_NAMES_FULL`, `DAY_NAMES_SHORT`, `DEFAULT_CALENDAR_SETTINGS`
+  - `storage-keys.ts` — `STORAGE_KEYS`
+  - `themes.ts` — `COLOR_THEMES`, `DEFAULT_THEME_SETTINGS`, `GOLDEN_ANGLE`
+  - `api.ts` — `CORS_PROXIES`, `TECHNION_SAP_BASE_URL`
+  - `semesters.ts` — `SEMESTER_SEASONS`, `SEMESTER_TRANSLATIONS`, `SemesterSeason` type
+  - `ui.ts` — `ANIMATION_DURATIONS`, `TIME_UPDATE_INTERVAL`, `MAX_LENGTHS`, `DEFAULT_RECORDING_TABS`, `PROTECTED_TAB_IDS`, `TOAST_CONFIG`, `HEADER_TICKER_ROTATE_MS`, `EXPORT_DATA_VERSION`, `MOBILE_BREAKPOINT`
+  - `validation.ts` — `VALIDATION_LIMITS`, `VALIDATION_PATTERNS`, `HTML_ENTITIES`
+  - `index.ts` — Barrel re-export
+- **Design decisions:**
+  - `AppSettings.theme` and `colorTheme` accept `string` union with enums for backward-compatible hydration
+  - `CloudPayload` uses full readable property names (not compact `v/u/a/p` keys) per migration rules
+  - Sort orders are string literal union types, not enums, for easier JSON round-tripping
+  - `PROTECTED_TAB_IDS` typed as `ReadonlySet<string>` (can't freeze a Set but it's const-bound)
+  - All `Object.freeze()` + `as const` for maximum immutability
+- `npm run typecheck` ✅ `npm run lint` ✅
