@@ -66,7 +66,7 @@ export function CourseList() {
         title="Add Course"
         onClick={handleAddCourse}
       >
-        <span style={{ fontSize: '18px' }}>+</span> Add Course
+        <span class="add-course-icon">+</span> Add Course
       </button>
     </>
   );

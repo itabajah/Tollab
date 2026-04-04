@@ -114,7 +114,7 @@ export function AddSemesterModal() {
     <Modal isOpen={isOpen} onClose={handleClose} title="Add Semester" size="sm">
       <form onSubmit={handleSubmit}>
         <div class="form-group">
-          <label for="new-semester-select">Semester</label>
+          <label for="new-semester-select">Select Semester</label>
           <select
             id="new-semester-select"
             value={isCustom ? 'custom' : selected}
@@ -136,7 +136,7 @@ export function AddSemesterModal() {
               id="custom-semester-name"
               type="text"
               class="form-control"
-              placeholder="e.g. Winter 2024"
+              placeholder="e.g., Special Term 2024"
               value={customName}
               onInput={handleCustomInput}
               maxLength={50}
@@ -152,7 +152,7 @@ export function AddSemesterModal() {
             Cancel
           </button>
           <button type="submit" class="btn-primary">
-            Add Semester
+            Create Semester
           </button>
         </div>
       </form>

@@ -73,8 +73,8 @@ function defaultHue(existingCourses: { color: string }[]): number {
   // Pick a hue maximally distant from existing ones
   let bestHue = 0;
   let bestDist = -1;
-  for (let h = 0; h <= 360; h += 10) {
-    const minDist = Math.min(...used.map((u) => Math.min(Math.abs(h - u), 360 - Math.abs(h - u))));
+  for (let h = 0; h <= 180; h += 10) {
+    const minDist = Math.min(...used.map((u) => Math.min(Math.abs(h - u), 180 - Math.abs(h - u))));
     if (minDist > bestDist) {
       bestDist = minDist;
       bestHue = h;
@@ -509,7 +509,7 @@ export function CourseModal() {
                 id="cm-color-hue"
                 type="range"
                 min="0"
-                max="360"
+                max="180"
                 value={hue}
                 className="full-spectrum"
                 onInput={(e) => setHue(parseInt((e.target as HTMLInputElement).value, 10))}
