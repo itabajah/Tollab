@@ -57,3 +57,38 @@
 - `npm run typecheck` — 0 errors ✅
 - `npm run lint` — 0 errors, 0 warnings from new files ✅
 - Pushed to `wave-5-core-ui` ✅
+
+## Wave 6 — Review Fix Pass (PR #52)
+
+**Date:** 2026-04-06
+**Branch:** `wave-6-courses-calendar`
+**Commit:** `43316f1` — `fix(ui): address Wave 6 review — keyboard a11y, CSS classes, text fixes`
+
+### Context
+
+Malik and Noura reviewed PR #52 and requested changes. Original authors (Layla, Dina, Omar) locked out per Reviewer Rejection Protocol. I picked up all fixes.
+
+### Malik's blocking issues fixed
+
+- **B1: CourseCard keyboard handler** — Added `handleKeyDown` callback with Enter/Space activation. `tabIndex={0}` was already present; added `onKeyDown` prop to the div with `role="button"`.
+- **B2: Inline fontSize in CourseList** — Removed `style={{ fontSize: '18px' }}` from the `+` span, replaced with `.add-course-icon` CSS class in `components.css`.
+
+### Noura's findings fixed
+
+- **6 missing CSS classes added:**
+  - `.course-info` → `components.css` — flex column container for faculty/lecturer/location rows
+  - `.course-list-empty` → `components.css` — centered italic placeholder for empty states
+  - `.schedule-section-actions` → `layout.css` — flex row for mobile-day-toggle wrapper
+  - `.form-control` → `components.css` — full-width input matching legacy select styling
+  - `.form-error` → `components.css` — error text with error color, matching `.error-text` pattern
+  - `.modal-footer` → `modals.css` — flex row for action buttons with gap and end-alignment
+- **Color picker CSS selector** — Added `#cm-color-hue.full-spectrum` alongside legacy `#course-color-hue.full-spectrum` in the gradient rule, webkit thumb rule, and moz thumb rule. Also added base appearance reset for `#cm-color-hue`.
+- **Color hue max** — Changed from `max="360"` to `max="180"` to match legacy half-spectrum. Updated `defaultHue()` range from 360→180 accordingly.
+- **AddSemesterModal text** — Fixed label ("Semester" → "Select Semester"), button ("Add Semester" → "Create Semester"), placeholder ("e.g. Winter 2024" → "e.g., Special Term 2024").
+
+### CI status
+
+- `npm run typecheck` — 0 errors ✅
+- `npm run lint` — 0 errors, 0 warnings from changed files ✅
+- `npm run build` — Pass (561ms) ✅
+- Pushed to `wave-6-courses-calendar` ✅
