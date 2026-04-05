@@ -24,8 +24,8 @@ vi.mock('@/store/app-store', () => ({
     }),
 }));
 
-// Mock SettingsModal as a simple stub
-vi.mock('@/components/modals', () => ({
+// Mock SettingsModal as a simple stub (lazy-loaded via dynamic import)
+vi.mock('@/components/modals/SettingsModal', () => ({
   SettingsModal: ({ isOpen }: { isOpen: boolean; onClose: () => void }) =>
     isOpen ? <div data-testid="settings-modal">Settings Modal</div> : null,
 }));
@@ -82,10 +82,10 @@ describe('Header', () => {
     expect(screen.getByTitle('Settings')).toBeInTheDocument();
   });
 
-  it('opens settings modal on settings button click', () => {
+  it('opens settings modal on settings button click', async () => {
     render(<Header />);
     fireEvent.click(screen.getByTitle('Settings'));
-    expect(screen.getByTestId('settings-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('settings-modal')).toBeInTheDocument();
   });
 
   // -- Cloud sync status ----------------------------------------------------

@@ -22,6 +22,14 @@
     --error-border: #dc2626;
     --progress-bg: #e5e5e5;
     --progress-fill: #1a1a1a;
+    --status-success: #10b981;
+    --status-error: #ef4444;
+    --status-warning: #f59e0b;
+    --status-info: #3b82f6;
+    --status-success-bg: rgba(16, 185, 129, 0.1);
+    --status-error-bg: rgba(239, 68, 68, 0.1);
+    --status-warning-bg: rgba(245, 158, 11, 0.1);
+    --status-info-bg: rgba(59, 130, 246, 0.1);
 }
 
 body.dark-mode {
@@ -43,6 +51,14 @@ body.dark-mode {
     --error-border: #dc2626;
     --progress-bg: #404040;
     --progress-fill: #fafafa;
+    --status-success: #34d399;
+    --status-error: #f87171;
+    --status-warning: #fbbf24;
+    --status-info: #60a5fa;
+    --status-success-bg: rgba(16, 185, 129, 0.2);
+    --status-error-bg: rgba(239, 68, 68, 0.2);
+    --status-warning-bg: rgba(245, 158, 11, 0.2);
+    --status-info-bg: rgba(59, 130, 246, 0.2);
 }
 
 * {
