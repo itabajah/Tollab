@@ -3,7 +3,7 @@
  * progress tracking, error handling, and toast notifications.
  */
 
-import { useCallback, useState } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 
 import { DEFAULT_CALENDAR_SETTINGS, DEFAULT_RECORDING_TABS, GOLDEN_ANGLE } from '@/constants';
 import { fetchICSData } from '@/services/cheesefork';
@@ -147,6 +147,14 @@ export function useImportExport(): ImportExportState & ImportExportActions {
   const [isFetchingCatalog, setIsFetchingCatalog] = useState(false);
   const [catalogProgress, setCatalogProgress] = useState('');
 
+  // Mounted guard to prevent state updates after unmount
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   // -- Single ICS import ----------------------------------------------------
 
   const importSingleICS = useCallback(
@@ -156,6 +164,8 @@ export function useImportExport(): ImportExportState & ImportExportActions {
 
       try {
         const imported = await fetchICSData(url);
+        if (!mountedRef.current) return { semesterName: '', count: 0 };
+
         setImportProgress('Processing courses...');
 
         const semester = importedSemesterToSemester(imported);
@@ -165,10 +175,10 @@ export function useImportExport(): ImportExportState & ImportExportActions {
           semesterName: semester.name,
           count: semester.courses.length,
         };
-        setImportProgress('');
+        if (mountedRef.current) setImportProgress('');
         return result;
       } finally {
-        setIsImporting(false);
+        if (mountedRef.current) setIsImporting(false);
       }
     },
     [importSemester],
@@ -204,6 +214,8 @@ export function useImportExport(): ImportExportState & ImportExportActions {
       const results: ImportResult[] = [];
 
       for (let i = 0; i < urls.length; i++) {
+        if (!mountedRef.current) break;
+
         const url = urls[i]!;
         setImportProgress(
           `Importing ${String(i + 1)}/${String(urls.length)} semesters...`,
@@ -211,6 +223,8 @@ export function useImportExport(): ImportExportState & ImportExportActions {
 
         try {
           const imported = await fetchICSData(url);
+          if (!mountedRef.current) break;
+
           const semester = importedSemesterToSemester(imported);
           importSemester(semester);
 
@@ -227,8 +241,10 @@ export function useImportExport(): ImportExportState & ImportExportActions {
         }
       }
 
-      setImportProgress('');
-      setIsImporting(false);
+      if (mountedRef.current) {
+        setImportProgress('');
+        setIsImporting(false);
+      }
       return results;
     },
     [importSemester],
@@ -242,23 +258,27 @@ export function useImportExport(): ImportExportState & ImportExportActions {
 
     try {
       const semesterList = await fetchSemesterList();
+      if (!mountedRef.current) return { updatedCount: 0, catalogSize: 0 };
+
       setCatalogProgress('Building course catalog...');
 
       const { catalog, size } = await buildCourseCatalog(
         semesterList,
-        (msg) => setCatalogProgress(msg),
+        (msg) => { if (mountedRef.current) setCatalogProgress(msg); },
       );
+
+      if (!mountedRef.current) return { updatedCount: 0, catalogSize: size };
 
       const currentSemester = semesters.find(
         (s) => s.id === currentSemesterId,
       );
 
       if (!currentSemester || currentSemester.courses.length === 0) {
-        setCatalogProgress('');
+        if (mountedRef.current) setCatalogProgress('');
         return { updatedCount: 0, catalogSize: size };
       }
 
-      setCatalogProgress('Enriching courses...');
+      if (mountedRef.current) setCatalogProgress('Enriching courses...');
       const { courses: enriched, updatedCount } = enrichCoursesWithCatalog(
         currentSemester.courses,
         catalog,
@@ -280,10 +300,10 @@ export function useImportExport(): ImportExportState & ImportExportActions {
         }
       }
 
-      setCatalogProgress('');
+      if (mountedRef.current) setCatalogProgress('');
       return { updatedCount, catalogSize: size };
     } finally {
-      setIsFetchingCatalog(false);
+      if (mountedRef.current) setIsFetchingCatalog(false);
     }
   }, [semesters, currentSemesterId, updateCourse]);
 

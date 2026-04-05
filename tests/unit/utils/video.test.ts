@@ -82,7 +82,7 @@ describe('getVideoEmbedInfo', () => {
 
 describe('supportsInlinePreview', () => {
   it('returns true for YouTube URL', () => {
-    expect(supportsInlinePreview('https://www.youtube.com/watch?v=abc123')).toBe(true);
+    expect(supportsInlinePreview('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true);
   });
 
   it('returns true for Panopto URL with valid ID', () => {
