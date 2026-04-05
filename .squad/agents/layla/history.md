@@ -78,3 +78,31 @@
 - `npm run lint` — ✅ 0 errors (22 pre-existing warnings in other files)
 - `vite build` — ✅ builds successfully (67.27 kB JS, 66.11 kB CSS)
 - Pushed to `wave-7-recordings-homework`
+
+### Wave 10 — Final File Cleanup (2026-04-06)
+**Branch:** `wave-10-cleanup`
+**Commit:** `a7f044c`
+
+**Removed:**
+1. `js/` directory — all 20 legacy JS files (constants, validation, error-handling, state, utils, toast, theme, firebase-sync, firebase-config.example, firebase-config, profile, video-fetch, header-ticker, render, modals, course-logic, item-logic, import-export, events, main). 15,837 lines deleted.
+2. `css/` root directory — 7 CSS files duplicated by `src/css/` (base, calendar, components, layout, modals, toast, utils).
+3. `tests/utils.test.js` — old Jest-based utils tests (replaced by `tests/unit/utils/`).
+4. `tests/validation.test.js` — old Jest-based validation tests (replaced by `tests/unit/validation/`).
+5. `tests/setup.js` — old Jest setup file (replaced by `tests/setup.ts` for Vitest).
+6. Root `CNAME` — duplicate of `public/CNAME`.
+7. Root `favicon.svg` — duplicate of `public/favicon.svg`.
+
+**Updated:**
+8. `.gitignore` — added `coverage/` to ignored paths; updated firebase-config path from `js/firebase-config.js` to `src/firebase-config.ts`.
+
+**Preserved:**
+- `index.legacy.html` — kept as reference per task instructions.
+- `public/CNAME` and `public/favicon.svg` — verified present and copied to `dist/` on build.
+
+**Verification:**
+- `npm run typecheck` — ✅ pass
+- `npm run lint` — ✅ 0 errors (28 pre-existing warnings)
+- `vite build` — ✅ builds successfully (119.56 kB JS, 68.47 kB CSS)
+- `dist/CNAME` and `dist/favicon.svg` present in build output
+- No broken imports
+- Pushed to `wave-10-cleanup`
