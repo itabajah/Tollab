@@ -361,7 +361,7 @@ export function FetchVideosModal({
 
       {/* Status */}
       {status && (
-        <div className="fetch-status" style={{ color: 'var(--text-secondary)' }}>
+        <div className="fetch-status">
           {status}
         </div>
       )}
