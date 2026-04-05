@@ -5,14 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tollab — طُلّاب</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
     <meta
       http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
         script-src  'self';
-        style-src   'self' 'unsafe-inline';
+        style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
         img-src     'self' data: https://*.googleapis.com https://*.firebaseapp.com;
-        font-src    'self';
+        font-src    'self' https://fonts.gstatic.com;
         connect-src 'self'
                     https://*.googleapis.com
                     https://*.firebaseio.com

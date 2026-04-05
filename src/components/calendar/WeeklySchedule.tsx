@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 import { MOBILE_BREAKPOINT } from '@/constants/ui';
 import { useAppStore } from '@/store/app-store';
 import { useCurrentSemester } from '@/store/selectors';
-import { DEFAULT_CALENDAR_SETTINGS } from '@/types';
+import { DEFAULT_CALENDAR_SETTINGS } from '@/constants';
 
 import { CurrentTimeLine, useTimeLineCell } from './CurrentTimeLine';
 import { EventChip } from './EventChip';
