@@ -42,7 +42,7 @@ export function Button({
       type={type}
       className={classes}
       disabled={disabled || loading}
-      onClick={onClick}
+      onClick={disabled || loading ? undefined : onClick}
       aria-busy={loading || undefined}
     >
       {loading ? 'Loading…' : children}

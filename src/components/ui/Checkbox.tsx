@@ -21,9 +21,10 @@ export function Checkbox({ checked, onChange, label, disabled = false, id, class
 
   const handleChange = useCallback(
     (e: JSX.TargetedEvent<HTMLInputElement>) => {
+      if (disabled) return;
       onChange(getInputChecked(e));
     },
-    [onChange],
+    [onChange, disabled],
   );
 
   return (
