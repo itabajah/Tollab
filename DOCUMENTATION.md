@@ -13,7 +13,7 @@
     - [Brand Identity](#brand-identity)
   - [2. Architecture \& Design Philosophy](#2-architecture--design-philosophy)
     - [Client-Only SPA](#client-only-spa)
-    - [Module Loading Order](#module-loading-order)
+    - [Component Architecture](#component-architecture)
     - [State Management](#state-management)
     - [Data Persistence Strategy](#data-persistence-strategy)
   - [3. Technology Stack](#3-technology-stack)
@@ -28,26 +28,20 @@
     - [RecordingTab](#recordingtab)
     - [RecordingItem](#recordingitem)
     - [Profile System](#profile-system)
-    - [Compact Storage Format (v2)](#compact-storage-format-v2)
   - [6. Core Modules — In-Depth](#6-core-modules--in-depth)
-    - [6.1 `constants.js` — Application Configuration](#61-constantsjs--application-configuration)
-    - [6.2 `validation.js` — Input Validation \& Sanitization](#62-validationjs--input-validation--sanitization)
-    - [6.3 `error-handling.js` — Error Handling \& Retry Logic](#63-error-handlingjs--error-handling--retry-logic)
-    - [6.4 `state.js` — State Management \& Data Persistence](#64-statejs--state-management--data-persistence)
-    - [6.5 `utils.js` — Utility Functions](#65-utilsjs--utility-functions)
-    - [6.6 `toast.js` — Toast Notification System](#66-toastjs--toast-notification-system)
-    - [6.7 `theme.js` — Theme Management](#67-themejs--theme-management)
-    - [6.8 `firebase-sync.js` — Cloud Sync via Firebase](#68-firebase-syncjs--cloud-sync-via-firebase)
-    - [6.9 `profile.js` — Profile Management](#69-profilejs--profile-management)
-    - [6.10 `video-fetch.js` — External Video Fetching](#610-video-fetchjs--external-video-fetching)
-    - [6.11 `header-ticker.js` — Header Ticker \& Fun Reminders](#611-header-tickerjs--header-ticker--fun-reminders)
-    - [6.12 `render.js` — UI Rendering Engine](#612-renderjs--ui-rendering-engine)
-    - [6.13 `modals.js` — Modal Dialog Management](#613-modalsjs--modal-dialog-management)
-    - [6.14 `course-logic.js` — Course CRUD Operations](#614-course-logicjs--course-crud-operations)
-    - [6.15 `item-logic.js` — Recordings, Homework \& Schedule Items](#615-item-logicjs--recordings-homework--schedule-items)
-    - [6.16 `import-export.js` — ICS Import \& Technion Data Fetch](#616-import-exportjs--ics-import--technion-data-fetch)
-    - [6.17 `events.js` — Event Listeners \& Handlers](#617-eventsjs--event-listeners--handlers)
-    - [6.18 `main.js` — Application Entry Point](#618-mainjs--application-entry-point)
+    - [6.1 `src/constants/` — Application Configuration](#61-srcconstants--application-configuration)
+    - [6.2 `src/utils/validation.ts` — Input Validation \& Sanitization](#62-srcutilsvalidationts--input-validation--sanitization)
+    - [6.3 `src/utils/error-handling.ts` — Error Handling \& Retry Logic](#63-srcutilserror-handlingts--error-handling--retry-logic)
+    - [6.4 `src/store/app-store.ts` — Application State](#64-srcstoreapp-storets--application-state)
+    - [6.5 `src/utils/` — Utility Functions](#65-srcutils--utility-functions)
+    - [6.6 `src/components/toast/` — Toast Notification System](#66-srccomponentstoast--toast-notification-system)
+    - [6.7 `src/hooks/useTheme.ts` — Theme Management](#67-srchooksusethemets--theme-management)
+    - [6.8 `src/services/firebase-sync.ts` — Cloud Sync via Firebase](#68-srcservicesfirebase-syncts--cloud-sync-via-firebase)
+    - [6.9 `src/store/profile-store.ts` — Profile Management](#69-srcstoreprofile-storets--profile-management)
+    - [6.10 `src/services/` — External API Services](#610-srcservices--external-api-services)
+    - [6.11 `src/hooks/useTickerMessages.ts` — Header Ticker \& Fun Reminders](#611-srchooksusetickermessagests--header-ticker--fun-reminders)
+    - [6.12 `src/components/` — UI Components](#612-srccomponents--ui-components)
+    - [6.13 `src/hooks/` — Custom Preact Hooks](#613-srchooks--custom-preact-hooks)
   - [7. CSS Architecture](#7-css-architecture)
     - [`base.css` — Design Tokens \& Reset](#basecss--design-tokens--reset)
     - [`layout.css` — Application Layout](#layoutcss--application-layout)
@@ -68,7 +62,7 @@
     - [Panopto Video Import](#panopto-video-import)
   - [10. Testing](#10-testing)
     - [Framework](#framework)
-    - [Test Coverage](#test-coverage)
+    - [Test Structure](#test-structure)
     - [Test Suites](#test-suites)
     - [Running Tests](#running-tests)
   - [11. Security Considerations](#11-security-considerations)
@@ -133,64 +127,67 @@ Tollab is a **single-page application (SPA)** designed to help Technion students
 
 ### Client-Only SPA
 
-Tollab is a **zero-build, zero-framework** web application. It uses:
-- **Vanilla HTML/CSS/JavaScript** — no React, Vue, Angular, or any UI framework
-- **No bundler** — no Webpack, Vite, Rollup, or esbuild
-- **No transpilation** — modern ES6+ JavaScript served directly to the browser
-- **Script tag loading** — all JS files are loaded via `<script>` tags in `index.html` in a specific dependency order
+Tollab is a **TypeScript/Preact** single-page application built with **Vite**. It uses:
+- **Preact** — Lightweight (3 KB) React-compatible UI framework with JSX
+- **TypeScript** — Strict mode with `noUncheckedIndexedAccess` for full type safety
+- **Vite 6.x** — Fast HMR dev server and optimized production builds
+- **ESM imports** — Standard ES module system, no global scope dependencies
 
-This architecture is intentional: it keeps the project simple, fast to load, and deployable as a static site on GitHub Pages with zero build pipeline.
+The application runs entirely in the browser with no backend server. Data is persisted to `localStorage` and optionally synced to Firebase Realtime Database via Google Sign-In.
 
-### Module Loading Order
+### Component Architecture
 
-The script loading order in `index.html` is critical because the modules depend on each other through global scope:
+The UI is built from composable Preact functional components organized by feature domain:
 
 ```
-constants.js          → Configuration values, frozen objects
-validation.js         → Input validation utilities
-error-handling.js     → Error handling, retry logic
-state.js              → Global state, localStorage persistence, compact/hydrate
-utils.js              → Pure helper functions (DOM, date, color, string, video)
-toast.js              → Toast notification system
-theme.js              → Dark/light mode, color theme management
-firebase-config.js    → Firebase credentials (generated at deploy time)
-Firebase SDK (CDN)    → firebase-app-compat, firebase-auth-compat, firebase-database-compat
-firebase-sync.js      → Google Auth + Realtime Database sync
-profile.js            → Profile CRUD, export/import
-video-fetch.js        → YouTube/Panopto video fetching with CORS proxy
-header-ticker.js      → Context-aware ticker messages
-render.js             → All UI rendering functions
-modals.js             → Modal dialog management
-course-logic.js       → Course CRUD, semester options
-item-logic.js         → Recordings, homework, schedule item logic
-import-export.js      → ICS parsing, Cheesefork/Technion data import
-events.js             → All event listener setup and handlers
-main.js               → Entry point, global exports
+App
+├── MainLayout                    ← Two-column responsive shell
+│   ├── Header                    ← Brand, theme toggle, settings
+│   ├── HeaderTicker              ← Context-aware rotating messages
+│   ├── SemesterControls          ← Semester select, add, delete
+│   ├── CourseList                ← Course cards with progress indicators
+│   │   └── CourseCard            ← Individual course card
+│   ├── WeeklySchedule            ← Calendar grid with event chips
+│   └── HomeworkSidebar           ← Urgency-grouped homework list
+├── Footer                        ← Credits
+├── AddSemesterModal              ← Semester creation dialog
+├── CourseModal                   ← Recordings/Homework/Details tabs
+├── SettingsModal                 ← Profile, Appearance, Calendar, Fetch Data
+├── SyncConflictModal             ← Cloud vs local conflict resolution
+└── ToastContainer                ← Notification stack
 ```
+
+Each component subscribes to exactly the state slice it needs via Zustand selectors, ensuring efficient re-renders.
 
 ### State Management
 
-There is no Redux, Zustand, or other state library. The application uses a single global `appData` object:
+Tollab uses **Zustand** with the **immer** middleware for state management, split into three stores:
 
-```javascript
-let appData = {
-    semesters: [...],
-    settings: { theme, colorTheme, baseColorHue, showCompleted, showWatchedRecordings },
-    lastModified: "ISO timestamp"
-};
+| Store | File | Purpose |
+|-------|------|---------|
+| **App Store** | `src/store/app-store.ts` | Semesters, courses, settings, sort orders — all persistent domain data |
+| **Profile Store** | `src/store/profile-store.ts` | Profile metadata (list of `{id, name}` entries), active profile ID |
+| **UI Store** | `src/store/ui-store.ts` | Ephemeral state: modal stack, editing context, temp form data (never persisted) |
+
+Derived state (current semester, homework counts, sorted items) is computed via selector hooks in `src/store/selectors.ts`.
+
+```typescript
+// Reading state in a component
+const courses = useAppStore((s) => s.currentSemester?.courses ?? []);
+
+// Mutating state (immer enables direct "mutation" syntax)
+useAppStore.getState().addCourse(semesterId, courseData);
 ```
-
-All mutations happen directly on `appData`, followed by a call to `saveData()` (which persists to localStorage) and `renderAll()` (which re-renders the entire UI from scratch).
 
 ### Data Persistence Strategy
 
-Data is stored in `localStorage` with a **compact serialization** format (v2):
-- Single-letter keys replace verbose property names (e.g., `n` for `name`, `i` for `id`)
-- Empty/default values are omitted
-- Arrays are used instead of objects for schedule items (`[day, start, end]`)
-- Boolean flags use `1`/omitted instead of `true`/`false`
+Data is stored in `localStorage` using **full readable typed interfaces** — no abbreviation or compaction. The persistence layer is wired via `src/services/store-persistence.ts`:
 
-This optimization significantly reduces storage size and JSON parsing overhead. On load, the compact format is **hydrated** back into the full developer-friendly object structure.
+1. On startup, `initStorePersistence()` loads profile list, active profile data, and settings from localStorage into the Zustand stores.
+2. A debounced subscriber (500ms) watches the app store and auto-saves changes to localStorage.
+3. A separate subscriber saves profile list changes immediately.
+
+All localStorage access goes through a single typed service (`src/services/storage.ts`) — no module touches `localStorage` directly.
 
 ---
 
@@ -198,16 +195,19 @@ This optimization significantly reduces storage size and JSON parsing overhead. 
 
 | Category | Technology |
 |----------|-----------|
-| **Language** | Vanilla JavaScript (ES6+) — no TypeScript |
+| **Language** | TypeScript 5.x (strict mode) |
+| **UI Framework** | Preact 10.x (React-compatible, 3 KB) |
+| **State Management** | Zustand 5.x with immer middleware |
+| **Build Tool** | Vite 6.x with `@preact/preset-vite` |
 | **Styling** | Pure CSS with CSS Custom Properties (design tokens) |
-| **HTML** | Single `index.html` page |
-| **Authentication** | Firebase Authentication (Google provider, compat SDK v9.23.0) |
-| **Database** | Firebase Realtime Database (compat SDK v9.23.0) |
+| **Authentication** | Firebase Authentication (Google provider, modular SDK v10+) |
+| **Database** | Firebase Realtime Database (modular SDK v10+) |
 | **Hosting** | GitHub Pages with custom domain (`tollab.co.il`) |
 | **Font** | Google Fonts — Pacifico |
-| **Testing** | Jest + jsdom |
-| **Linting** | ESLint |
-| **HTML Validation** | html-validate |
+| **Unit Testing** | Vitest 3.x + Testing Library (Preact) + jsdom |
+| **E2E Testing** | Playwright 1.x |
+| **Linting** | ESLint 9.x (flat config) |
+| **Formatting** | Prettier 3.x |
 | **Package Manager** | npm |
 
 ### External APIs / Services
@@ -226,208 +226,294 @@ This optimization significantly reduces storage size and JSON parsing overhead. 
 
 ```
 Tollab/
-├── CNAME                           # GitHub Pages custom domain: tollab.co.il
-├── index.html                      # Single-page application HTML (~700 lines)
-├── package.json                    # npm configuration, Jest setup
+├── CNAME                              # GitHub Pages custom domain: tollab.co.il
+├── index.html                         # Vite entry point (mounts #app)
+├── index.legacy.html                  # Preserved legacy SPA (reference only)
+├── package.json                       # Dependencies, scripts, project config
+├── tsconfig.json                      # TypeScript config (strict mode)
+├── vite.config.ts                     # Vite config with Preact preset + path aliases
+├── eslint.config.js                   # ESLint 9.x flat config
 │
-├── css/                            # Modular CSS architecture
-│   ├── base.css                    # CSS variables, theme colors, base elements
-│   ├── layout.css                  # App layout, two-column grid, responsive
-│   ├── components.css              # Course cards, buttons, forms, controls
-│   ├── calendar.css                # Weekly schedule grid, time slots, event chips
-│   ├── modals.css                  # Modal overlays, tabs, recordings UI
-│   ├── toast.css                   # Toast notification styling & animations
-│   └── utils.css                   # Utility classes (hidden, scrollbar, etc.)
+├── public/                            # Static assets (served as-is by Vite)
 │
-├── js/                             # Application logic (18 modules)
-│   ├── constants.js                # Frozen config objects, enums, API endpoints
-│   ├── validation.js               # Input validation (strings, URLs, numbers, dates)
-│   ├── error-handling.js           # Retry logic, error classification, backoff
-│   ├── state.js                    # Global state, compact/hydrate, localStorage
-│   ├── utils.js                    # Pure helpers (DOM, date, color, string, video)
-│   ├── toast.js                    # Toast notification manager
-│   ├── theme.js                    # Dark/light mode, course color themes
-│   ├── firebase-config.js          # Firebase credentials (gitignored, generated at deploy)
-│   ├── firebase-config.example.js  # Firebase config template for local dev
-│   ├── firebase-sync.js            # Firebase Auth + RTDB sync, conflict resolution
-│   ├── profile.js                  # Profile CRUD, export/import
-│   ├── video-fetch.js              # YouTube/Panopto fetching with CORS proxy & retry
-│   ├── header-ticker.js            # Context-aware rotating ticker messages
-│   ├── render.js                   # All UI rendering (semesters, courses, calendar, etc.)
-│   ├── modals.js                   # Modal open/close, course modal population
-│   ├── course-logic.js             # Course CRUD, semester option generation
-│   ├── item-logic.js               # Video preview, recording/homework/tab CRUD
-│   ├── import-export.js            # ICS parsing, Cheesefork import, Technion fetch
-│   ├── events.js                   # Event listener setup, handlers
-│   └── main.js                     # DOMContentLoaded init, global function exports
+├── src/                               # Application source code
+│   ├── main.tsx                       # Entry point — renders <App />, inits persistence
+│   ├── App.tsx                        # Root component — composes layout shell
+│   ├── vite-env.d.ts                  # Vite client type declarations
+│   │
+│   ├── types/                         # TypeScript interfaces & type definitions
+│   │   ├── index.ts                   #   Barrel re-export
+│   │   ├── semester.ts                #   Semester, CalendarSettings
+│   │   ├── course.ts                  #   Course, CourseRecordings, ExamEntry, ScheduleSlot
+│   │   ├── recording.ts              #   RecordingTab, RecordingItem
+│   │   ├── homework.ts               #   Homework, HomeworkLink
+│   │   ├── profile.ts                #   Profile, ProfileData
+│   │   ├── settings.ts               #   AppSettings, ColorTheme, ThemeMode, sort orders
+│   │   ├── validation.ts             #   ValidationResult<T>, VideoUrlResult, etc.
+│   │   ├── sync.ts                   #   CloudPayload, SyncConflictInfo, FirebaseSyncState
+│   │   ├── toast.ts                  #   ToastOptions, ToastType
+│   │   └── ticker.ts                 #   TickerCategory, TickerContext, TickerTemplateMap
+│   │
+│   ├── constants/                     # Immutable configuration values
+│   │   ├── index.ts                   #   Barrel re-export
+│   │   ├── api.ts                     #   CORS_PROXIES, TECHNION_SAP_BASE_URL
+│   │   ├── calendar.ts               #   DAY_NAMES, DEFAULT_CALENDAR_SETTINGS
+│   │   ├── semesters.ts              #   SEMESTER_SEASONS, SEMESTER_TRANSLATIONS
+│   │   ├── sort-orders.ts            #   RECORDING_SORT_ORDERS, HOMEWORK_SORT_ORDERS
+│   │   ├── storage-keys.ts           #   STORAGE_KEYS (localStorage key prefixes)
+│   │   ├── themes.ts                 #   COLOR_THEMES, DEFAULT_THEME_SETTINGS, GOLDEN_ANGLE
+│   │   ├── ticker-templates.ts       #   Ticker message templates by category
+│   │   ├── ui.ts                     #   ANIMATION_DURATIONS, MAX_LENGTHS, TOAST_CONFIG, etc.
+│   │   └── validation.ts             #   VALIDATION_PATTERNS, VALIDATION_LIMITS
+│   │
+│   ├── store/                         # Zustand state management
+│   │   ├── app-store.ts               #   Main app state (semesters, settings, CRUD actions)
+│   │   ├── profile-store.ts           #   Profile metadata (list, active profile)
+│   │   ├── ui-store.ts                #   Ephemeral UI state (modals, editing context)
+│   │   └── selectors.ts              #   Derived-state selector hooks
+│   │
+│   ├── services/                      # Side-effect services (localStorage, Firebase, APIs)
+│   │   ├── storage.ts                 #   Typed localStorage interface (single entry point)
+│   │   ├── store-persistence.ts       #   Auto-save subscribers wiring stores → localStorage
+│   │   ├── firebase-config.ts         #   Firebase init from Vite env vars
+│   │   ├── firebase-auth.ts           #   Google Sign-In auth service
+│   │   ├── firebase-sync.ts           #   Realtime Database sync with echo prevention
+│   │   ├── cors-proxy.ts             #   CORS proxy rotation with retry/backoff
+│   │   ├── youtube.ts                #   YouTube playlist scraping
+│   │   ├── panopto.ts                #   Panopto video extraction
+│   │   ├── technion-catalog.ts       #   Technion SAP course catalog fetch
+│   │   └── cheesefork.ts             #   Cheesefork ICS import + batch sync
+│   │
+│   ├── utils/                         # Pure utility functions (no side effects)
+│   │   ├── index.ts                   #   Barrel re-export
+│   │   ├── color.ts                   #   HSL generation, hue extraction, course colors
+│   │   ├── date.ts                    #   Date parsing, week range, day-of-week
+│   │   ├── dom.ts                     #   escapeHtml, DOM helpers
+│   │   ├── error-handling.ts          #   Retry logic, backoff, error classification
+│   │   ├── ics-parser.ts             #   ICS/iCal format parser
+│   │   ├── semester.ts               #   Semester comparison and sorting
+│   │   ├── string.ts                 #   Truncation, ID generation, sanitization
+│   │   ├── validation.ts             #   Input validators (strings, URLs, dates, numbers)
+│   │   └── video.ts                  #   Platform detection, embed URL extraction
+│   │
+│   ├── hooks/                         # Custom Preact hooks
+│   │   ├── useCalendarTime.ts         #   Current time line position updates
+│   │   ├── useFirebaseSync.ts         #   Firebase auth state + real-time sync
+│   │   ├── useImportExport.ts         #   Cheesefork/Technion import orchestration
+│   │   ├── useTheme.ts               #   Theme toggle + color scheme management
+│   │   └── useTickerMessages.ts      #   Context-aware ticker message rotation
+│   │
+│   ├── components/                    # Preact UI components (organized by feature)
+│   │   ├── layout/                    #   Header, Footer, MainLayout, HeaderTicker, SemesterControls
+│   │   ├── courses/                   #   CourseList, CourseCard, CourseProgress
+│   │   ├── calendar/                  #   WeeklySchedule, TimeGrid, EventChip, CurrentTimeLine
+│   │   ├── homework/                  #   HomeworkSidebar, HomeworkItem, HomeworkEditor
+│   │   ├── recordings/                #   RecordingsPanel, RecordingsTabs, RecordingItem, VideoPreview
+│   │   ├── modals/                    #   Modal, CourseModal, SettingsModal, AddSemesterModal, dialogs
+│   │   ├── settings/                  #   ProfileTab, AppearanceTab, CalendarTab, FetchDataTab
+│   │   ├── toast/                     #   ToastContainer, Toast, ToastContext
+│   │   └── ui/                        #   Button, IconButton, Select, Checkbox (primitives)
+│   │
+│   └── css/                           # Modular CSS architecture
+│       ├── base.css                   #   CSS variables, theme colors, base elements
+│       ├── layout.css                 #   App layout, two-column grid, responsive
+│       ├── components.css             #   Course cards, buttons, forms, controls
+│       ├── calendar.css               #   Weekly schedule grid, time slots, event chips
+│       ├── modals.css                 #   Modal overlays, tabs, recordings UI
+│       ├── toast.css                  #   Toast notification styling & animations
+│       └── utils.css                  #   Utility classes (hidden, scrollbar, etc.)
 │
-└── tests/                          # Jest test suite
-    ├── setup.js                    # Test environment mocks (localStorage, DOM, globals)
-    ├── utils.test.js               # Unit tests for utils.js
-    └── validation.test.js          # Unit tests for validation.js
+└── tests/                             # Test suites
+    ├── setup.ts                       #   Vitest environment setup (jsdom mocks)
+    └── unit/                          #   Unit tests
+        ├── utils/                     #     Tests for src/utils/ (color, date, dom, etc.)
+        └── validation/                #     Tests for validation functions
 ```
 
 ---
 
 ## 5. Data Model
 
+All data types are defined as **TypeScript interfaces** in `src/types/`. The type system enforces data integrity at compile time with strict mode and `noUncheckedIndexedAccess`.
+
 ### Top-Level Structure
 
-```
-appData
-├── lastModified: string (ISO 8601)
-├── settings
-│   ├── theme: "light" | "dark"
-│   ├── colorTheme: "colorful" | "single" | "mono"
-│   ├── baseColorHue: number (0-360)
-│   ├── showCompleted: boolean
-│   └── showWatchedRecordings: boolean
-└── semesters: Semester[]
+```typescript
+// src/store/app-store.ts — AppState
+interface AppState {
+  semesters: Semester[];
+  currentSemesterId: string | null;
+  settings: AppSettings;
+  lastModified: string;  // ISO 8601
+}
 ```
 
 ### Semester
 
-```
-Semester
-├── id: string (unique)
-├── name: string (e.g., "Winter 2024-2025", "Spring 2025")
-├── courses: Course[]
-└── calendarSettings
-    ├── startHour: number (0-23, default 8)
-    ├── endHour: number (0-23, default 20)
-    └── visibleDays: number[] (0=Sun through 6=Sat, default [0,1,2,3,4,5])
+```typescript
+// src/types/semester.ts
+interface Semester {
+  id: string;
+  name: string;               // e.g., "Winter 2024-2025", "Spring 2025"
+  courses: Course[];
+  calendarSettings: CalendarSettings;
+}
+
+interface CalendarSettings {
+  startHour: number;           // 0-23, default 8
+  endHour: number;             // 0-23, default 20
+  visibleDays: number[];       // 0=Sun through 6=Sat, default [0,1,2,3,4,5]
+}
 ```
 
 ### Course
 
-```
-Course
-├── id: string (unique)
-├── name: string (e.g., "Introduction to Computer Science")
-├── number: string (e.g., "234111")
-├── points: string (e.g., "3.0")
-├── lecturer: string
-├── faculty: string
-├── location: string
-├── grade: string (0-100)
-├── color: string (HSL, e.g., "hsl(137, 45%, 50%)")
-├── syllabus: string
-├── notes: string
-├── exams
-│   ├── moedA: string (date, YYYY-MM-DD)
-│   └── moedB: string (date, YYYY-MM-DD)
-├── schedule: ScheduleSlot[]
-├── homework: Homework[]
-└── recordings
-    └── tabs: RecordingTab[]
+```typescript
+// src/types/course.ts
+interface Course {
+  id: string;
+  name: string;                // e.g., "Introduction to Computer Science"
+  number: string;              // e.g., "234111"
+  points: string;              // e.g., "3.0"
+  lecturer: string;
+  faculty: string;
+  location: string;
+  grade: string;               // 0-100
+  color: string;               // HSL, e.g., "hsl(137, 45%, 50%)"
+  syllabus: string;
+  notes: string;
+  exams: ExamEntry;
+  schedule: ScheduleSlot[];
+  homework: Homework[];
+  recordings: CourseRecordings;
+}
+
+interface ExamEntry {
+  moedA: string;               // YYYY-MM-DD
+  moedB: string;               // YYYY-MM-DD
+}
+
+interface CourseRecordings {
+  tabs: RecordingTab[];
+}
 ```
 
 ### ScheduleSlot
 
-```
-ScheduleSlot
-├── day: number (0=Sunday through 6=Saturday)
-├── start: string ("HH:MM")
-└── end: string ("HH:MM")
+```typescript
+// src/types/course.ts
+interface ScheduleSlot {
+  day: number;                 // 0=Sunday through 6=Saturday
+  start: string;               // "HH:MM"
+  end: string;                 // "HH:MM"
+}
 ```
 
 ### Homework
 
-```
-Homework
-├── title: string
-├── dueDate: string (YYYY-MM-DD)
-├── completed: boolean
-├── notes: string
-└── links: Link[]
-    ├── label: string
-    └── url: string
+```typescript
+// src/types/homework.ts
+interface Homework {
+  title: string;
+  dueDate: string;             // YYYY-MM-DD
+  completed: boolean;
+  notes: string;
+  links: HomeworkLink[];
+}
+
+interface HomeworkLink {
+  label: string;
+  url: string;
+}
 ```
 
 ### RecordingTab
 
-```
-RecordingTab
-├── id: string ("lectures", "tutorials", or "custom_<uniqueId>")
-├── name: string
-└── items: RecordingItem[]
+```typescript
+// src/types/recording.ts
+interface RecordingTab {
+  id: string;                  // "lectures", "tutorials", or "custom_<uniqueId>"
+  name: string;
+  items: RecordingItem[];
+}
 ```
 
 ### RecordingItem
 
-```
-RecordingItem
-├── name: string
-├── videoLink: string (URL)
-├── slideLink: string (URL)
-└── watched: boolean
+```typescript
+// src/types/recording.ts
+interface RecordingItem {
+  name: string;
+  videoLink: string;           // URL
+  slideLink: string;           // URL
+  watched: boolean;
+}
 ```
 
 ### Profile System
 
-Separate from `appData`, profiles are stored independently:
+Profile metadata is managed by the Profile Store (`src/store/profile-store.ts`), separate from application data:
+
+```typescript
+// src/types/profile.ts
+interface Profile {
+  id: string;
+  name: string;
+}
+
+interface ProfileData {
+  semesters: Semester[];
+  settings: AppSettings;
+  lastModified: string;
+}
+```
 
 ```
-localStorage:
-  tollab_profiles     → [ {id, name}, {id, name}, ... ]
-  tollab_active       → "profile_id"
-  tollab_<profileId>  → compact(appData)  ← one per profile
+localStorage layout:
+  tollab_profiles       → Profile[]         (profile registry)
+  tollab_active         → string            (active profile ID)
+  tollab_data_<id>      → ProfileData       (full typed JSON, one per profile)
+  tollab_settings       → AppSettings       (app-wide settings)
 ```
-
-### Compact Storage Format (v2)
-
-The compact format maps full property names to abbreviated keys:
-
-| Full Path | Compact Key | Notes |
-|-----------|------------|-------|
-| `lastModified` | `t` | timestamp |
-| `settings` | `s` | only non-default values |
-| `semesters` | `d` | data array |
-| `semester.id` | `i` | |
-| `semester.name` | `n` | |
-| `semester.courses` | `c` | |
-| `course.name` | `n` | |
-| `course.number` | `num` | omitted if empty |
-| `course.points` | `pts` | omitted if empty |
-| `course.lecturer` | `lec` | omitted if empty |
-| `course.homework` | `hw` | omitted if empty |
-| `course.recordings` | `rec` | only tabs with items |
-| `homework.title` | `t` | |
-| `homework.dueDate` | `d` | |
-| `homework.completed` | `c` | `1` or omitted |
-| `recording.name` | `n` | |
-| `recording.videoLink` | `v` | |
-| `recording.watched` | `w` | `1` or omitted |
-| `schedule` | `sch` | `[day, start, end]` array format |
 
 ---
 
 ## 6. Core Modules — In-Depth
 
-### 6.1 `constants.js` — Application Configuration
+### 6.1 `src/constants/` — Application Configuration
 
-The first module loaded. Defines all configuration values as **frozen objects** (`Object.freeze`) to prevent accidental mutation.
+Immutable configuration values defined as frozen objects and TypeScript enums. Organized into domain-specific files with barrel re-export via `index.ts`.
 
 **Key Exports:**
 
 - **`SORT_ORDERS`** — Sort options for recordings (Default, Manual, Name A-Z/Z-A, Watched/Unwatched first) and homework (Manual, Date, Completed, Name)
 - **`DEFAULT_CALENDAR_SETTINGS`** — Start hour 8, end hour 20, visible days Sun-Fri
-- **`STORAGE_KEYS`** — localStorage key names/prefixes (`tollab_profiles`, `tollab_active`, `tollab_`)
+- **`STORAGE_KEYS`** — localStorage key names/prefixes (`tollab_profiles`, `tollab_active`, `tollab_data_`)
 - **`COLOR_THEMES`** — Three themes: `colorful` (rainbow), `single` (monochromatic), `mono` (grayscale)
 - **`DEFAULT_THEME_SETTINGS`** — Light mode, colorful theme, base hue 200
 - **`GOLDEN_ANGLE`** — 137° for generating visually distinct sequential course colors
 - **`DEFAULT_RECORDING_TABS`** — Two default tabs: "Lectures" and "Tutorials"
-- **`PROTECTED_TAB_IDS`** —  Set of `['lectures', 'tutorials']` — cannot be deleted
+- **`PROTECTED_TAB_IDS`** — Set of `['lectures', 'tutorials']` — cannot be deleted
 - **`CORS_PROXIES`** — Array of proxy URL generator functions for bypassing CORS
 - **`TECHNION_SAP_BASE_URL`** — GitHub raw URL for Technion course catalog data
 - **`SEMESTER_SEASONS`** — `['Winter', 'Spring', 'Summer']`
 - **`SEMESTER_TRANSLATIONS`** — Hebrew-to-English mappings (`אביב` → `Spring`, etc.)
 - **`ANIMATION_DURATIONS`** — Timing constants for UI animations
 - **`MAX_LENGTHS`** — Truncation limits for display strings
+- **`VALIDATION_PATTERNS`** — Regex patterns for URL, date, time, course number validation
+- **`VALIDATION_LIMITS`** — Max lengths for all input fields
 
-### 6.2 `validation.js` — Input Validation & Sanitization
+### 6.2 `src/utils/validation.ts` — Input Validation & Sanitization
 
-A comprehensive, production-grade validation layer that prevents malformed data from entering the system.
+A comprehensive, production-grade validation layer that prevents malformed data from entering the system. All validators return a consistent `ValidationResult<T>` type:
+
+```typescript
+interface ValidationResult<T = string> {
+  valid: boolean;
+  value: T;
+  error: string | null;
+}
+```
 
 **Validation Functions:**
 
@@ -439,24 +525,15 @@ A comprehensive, production-grade validation layer that prevents malformed data 
 | `validateProfileName()` | Profile name + uniqueness | Required, max 50 chars, checks for duplicate names |
 | `validateNotes()` | Notes/description text | Optional, max 5000 chars |
 | `validateUrl()` | URL format validation | Protocol whitelist (http/https), max 2048 chars, uses `URL` constructor |
-| `validateVideoUrl()` | Video URL + platform detection | Returns `{valid, value, platform}` where platform is `youtube`, `panopto`, or `other` |
+| `validateVideoUrl()` | Video URL + platform detection | Returns `VideoUrlResult` with platform: `youtube`, `panopto`, or `other` |
 | `validateNumber()` | Number validation | Range, integer, required, zero-check |
 | `validateDate()` | Date string validation | YYYY-MM-DD format, reasonable range (2000-2100) |
 | `validateTime()` | Time string validation | HH:MM format regex |
 | `validateImportedData()` | Full import data structure | Validates semesters array, courses, recordings structure; returns warnings |
+| `sanitizeString()` | XSS/control char stripping | Removes control characters, collapses whitespace |
+| `sanitizeFilename()` | Safe filename generation | Path traversal prevention, null byte removal, filesystem-safe |
 
-All validators return a consistent `{valid: boolean, value: *, error: string|null}` shape.
-
-**Regex Patterns (`VALIDATION_PATTERNS`):**
-- `URL` — `^https?:\/\/[^\s<>'"]+$`
-- `YOUTUBE_URL` — YouTube/youtu.be detection
-- `PANOPTO_URL` — Panopto detection
-- `COURSE_NUMBER` — Alphanumeric up to 20 chars
-- `TIME_FORMAT` — `HH:MM` validation
-- `DATE_FORMAT` — `YYYY-MM-DD` validation
-- `UUID` — Standard UUID format
-
-### 6.3 `error-handling.js` — Error Handling & Retry Logic
+### 6.3 `src/utils/error-handling.ts` — Error Handling & Retry Logic
 
 Provides consistent, user-friendly error handling across the application.
 
@@ -469,110 +546,94 @@ Provides consistent, user-friendly error handling across the application.
 - **`isRetryableError(error)`** — Determines if an error should be retried (permission/auth errors are not retried)
 - **`calculateBackoffDelay(attempt)`** — Exponential backoff with ±20% jitter
 - **`withRetry(fn, options)`** — Wraps async functions with automatic retry on failure
-- **`safeExecute(fn, options)`** — Wraps operations with error handling and toast notifications on failure
+- **`safeExecute(fn, fallback)`** — Synchronous try/catch wrapper with typed fallback value
 
-**Global Error Handlers:**
-- `setupGlobalErrorHandler()` — Catches unhandled errors and promise rejections, shows toast notifications
-- `setupOfflineHandling()` — Detects online/offline state, triggers auto-sync on reconnect
+### 6.4 `src/store/app-store.ts` — Application State
 
-### 6.4 `state.js` — State Management & Data Persistence
+The main Zustand store, replacing the legacy global `appData` object. Uses the immer middleware for clean deeply-nested updates.
 
-The heart of the application's data layer. Manages the global `appData` object, profile system, and localStorage persistence with compact serialization.
-
-**Global State Variables:**
-- `appData` — Main application data
+**State:**
+- `semesters` — Array of semester data
 - `currentSemesterId` — Currently selected semester
-- `profiles` — List of user profiles `[{id, name}]`
-- `activeProfileId` — Currently active profile ID
-- `timeInterval` — Interval for current-time line updates
+- `settings` — Theme, color scheme, display preferences
+- `lastModified` — ISO 8601 timestamp
+- `recordingSortOrders` — Per-tab sort preference
+- `homeworkSortOrders` — Per-course sort preference
 
-**Compact/Hydrate System:**
+**Actions (all via immer mutations):**
+- Semester CRUD: `addSemester`, `deleteSemester`, `renameSemester`
+- Course CRUD: `addCourse`, `updateCourse`, `deleteCourse`, `moveCourse`
+- Recording CRUD: `addRecording`, `deleteRecording`, `toggleRecordingWatched`, `updateRecording`, `moveRecording`
+- Recording tabs: `addRecordingsTab`, `renameRecordingsTab`, `clearRecordingsTab`, `deleteRecordingsTab`
+- Homework CRUD: `addHomework`, `deleteHomework`, `toggleHomeworkCompleted`, `updateHomeworkNotes`, `addHomeworkLink`
+- Schedule: `addScheduleItem`, `removeScheduleItem`
+- Settings: `updateSettings`, `updateCalendarSettings`
+- Bulk: `importCourses` (merges by number/name), `loadData` (full state replacement)
 
-The module implements a two-way transformation:
+### 6.5 `src/utils/` — Utility Functions
 
-1. **`compactForStorage(data)`** → Reduces full data to minimal JSON using abbreviated keys
-   - `compactSettings()`, `compactSemester()`, `compactCourse()`, `compactRecordingTab()`, `compactRecordingItem()`, `compactHomework()` — Recursive compaction
-   
-2. **`hydrateFromStorage(compact)`** → Restores full structure from compact format
-   - `hydrateSettings()`, `hydrateSemester()`, `hydrateCourse()`, `hydrateRecordingTabs()`, `hydrateRecordingItem()`, `hydrateHomework()` — Recursive hydration with default value injection
+Pure helper functions with no side effects, organized into domain-specific modules:
 
-**Legacy Migration:**
-- `migrateData(data)` — Handles pre-v2 data format, ensuring all required fields exist
-- `migrateCourse(course)` — Migrates legacy `lectures` array to tabbed `recordings` structure
+**`color.ts` — Color Utilities:**
+- `extractHueFromColor(color)` — Extracts hue from HSL string
+- `getNextAvailableHue(usedHues)` — Calculates next hue based on golden angle distribution
+- `generateCourseColor(existingColors)` — Generates HSL color for new courses
 
-**Data Operations:**
-- `loadData()` → `loadProfiles()` → `loadActiveProfile()` → `loadProfileData()` → `initializeCurrentSemester()` → `renderAll()` → `startTimeUpdater()`
-- `saveData()` — Serializes `appData` to compact format and writes to localStorage
-
-### 6.5 `utils.js` — Utility Functions
-
-Pure helper functions with no side effects, organized into categories:
-
-**DOM Helpers:**
-- `$(id)` — Shorthand for `document.getElementById`
-- `escapeHtml(text)` — XSS prevention by escaping `&`, `<`, `>`, `"`, `'`
-
-**Data Accessors:**
-- `getCurrentSemester()` — Gets the active semester from `appData`
-- `getCourse(courseId)` — Gets a course by ID from the current semester
-
-**Date Utilities:**
+**`date.ts` — Date Utilities:**
 - `convertDateFormat(dateStr)` — Converts `dd-MM-yyyy` to `yyyy-MM-dd`
 - `parseICSDate(icsDate)` — Parses ICS format (`20241027T103000`) to `Date`
 - `getCurrentWeekRange()` — Returns `{start, end}` of current week
-- `isDateInCurrentWeek(dateStr)` — Checks if a date is in the current week
+- `isDateInCurrentWeek(dateStr)` — Checks if a date falls in the current week
 - `getDayOfWeekFromDate(dateStr)` — Returns day-of-week number
 
-**Semester Utilities:**
-- `compareSemesters(a, b)` — Sorts semesters newest-first (year descending, then season: Winter > Summer > Spring)
+**`dom.ts` — DOM Helpers:**
+- `escapeHtml(text)` — XSS prevention by escaping `&`, `<`, `>`, `"`, `'`
+
+**`semester.ts` — Semester Utilities:**
+- `compareSemesters(a, b)` — Sorts semesters newest-first (year descending, then season priority)
 - `extractYear(name)` — Extracts year number from semester name
 - `getSeasonValue(name)` — Assigns numeric priority to seasons, supports Hebrew names
 
-**Color Utilities:**
-- `extractHueFromColor(color)` — Extracts hue from HSL string
-- `getNextAvailableHue()` — Calculates next hue for a new course based on theme
-- `generateCourseColor(index, total)` — Generates HSL color from index using golden angle distribution
-
-**String Utilities:**
+**`string.ts` — String Utilities:**
 - `truncate(str, maxLength)` — Truncates with ellipsis
-- `generateId()` — Generates unique IDs (`Date.now() + random`)
+- `generateId()` — Generates unique IDs via `crypto.randomUUID()`
 
-**Video Embed Utilities:**
+**`video.ts` — Video Embed Utilities:**
 - `detectVideoPlatform(url)` — Returns `'youtube'`, `'panopto'`, or `'unknown'`
 - `getVideoEmbedInfo(url)` — Extracts embed URLs for inline preview
 - `supportsInlinePreview(url)` — Checks if a URL can be embedded
 
-### 6.6 `toast.js` — Toast Notification System
+**`ics-parser.ts` — ICS Format Parser:**
+- `parseICS(content)` — Parses iCal/ICS content into typed event objects
+- Extracts: `SUMMARY`, `DTSTART`, `DTEND`, `LOCATION`, `RRULE`
+- Detects recurring events (lectures) vs one-time events (exams)
+- Groups events by course number with Hebrew-to-English semester translation
 
-A full-featured, accessible toast notification system at the bottom-right of the screen.
+### 6.6 `src/components/toast/` — Toast Notification System
+
+A full-featured, accessible toast notification system using Preact Context for provider-based access.
 
 **Features:**
-- Four types: `success`, `error`, `warning`, `info` — each with distinct icon and color
+- Four types: `success`, `error`, `warning`, `info` — each with distinct SVG icon and color
 - Auto-dismiss with configurable duration (4s default, 6s for errors)
-- Animated progress bar showing remaining time
+- Animated progress bar showing remaining time; pauses on hover
 - Maximum 5 visible toasts; oldest removed when limit exceeded
-- Dismiss by clicking the X button
-- Optional action button with callback
-- Optional description text
 - `aria-live` regions for screen reader accessibility
 - Slide-in/slide-out animations
 
-**API:**
-```javascript
-ToastManager.success('Course updated');
-ToastManager.error('Failed to save', { description: 'Check storage' });
-ToastManager.warning('Profile created locally. Cloud sync failed.');
-ToastManager.info('Syncing...', { persistent: true, progress: false });
-```
+**Components:**
+- `ToastContext` — Preact Context providing `addToast()` to the component tree
+- `ToastContainer` — Renders the toast stack, manages auto-dismiss timers
+- `Toast` — Individual toast with icon, message, progress bar, dismiss button
 
-### 6.7 `theme.js` — Theme Management
+### 6.7 `src/hooks/useTheme.ts` — Theme Management
 
-Manages two independent theming systems:
+A custom Preact hook that manages two independent theming systems:
 
 **1. Dark/Light Mode:**
-- `initTheme()` — Applies saved theme on load
-- `toggleTheme()` — Toggles `body.dark-mode` class
-- `applyTheme(theme, shouldSave)` — Applies and optionally persists
+- Reads `settings.theme` from the app store
+- Toggles `body.dark-mode` CSS class via `useEffect`
+- `toggleTheme()` — dispatches store action and persists
 
 **2. Course Color Themes:**
 Three schemes for course card colors:
@@ -580,14 +641,9 @@ Three schemes for course card colors:
 - **Monochromatic (Single)** — All courses use shades within ±30° of a configurable base hue
 - **Grayscale (Mono)** — All courses are `hsl(0, 0%, 50%)` gray
 
-**Functions:**
-- `updateBaseColorPreview()` — Live preview of base hue in settings
-- `resetAllColors()` — Recalculates all course colors for current theme
-- `updateCourseColorSlider()` — Adjusts the hue slider range based on active theme
+### 6.8 `src/services/firebase-sync.ts` — Cloud Sync via Firebase
 
-### 6.8 `firebase-sync.js` — Cloud Sync via Firebase
-
-Implements real-time cross-device synchronization using Firebase Authentication (Google) and Realtime Database. Runs as an **IIFE** (Immediately Invoked Function Expression) to encapsulate internal state.
+Implements real-time cross-device synchronization using Firebase modular SDK (v10+) with Authentication (Google) and Realtime Database.
 
 **Architecture:**
 - Each user gets a single database node: `tollab/users/{uid}/data`
@@ -600,7 +656,7 @@ Implements real-time cross-device synchronization using Firebase Authentication 
 
 1. **Client ID Deduplication** — Each browser tab generates a `clientId` and a `writeId`. Remote updates from the same client/write are ignored to prevent echo loops.
 
-2. **Merge Strategy (`mergeLocalAndCloud`):**
+2. **Merge Strategy:**
    - Profile matching is done by `id`
    - When both local and cloud have the same profile, the one with the newer `lastModified` wins
    - New cloud profiles are added locally (with name deduplication)
@@ -613,72 +669,52 @@ Implements real-time cross-device synchronization using Firebase Authentication 
      - **Use Local Data** — Overwrites cloud with local
      - **Merge Both** — Combines profiles from both sources (recommended)
 
-4. **Compact Format in Cloud:**
-   - Uses the same `compactForStorage` format as localStorage
-   - Legacy v1 cloud format is automatically migrated to v2
+### 6.9 `src/store/profile-store.ts` — Profile Management
 
-**Exposed Global Functions:**
-- `initializeFirebaseSync()` — Sets up Firebase and auth state listener
-- `autoSyncToFirebase()` — Debounced sync (called after every `saveData()`)
-- `forceSyncToFirebase()` — Immediate sync (called on profile create/delete/rename)
+A Zustand store managing multiple independent user profiles, each with their own full `ProfileData`:
 
-### 6.9 `profile.js` — Profile Management
+**Actions:**
+- `createProfile(name)` — Creates with empty data, validates name uniqueness
+- `switchProfile(id)` — Switches active profile, triggers app store reload
+- `renameProfile(id, newName)` — Validates uniqueness, bumps `lastModified`
+- `deleteProfile(id)` — Handles last-profile edge case by creating a new default
+- `exportProfile(id)` — Reads current app store data for JSON export
+- `importProfile(data)` — Validates structure, creates new profile with unique name
 
-Manages multiple independent user profiles, each with their own full `appData`:
+### 6.10 `src/services/` — External API Services
 
-**CRUD Operations:**
-- `createProfile()` — Prompts for name, creates with empty data, syncs to cloud
-- `switchProfile(id)` — Switches active profile, reloads data, re-renders
-- `renameProfile()` — Prompt dialog with uniqueness validation, bumps `lastModified`
-- `deleteProfile()` — Confirmation dialog, handles last-profile edge case by creating a new default
-
-**Export/Import:**
-- `exportProfile()` — Downloads current profile as timestamped JSON file (`tollab-profilename-YYYY-MM-DD.json`)
-- `importProfile(file)` — Reads JSON file, validates structure, creates new profile with unique name
-
-**Cloud Integration:**
-- All CRUD operations call `forceSyncToFirebase()` after completion
-- Profile rename bumps `lastModified` to ensure it wins merge conflicts
-
-**UI Rendering:**
-- `renderProfileUI()` — Updates the profile dropdown and button states in the settings modal
-
-### 6.10 `video-fetch.js` — External Video Fetching
-
-Imports lecture recordings from external platforms with robust error handling:
-
-**YouTube Playlist Import:**
-1. Extracts playlist ID from URL
+**`youtube.ts` — YouTube Playlist Import:**
+1. Extracts playlist ID from URL (strict `[a-zA-Z0-9_-]` charset validation)
 2. Fetches playlist page HTML through CORS proxy
-3. Parses video titles and IDs from HTML
-4. Creates recording items with YouTube embed URLs
+3. Parses video titles and IDs via regex extraction
+4. Creates typed `RecordingItem[]` with YouTube embed URLs
 
-**Panopto Import (two methods):**
-1. **Console Script Method** — User runs a JavaScript snippet in the browser console on the Panopto folder page; it copies video data to clipboard as JSON; user pastes into Tollab
-2. Video selection UI with checkboxes for choosing which videos to import
+**`panopto.ts` — Panopto Import:**
+1. User runs a browser console script on the Panopto folder page
+2. Script copies video data to clipboard as JSON
+3. User pastes into Tollab's import dialog
+4. Validates UUID folder IDs (`[a-f0-9-]{36}`) and extracts video metadata
+5. Shows a checklist of videos for selective import
 
-**CORS Proxy System:**
+**`cors-proxy.ts` — CORS Proxy System:**
 - Three proxy services configured, tried in order
 - Per-proxy retry with exponential backoff + jitter
 - Rate limiting (429) detection with extended backoff
-- Network error detection with proxy fallback
-- Timeout handling via `AbortController`
-- Progress callback for UI updates
+- `AbortController` timeout handling
 
-**Configuration:**
-```javascript
-FETCH_CONFIG = {
-    MAX_RETRIES_PER_PROXY: 2,
-    INITIAL_RETRY_DELAY: 500ms,
-    MAX_RETRY_DELAY: 5000ms,
-    BACKOFF_MULTIPLIER: 2,
-    FETCH_TIMEOUT: 15000ms
-}
-```
+**`cheesefork.ts` — Cheesefork ICS Import:**
+- Fetches ICS file through CORS proxy (tries `.json` first, falls back to `.ics`)
+- Supports batch import across semester ranges
+- Delegates parsing to `src/utils/ics-parser.ts`
 
-### 6.11 `header-ticker.js` — Header Ticker & Fun Reminders
+**`technion-catalog.ts` — Technion Course Catalog:**
+- Fetches from `michael-maltsev/technion-sap-info-fetcher` (GitHub Pages)
+- Enriches existing courses with: full name, lecturer, faculty, credits, exam dates
+- Matches by course number
 
-A rotating message bar below the header that shows **context-aware, playful reminders** based on the student's current academic state.
+### 6.11 `src/hooks/useTickerMessages.ts` — Header Ticker & Fun Reminders
+
+A custom Preact hook that generates **context-aware, playful reminders** based on the student's current academic state.
 
 **Message Categories (with context rules):**
 
@@ -710,206 +746,84 @@ A rotating message bar below the header that shows **context-aware, playful remi
 
 **Implementation:**
 - Messages are templates with `{placeholder}` syntax (e.g., `{title}`, `{minutes}`, `{courseMaybe}`)
+- Templates defined in `src/constants/ticker-templates.ts`
 - A **crossfade animation** alternates between two `<span>` elements for smooth transitions
 - Rotation interval configurable; messages prioritized by urgency
 
-### 6.12 `render.js` — UI Rendering Engine
+### 6.12 `src/components/` — UI Components
 
-The largest module, responsible for rendering every visual component from the `appData` state.
+The UI layer is built from Preact functional components organized by feature domain. Each component subscribes to Zustand store slices for reactive updates — no manual `renderAll()` calls.
 
-**Main Render Cycle:**
-```
-renderAll()
-├── renderSemesters()         → Semester dropdown
-├── renderCourses()           → Course card list
-├── renderCalendar()          → Weekly schedule grid
-├── renderHomeworkSidebar()   → Upcoming homework sidebar
-└── renderHeaderTicker()      → Context-aware ticker
-```
+**Layout Components (`layout/`):**
+- `Header` — Brand name, theme toggle button, settings gear icon
+- `HeaderTicker` — Rotating context-aware messages with crossfade animation
+- `MainLayout` — Two-column responsive shell with slot-based composition
+- `SemesterControls` — Semester dropdown, add/delete buttons
+- `Footer` — Credits
 
-**Semester Rendering:**
-- Populates a `<select>` dropdown sorted newest-first
+**Course Components (`courses/`):**
+- `CourseList` — Renders sorted course cards for the current semester
+- `CourseCard` — Color-coded card with title, metadata, progress indicators, reorder buttons
+- `CourseProgress` — Recordings watched / homework completed progress bars
 
-**Course Card Rendering:**
-- Each course rendered as a card with:
-  - Color-coded left border (based on course color)
-  - Course title, faculty, lecturer, location, notes
-  - Progress indicators for lectures watched, tutorials watched, homework completed
-  - Reorder buttons (up/down arrows)
-  - Metadata row (course number, points, grade)
+**Calendar Components (`calendar/`):**
+- `WeeklySchedule` — CSS Grid weekly view with configurable hours and days
+- `TimeGrid` — Hour labels and grid lines
+- `EventChip` — Course event positioned by time slot, color-coded
+- `CurrentTimeLine` — Red dashed line showing current time (updated via `useCalendarTime` hook)
 
-**Calendar Rendering:**
-- Creates a CSS Grid layout for the weekly schedule
-- Time axis (configurable hours)
-- Day columns (configurable visible days)
-- Event chips positioned absolutely based on time slots
-- Current time line indicator
-- Configurable via per-semester `calendarSettings`
+**Homework Components (`homework/`):**
+- `HomeworkSidebar` — Urgency-grouped list (overdue → today → this week → upcoming)
+- `HomeworkItem` — Title, due date, completion toggle, course name
+- `HomeworkEditor` — Inline editing with notes and links management
 
-**Recording Rendering:**
-- Tab bar with count badges
-- Sort controls (dropdown with 6 sort options)
-- Recording items with:
-  - Watched checkbox
-  - Video link with platform detection (YouTube/Panopto icons)
-  - Inline video preview (iframe embed for YouTube/Panopto)
-  - External link button
-  - Slides link
-  - Edit section (expandable)
-  - Reorder buttons (in manual sort mode only)
+**Recording Components (`recordings/`):**
+- `RecordingsPanel` — Full recordings interface within course modal
+- `RecordingsTabs` — Tab bar with count badges and sort controls
+- `RecordingItem` — Watched checkbox, video/slides links, edit section, reorder
+- `RecordingEditor` — Inline name/URL editing
+- `VideoPreview` — Inline iframe embed for YouTube/Panopto
 
-**Homework Sidebar Rendering:**
-- Groups homework by urgency: overdue → today → this week → upcoming → no date
-- Each item shows: course name, title, due date, completion toggle
-- "Show Done" toggle to hide/show completed items
+**Modal Components (`modals/`):**
+- `Modal` — Base overlay with scroll lock and backdrop
+- `CourseModal` — Three-tab interface (Recordings, Homework, Details)
+- `SettingsModal` — Four-tab settings (Profile, Appearance, Calendar, Fetch Data)
+- `AddSemesterModal` — Semester creation with season/year pickers
+- `FetchVideosModal` — YouTube/Panopto import UI
+- `SyncConflictModal` — Cloud vs local conflict resolution (Use Cloud / Use Local / Merge)
+- `AlertDialog`, `ConfirmDialog`, `PromptDialog` — Promise-based dialog primitives with focus trap
+- `useFocusTrap` — Hook for WCAG-compliant keyboard navigation within modals
 
-### 6.13 `modals.js` — Modal Dialog Management
+**Settings Components (`settings/`):**
+- `ProfileTab` — Profile selector, rename, cloud sync, export/import, delete
+- `AppearanceTab` — Color theme selector, base hue slider, reset colors
+- `CalendarTab` — Start/end hours, visible days checkboxes
+- `FetchDataTab` — ICS URL input with batch option, Technion catalog fetch
 
-Manages all modal dialogs in the application:
+**Toast Components (`toast/`):**
+- `ToastContainer` — Renders toast stack at bottom-right
+- `Toast` — Individual notification with icon, message, progress bar
+- `ToastContext` — Provider pattern for `addToast()` access throughout component tree
 
-**Generic Modal Functions:**
-- `openModal(id)` — Shows modal overlay with body scroll lock
-- `closeModal(id)` — Hides modal, restores scroll when no modals remain
-- `resetModalScroll()` — Scrolls modal body to top
+**UI Primitives (`ui/`):**
+- `Button` — Variants: primary, secondary, danger
+- `IconButton` — Icon-only button with aria-label
+- `Select` — Styled dropdown select
+- `Checkbox` — Styled checkbox with label
 
-**Course Modal (the main editing interface):**
-- Three tabs: **Recordings**, **Homework**, **Details**
-- `openCourseModal(courseId, initialTab, highlight)`:
-  - If `courseId` is null → "Add Course" mode (only Details tab shown)
-  - If `courseId` exists → "Edit Course" mode (all three tabs shown)
-  - `highlight` parameter supports jumping to a specific homework item or exam field
+### 6.13 `src/hooks/` — Custom Preact Hooks
 
-**Specialized Modals:**
-- Add Semester modal
-- Fetch Videos modal (YouTube/Panopto import)
-- Sync Conflict Resolution modal (cloud vs local data)
-- Settings modal (4 tabs: Profile, Appearance, Calendar, Fetch Data)
-
-**Dialog Helpers (promised-based):**
-- `showConfirmDialog(message, options)` → Returns `true`/`false`
-- `showPromptDialog(message, defaultValue, options)` → Returns string or `null`
-- `showAlertDialog(message, options)` → Returns when dismissed
-
-### 6.14 `course-logic.js` — Course CRUD Operations
-
-**Course Operations:**
-- `saveCourse()` — Validates input, builds course data, creates or updates
-- `buildCourseData(name)` — Collects all form values into a course object
-- `createNewCourse(semester, data)` — Pushes new course with default recordings structure
-- `updateExistingCourse(semester, data)` — Updates existing course via `Object.assign`
-- `deleteCourse()` — Confirmation dialog, removes from array, re-renders
-- `moveCourse(index, direction)` — Reorders courses via array swap
-
-**Semester Options:**
-- `populateSemesterOptions()` — Generates 9 options (3 years × 3 seasons) plus "Custom..."
-
-### 6.15 `item-logic.js` — Recordings, Homework & Schedule Items
-
-**Video Preview:**
-- `toggleVideoPreview(index, embedUrl)` — Opens/closes inline iframe preview
-- `closeVideoPreview(index)` — Removes iframe and clears preview state
-- Only one preview can be open at a time
-
-**Recording CRUD:**
-- `addRecording()` — Adds recording from URL input with auto-generated name
-- `deleteRecording(courseId, tabId, index)` — Confirmation → splice
-- `toggleRecordingStatus(courseId, tabId, index)` — Toggle watched
-- `saveRecordingEdit(courseId, tabId, index)` — Updates name, video link, slides link
-- `moveRecording(courseId, tabId, index, direction)` — Reorder in manual sort mode
-
-**Recording Tab Management:**
-- `addRecordingsTab()` — Prompt for name, creates custom tab
-- `renameRecordingsTab()` — Prompt with validation
-- `clearRecordingsTab()` — Removes all items from a tab
-- `deleteRecordingsTab()` — Protected tabs (lectures/tutorials) cannot be deleted
-
-**Homework CRUD:**
-- `addHomework()` — Creates from title + date inputs
-- `deleteHomework(courseId, index)` — Confirmation → splice
-- `toggleHomeworkStatus(courseId, index)` — Toggle completion
-- `updateHomeworkNotes(courseId, index)` — Saves notes text
-- `addHomeworkLink(courseId, index)` — Adds link with label to homework
-
-**Sort System:**
-- `sortRecordings(items, order)` — Sorts by name, watched status, or manual order
-- `sortHomework(items, order)` — Sorts by date, completion, or name
-- `getRecordingsSortOrder() / setRecordingsSortOrder()` — Per-tab sort preference
-
-### 6.16 `import-export.js` — ICS Import & Technion Data Fetch
-
-**Cheesefork ICS Import:**
-1. User pastes ICS URL from Cheesefork
-2. App first tries fetching the `.json` variant (richer metadata)
-3. Falls back to parsing raw `.ics` content
-4. Supports **batch import** — specify start/end semester and year; iterates through all semesters in range
-
-**ICS Parsing (`parseICS`):**
-- Splits content by `BEGIN:VEVENT`
-- Extracts: `SUMMARY`, `DTSTART`, `DTEND`, `LOCATION`, `RRULE`
-- Detects weekly recurring events (lectures) vs one-time events (exams)
-- Groups events by course number
-- Creates course objects with schedule slots and exam dates
-- Handles Hebrew-to-English semester name translation
-
-**Technion Course Catalog (`fetchTechnionData`):**
-- Fetches from `michael-maltsev/technion-sap-info-fetcher` (GitHub Pages)
-- Enriches existing courses with: full name, lecturer, faculty, credits, exam dates
-- Matches by course number
-
-**Import Processing:**
-- `processImportedData(courses, semesterName)` — Creates or finds semester, merges courses
-- `findExistingCourse(semester, imported)` — Matches by number or name substring
-- `updateExistingCourseExams(existing, imported)` — Updates exam dates if missing
-- `createImportedCourse(imported, index, total)` — Creates full course with theme-aware color
-
-### 6.17 `events.js` — Event Listeners & Handlers
-
-Sets up all DOM event listeners, organized by feature:
-
-**`setupEventListeners()`** calls:
-- `setupSemesterEvents()` — Semester select/add/delete
-- `setupCourseEvents()` — Course add/save/delete, color slider, schedule, tab switching
-- `setupRecordingsEvents()` — Recording add, tab management, video fetch modal, Panopto import
-- `setupHomeworkEvents()` — Homework add, show-completed toggle, mobile scroll button
-- `setupSettingsEvents()` — Settings modal, calendar config, ICS sync, Technion fetch, color reset
-- `setupProfileEvents()` — Profile create/rename/delete, cloud connect/disconnect, export/import
-- `setupColorThemeEvents()` — Color theme selector, base hue slider with live preview
-- `setupMobileDayToggle()` — Mobile single-day calendar view toggle
-
-**Notable Patterns:**
-- Keyboard shortcut: Enter key adds recordings
-- Clipboard integration for Panopto console script
-- Batch sync toggle shows/hides date range inputs
-- File input for JSON import (hidden, triggered by button)
-
-### 6.18 `main.js` — Application Entry Point
-
-The last module loaded. Has two responsibilities:
-
-**1. Initialization** (on `DOMContentLoaded`):
-```
-setupGlobalErrorHandler()
-setupOfflineHandling()
-loadData()
-initTheme()
-setupEventListeners()
-renderProfileUI()
-initializeFirebaseSync()
-startHeaderTickerRotation()
-Hide calendar on mobile (< 768px)
-```
-
-**2. Global Function Exports** — Exposes ~40 functions to `window.*` for use in HTML `onclick` handlers:
-- Core UI: `toggleTheme`, `closeModal`, `openCourseModal`
-- Recordings: `toggleRecordingStatus`, `deleteRecording`, `addRecordingsTab`, etc.
-- Homework: `toggleHomeworkStatus`, `deleteHomework`, `openHomeworkFromSidebar`, etc.
-- Course: `moveCourse`, `removeScheduleItem`
+- **`useCalendarTime`** — Updates the current time line position in the weekly calendar at regular intervals
+- **`useFirebaseSync`** — Manages Firebase auth state listener and real-time database sync
+- **`useImportExport`** — Orchestrates Cheesefork ICS import, Technion catalog fetch, and batch semester sync
+- **`useTheme`** — Theme toggle and color scheme management (see §6.7)
+- **`useTickerMessages`** — Context-aware ticker message generation and rotation (see §6.11)
 
 ---
 
 ## 7. CSS Architecture
 
-The CSS is split into 7 modular files — no preprocessor, no CSS-in-JS, no utility framework.
+The CSS is split into 7 modular files in `src/css/` — no preprocessor, no CSS-in-JS, no utility framework. CSS files are imported in `src/main.tsx` via Vite.
 
 ### `base.css` — Design Tokens & Reset
 - **CSS Custom Properties** define the entire color system
@@ -973,7 +887,14 @@ The CSS is split into 7 modular files — no preprocessor, no CSS-in-JS, no util
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
 2. Enable **Authentication** with Google provider
 3. Create **Realtime Database** (start in locked/test mode)
-4. Copy web app config to `js/firebase-config.js`
+4. Set Vite environment variables in `.env` (see §12 Development Setup):
+   ```
+   VITE_FIREBASE_API_KEY=...
+   VITE_FIREBASE_AUTH_DOMAIN=...
+   VITE_FIREBASE_DATABASE_URL=...
+   VITE_FIREBASE_PROJECT_ID=...
+   VITE_FIREBASE_APP_ID=...
+   ```
 
 ### Database Structure
 
@@ -995,7 +916,7 @@ tollab/
               i: "profile_id",
               n: "Profile Name",
               t: "2025-04-04T12:00:00.000Z",  # lastModified
-              d: { ... compact appData ... }
+              d: { ... ProfileData ... }
             }
           ]
 ```
@@ -1003,17 +924,19 @@ tollab/
 ### Sync Flow
 
 ```
-Local Change → saveData() → autoSyncToFirebase() (debounced)
-                                    ↓
-                          buildLocalPayload()
-                                    ↓
-                          saveCloudPayload(uid, payload)
-                                    ↓
-                          Realtime listener on other device
-                                    ↓
-                          writeMergedToLocalStorage()
-                                    ↓
-                          loadData() + renderAll()
+Local Change → Zustand store mutation → debounced subscriber
+                                            ↓
+                                     saveToLocalStorage()
+                                            ↓
+                                     autoSyncToFirebase() (via useFirebaseSync hook)
+                                            ↓
+                                     saveCloudPayload(uid, payload)
+                                            ↓
+                                     Realtime listener on other device
+                                            ↓
+                                     Merge + update Zustand stores
+                                            ↓
+                                     Preact re-renders reactively
 ```
 
 ### Security Rules
@@ -1082,51 +1005,61 @@ Panopto (used by many universities for lecture recording) doesn't have a public 
 
 ### Framework
 
-- **Jest** with `jsdom` environment for DOM simulation
-- Test files in `tests/` directory matching `*.test.js` pattern
-- Setup file (`tests/setup.js`) mocks:
-  - `localStorage` (full mock with `getItem`, `setItem`, `removeItem`, `clear`)
-  - Global `$()` helper
-  - Console methods (suppressed for clean output)
-  - Global constants (`VALIDATION_LIMITS`, `VALIDATION_PATTERNS`, etc.)
-  - `ToastManager` (all methods mocked)
+- **Vitest 3.x** with `jsdom` environment for DOM simulation
+- **Testing Library (Preact)** for component testing
+- **Playwright 1.x** for end-to-end testing
+- Test files in `tests/` directory matching `*.test.ts` pattern
+- Setup file (`tests/setup.ts`) configures:
+  - jsdom environment for DOM APIs
+  - Testing Library matchers (`@testing-library/jest-dom`)
+  - `localStorage` mocking
+  - Console method suppression for clean output
 
-### Test Coverage
+### Test Structure
 
-Coverage thresholds set in `package.json`:
-```json
-{
-  "branches": 50,
-  "functions": 50,
-  "lines": 50,
-  "statements": 50
-}
+```
+tests/
+├── setup.ts                     # Vitest environment setup
+└── unit/
+    ├── utils/                   # Tests for src/utils/ modules
+    │   ├── color.test.ts
+    │   ├── date.test.ts
+    │   ├── dom.test.ts
+    │   ├── error-handling.test.ts
+    │   ├── ics-parser.test.ts
+    │   ├── semester.test.ts
+    │   ├── string.test.ts
+    │   └── video.test.ts
+    └── validation/
+        └── validation.test.ts   # Tests for all validation functions
 ```
 
 ### Test Suites
 
-**`utils.test.js`** — Tests for utility functions:
-- `escapeHtml` — HTML entity escaping for all special characters, null handling
-- `generateUUID` — Format validation, uniqueness across 100 generations
-- `formatDate` — Date formatting with zero-padding
-- `throttle` — Call frequency limiting with timer verification
-- `debounce` — Delayed execution with reset behavior
-- `getContrastColor` — Black/white text selection based on background luminance
-- `truncateText` — String truncation with ellipsis
+**`utils/` tests** — Comprehensive coverage for all pure utility functions:
+- `color.test.ts` — HSL generation, hue extraction, golden angle distribution
+- `date.test.ts` — Date parsing, week range, ICS date conversion
+- `dom.test.ts` — `escapeHtml` HTML entity escaping for all special characters, null handling
+- `error-handling.test.ts` — Retry logic, backoff calculation, error classification
+- `ics-parser.test.ts` — ICS format parsing, recurring events, exam extraction
+- `semester.test.ts` — Semester comparison, year extraction, season sorting
+- `string.test.ts` — Truncation, sanitization, ID generation, filename safety
+- `video.test.ts` — Platform detection, embed URL extraction, preview support
 
-**`validation.test.js`** — Tests for validation functions:
+**`validation/` tests** — All validation functions with boundary testing:
 - `validateString` — Required, trim, length limits, patterns, null/number coercion
-- `validateCourseName` — Empty, valid, too-long names
-- `validateUrl` — HTTP/HTTPS, invalid, FTP rejection, required/optional
-- `validateVideoUrl` — YouTube, Panopto, Vimeo detection
-- `validateNumber` — Integer, range, NaN, zero, optional
-- `validateDate` — Format, range, empty optional
+- `validateCourseName`, `validateHomeworkTitle`, `validateProfileName`
+- `validateUrl`, `validateVideoUrl` — YouTube, Panopto detection
+- `validateNumber`, `validateDate`, `validateTime` — Range and format validation
+- `sanitizeString` — XSS, HTML entities, control characters
+- `sanitizeFilename` — Path traversal (Unix/Windows), null bytes, filesystem-safe
 
 ### Running Tests
 
 ```bash
-npm test              # Run all tests with coverage
-npm run test:watch    # Watch mode for development
+npm test                # Run all tests (Vitest)
+npm run test:watch      # Watch mode for development
+npm run test:coverage   # Run tests with coverage report
 ```
 
 ---
@@ -1134,18 +1067,20 @@ npm run test:watch    # Watch mode for development
 ## 11. Security Considerations
 
 ### XSS Prevention
-- All user-generated content is passed through `escapeHtml()` before rendering to the DOM
-- The function escapes: `&`, `<`, `>`, `"`, `'`
+- All user-generated content is escaped via `escapeHtml()` in `src/utils/dom.ts` before rendering
+- Preact's JSX auto-escapes all interpolated values — no `dangerouslySetInnerHTML` usage
 - Video embed URLs are sanitized and only YouTube/Panopto embed URLs are allowed in iframes
 
 ### URL Validation
-- All URLs are validated using the `URL` constructor
+- All URLs are validated using the `URL` constructor in `src/utils/validation.ts`
 - Only `http:` and `https:` protocols are allowed
 - Maximum URL length: 2048 characters
 - Video URLs are validated for platform detection before embedding
 
 ### Input Sanitization
-- All text inputs are trimmed and length-limited
+- `sanitizeString()` strips control characters and collapses whitespace
+- `sanitizeFilename()` prevents path traversal, null bytes, and filesystem-unsafe characters
+- All text inputs are trimmed and length-limited via typed validators
 - Course numbers validated against alphanumeric pattern
 - Time and date formats validated against strict regex patterns
 - Imported data undergoes structural validation before processing
@@ -1153,8 +1088,8 @@ npm run test:watch    # Watch mode for development
 ### Firebase Security
 - Database rules restrict reads/writes to authenticated users' own data
 - Google OAuth provides strong authentication
-- Firebase credentials are kept in a gitignored config file
-- The example config (`firebase-config.example.js`) contains only placeholder values
+- Firebase config loaded from Vite environment variables (not committed to repo)
+- User isolation: each user reads/writes only `tollab/users/{uid}/data`
 
 ### CORS Proxy Usage
 - External data is fetched through CORS proxies (necessary for a static frontend)
@@ -1169,8 +1104,8 @@ npm run test:watch    # Watch mode for development
 
 The application is deployed as a static site on GitHub Pages:
 - **Custom domain**: `tollab.co.il` (configured via `CNAME` file)
-- **No build step**: HTML/CSS/JS served directly
-- **Firebase config**: Generated at deploy time from GitHub Secrets (the `firebase-config.js` file is not committed)
+- **Build step**: `npm run build` produces optimized output in `dist/`
+- **Firebase config**: Injected via Vite environment variables from CI secrets
 
 ### Local Development
 
@@ -1179,37 +1114,49 @@ The application is deployed as a static site on GitHub Pages:
 git clone https://github.com/itabajah/Tollab.git
 cd Tollab
 
-# Install dev dependencies (Jest, ESLint, etc.)
+# Install dependencies
 npm install
 
-# Create Firebase config for local development
-cp js/firebase-config.example.js js/firebase-config.js
-# Edit js/firebase-config.js with your Firebase project credentials
+# Create environment file for Firebase config
+cp .env.example .env    # (or create .env manually)
+# Edit .env with your Firebase project credentials:
+#   VITE_FIREBASE_API_KEY=your-api-key
+#   VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+#   VITE_FIREBASE_DATABASE_URL=https://your-project.firebaseio.com
+#   VITE_FIREBASE_PROJECT_ID=your-project-id
+#   VITE_FIREBASE_APP_ID=your-app-id
 
-# Start local server
-npm run serve    # Starts http-server on port 8080
+# Start Vite dev server with HMR
+npm run dev
 
 # Run tests
 npm test
 
-# Lint JavaScript
-npm run lint
-npm run lint:fix
+# Type-check
+npm run typecheck
 
-# Validate HTML
-npm run validate
+# Lint
+npm run lint
+
+# Production build
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
 ### Scripts (from `package.json`)
 
 | Script | Command | Purpose |
 |--------|---------|---------|
-| `test` | `jest --coverage` | Run tests with coverage report |
-| `test:watch` | `jest --watch` | Watch mode |
-| `lint` | `eslint js/*.js` | Lint all JS files |
-| `lint:fix` | `eslint js/*.js --fix` | Auto-fix lint issues |
-| `serve` | `npx http-server -p 8080 -o` | Start local dev server |
-| `validate` | `html-validate index.html` | Validate HTML |
+| `dev` | `vite` | Start Vite dev server with HMR |
+| `build` | `tsc --noEmit && vite build` | Type-check + production build |
+| `preview` | `vite preview` | Preview production build locally |
+| `lint` | `eslint src/` | Lint all TypeScript/TSX files |
+| `typecheck` | `tsc --noEmit` | TypeScript type checking |
+| `test` | `vitest run` | Run all tests |
+| `test:watch` | `vitest` | Watch mode for development |
+| `test:coverage` | `vitest run --coverage` | Tests with coverage report |
 
 ---
 
@@ -1267,7 +1214,7 @@ npm run validate
 - Cloud sync via Firebase (Google Sign-In)
 - Sync conflict resolution (Use Cloud, Use Local, Merge)
 - Offline detection with auto-sync on reconnect
-- Compact storage format for efficient localStorage usage
+- Full typed localStorage persistence via centralized storage service
 
 ### External Integrations
 - Cheesefork ICS schedule import (single or batch)
@@ -1358,4 +1305,4 @@ On screens ≤768px:
 
 ---
 
-*This documentation was generated from a comprehensive analysis of the Tollab codebase. For the latest updates, refer to the source code directly.*
+*This documentation reflects the TypeScript/Preact v2 architecture. For the latest updates, refer to the source code directly.*
