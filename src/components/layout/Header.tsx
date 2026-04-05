@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store/app-store';
-import type { ThemeMode } from '@/types';
+import { FirebaseSyncState } from '@/types';
 
 // ---------------------------------------------------------------------------
 // SVG icons — identical to index.legacy.html
@@ -71,20 +71,67 @@ function SettingsIcon() {
 }
 
 // ---------------------------------------------------------------------------
-// Cloud status label (placeholder until Wave 8 Firebase integration)
+// Cloud status helpers
 // ---------------------------------------------------------------------------
 
-function cloudStatusLabel(_theme: ThemeMode | string): string {
-  // Wave 8 will read FirebaseSyncState from a sync store.
-  // For now, always show "Not connected".
-  return 'Not connected';
+function CloudSyncIcon({ state }: { state: FirebaseSyncState }) {
+  const size = 14;
+  const style = { verticalAlign: 'middle' as const, marginRight: 4 };
+
+  switch (state) {
+    case FirebaseSyncState.Synced:
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--green, #22c55e)" stroke-width="2" style={style}>
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+          <polyline points="13 13 9 17 7 15" />
+        </svg>
+      );
+    case FirebaseSyncState.Syncing:
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style={style}>
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+        </svg>
+      );
+    case FirebaseSyncState.Error:
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--red, #ef4444)" stroke-width="2" style={style}>
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function cloudStatusLabel(state: FirebaseSyncState, email?: string | null): string {
+  switch (state) {
+    case FirebaseSyncState.Synced:
+      return email ? `Synced (${email})` : 'Synced';
+    case FirebaseSyncState.Syncing:
+      return 'Syncing…';
+    case FirebaseSyncState.Error:
+      return 'Sync error';
+    default:
+      return 'Not connected';
+  }
+}
+
+/** Props for Header when wired to useFirebaseSync. */
+export interface HeaderSyncProps {
+  syncState?: FirebaseSyncState;
+  userEmail?: string | null;
 }
 
 // ---------------------------------------------------------------------------
 // Header component
 // ---------------------------------------------------------------------------
 
-export function Header() {
+export function Header({
+  syncState = FirebaseSyncState.Disconnected,
+  userEmail,
+}: HeaderSyncProps = {}) {
   const theme = useAppStore((s) => s.settings.theme);
   const updateSettings = useAppStore((s) => s.updateSettings);
 
@@ -99,6 +146,8 @@ export function Header() {
     // Wave 6+ will wire this to useUiStore.pushModal('settings')
   };
 
+  const label = cloudStatusLabel(syncState, userEmail);
+
   return (
     <header>
       <div class="brand">
@@ -110,7 +159,8 @@ export function Header() {
           id="cloud-header-text"
           class="cloud-status-text"
         >
-          {cloudStatusLabel(theme)}
+          <CloudSyncIcon state={syncState} />
+          {label}
         </span>
         <button
           id="theme-toggle-btn"
