@@ -37,6 +37,12 @@ export default [
     },
   },
   {
+    files: ['src/services/**/*.ts', 'src/hooks/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     ignores: ['dist/', 'node_modules/', 'js/', 'tests/*.js'],
   },
 ];
