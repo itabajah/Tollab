@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
 import type { HomeworkLink } from '@/types';
+import { getInputValue, getTextAreaValue } from '@/utils/dom';
 import { validateUrl } from '@/utils/validation';
 
 // ---------------------------------------------------------------------------
@@ -139,7 +140,7 @@ export function HomeworkEditor({
           type="text"
           class="hw-edit-input"
           value={title}
-          onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
+          onInput={(e) => setTitle(getInputValue(e))}
         />
       </div>
 
@@ -150,7 +151,7 @@ export function HomeworkEditor({
           type="date"
           class="hw-edit-input hw-edit-date"
           value={dueDate}
-          onInput={(e) => setDueDate((e.target as HTMLInputElement).value)}
+          onInput={(e) => setDueDate(getInputValue(e))}
         />
       </div>
 
@@ -171,7 +172,7 @@ export function HomeworkEditor({
                     class="hw-link-edit-input hw-link-edit-label-input"
                     value={editLinkLabel}
                     onInput={(e) =>
-                      setEditLinkLabel((e.target as HTMLInputElement).value)
+                      setEditLinkLabel(getInputValue(e))
                     }
                     placeholder="Label"
                   />
@@ -180,7 +181,7 @@ export function HomeworkEditor({
                     class="hw-link-edit-input hw-link-edit-url-input"
                     value={editLinkUrl}
                     onInput={(e) =>
-                      setEditLinkUrl((e.target as HTMLInputElement).value)
+                      setEditLinkUrl(getInputValue(e))
                     }
                     placeholder="URL"
                   />
@@ -233,7 +234,7 @@ export function HomeworkEditor({
           class="hw-link-input"
           placeholder="Paste URL..."
           value={newLinkUrl}
-          onInput={(e) => setNewLinkUrl((e.target as HTMLInputElement).value)}
+          onInput={(e) => setNewLinkUrl(getInputValue(e))}
           onKeyDown={(e: KeyboardEvent) => {
             if (e.key === 'Enter') { e.preventDefault(); handleAddLink(); }
           }}
@@ -243,7 +244,7 @@ export function HomeworkEditor({
           class="hw-link-input hw-link-label"
           placeholder="Label (auto)"
           value={newLinkLabel}
-          onInput={(e) => setNewLinkLabel((e.target as HTMLInputElement).value)}
+          onInput={(e) => setNewLinkLabel(getInputValue(e))}
           onKeyDown={(e: KeyboardEvent) => {
             if (e.key === 'Enter') { e.preventDefault(); handleAddLink(); }
           }}
@@ -258,7 +259,7 @@ export function HomeworkEditor({
         class="hw-notes"
         placeholder="Add notes..."
         value={notes}
-        onInput={(e) => setNotes((e.target as HTMLTextAreaElement).value)}
+        onInput={(e) => setNotes(getTextAreaValue(e))}
       />
 
       {/* Save / Cancel */}

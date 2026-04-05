@@ -89,6 +89,11 @@ body.dark-mode h1 {
     color: var(--text-tertiary);
 }
 
+.cloud-sync-icon {
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
 .add-course-icon {
     font-size: 18px;
 }

@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { Button, Select } from '@/components/ui';
 import { ColorTheme } from '@/types';
 import type { SelectOption } from '@/components/ui';
+import { getInputValue } from '@/utils/dom';
 
 // ---------------------------------------------------------------------------
 // Theme options
@@ -51,7 +52,7 @@ export function AppearanceTab() {
   }, []);
 
   const handleHueChange = useCallback((e: Event) => {
-    const val = parseInt((e.target as HTMLInputElement).value, 10);
+    const val = parseInt(getInputValue(e), 10);
     if (!isNaN(val)) {
       setPendingHue(val);
     }

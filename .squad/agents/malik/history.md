@@ -96,3 +96,19 @@
 **New findings (non-blocking):** Missing `memo()` on list items, missing error boundaries, minor prop drilling
 **CI:** typecheck ✅ | lint ✅ (0 warnings) | test ✅ (550/550) | build ✅
 **Decision file:** `.squad/decisions/inbox/malik-review2-quality.md`
+
+### 2026-04-07: Review 4 — memo/useCallback Optimizations + Quality Cleanup
+**Scope:** 8 component files, 3 CSS files, 1 config deletion
+**Branch:** `review-4-audit`
+**Changes applied:**
+- ✅ `memo()` wrapped on 5 list item components: CourseCard, RecordingItem, HomeworkItem, EventChip, Toast (imported from `preact/compat`)
+- ✅ `useCallback` verified on all parent handler functions (CourseList, RecordingsPanel, HomeworkSidebar — all already correctly wrapped)
+- ✅ 5 static inline styles replaced with CSS classes:
+  - HomeworkSidebar: 2× `color/fontStyle` → `.hw-empty-message`
+  - Header: `verticalAlign/marginRight` on SVG icons → `.cloud-sync-icon`
+  - WeeklySchedule: `transform/transition` → `.collapse-chevron` + `.collapse-chevron-rotated`
+- ✅ console.log scan: zero debug statements found (already clean)
+- ✅ Legacy `.eslintrc.js` deleted (146 lines, flagged in iter 1)
+**Remaining dynamic inline styles (legitimate):** EventChip positions, CurrentTimeLine top%, CourseCard border color, HomeworkItem opacity/borderLeft, TimeGrid gridTemplateColumns, AppearanceTab/CourseModal hue preview, Toast animationDuration
+**CI:** lint ✅ (my files) | build ✅ | pre-existing failures: typecheck (test file TS error), firebase tests (mock setup)
+

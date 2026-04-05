@@ -20,6 +20,8 @@ import {
 } from '@/services/storage';
 import { useAppStore } from '@/store/app-store';
 import { useProfileStore } from '@/store/profile-store';
+import type { HomeworkSortOrder, RecordingSortOrder } from '@/types';
+import { isHomeworkSortOrder, isRecordingSortOrder } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Debounce helper
@@ -170,8 +172,8 @@ function loadProfileIntoAppStore(profileId: string): void {
       settings: data.settings ?? settings,
       lastModified: data.lastModified,
       currentSemesterId: uiState.currentSemesterId,
-      recordingSortOrders: uiState.recordingSortOrders as Record<string, Record<string, import('@/types').RecordingSortOrder>> | undefined,
-      homeworkSortOrders: uiState.homeworkSortOrders as Record<string, import('@/types').HomeworkSortOrder> | undefined,
+      recordingSortOrders: validateRecordingSortOrders(uiState.recordingSortOrders),
+      homeworkSortOrders: validateHomeworkSortOrders(uiState.homeworkSortOrders),
     });
   } else {
     // New profile — start with defaults + saved settings
@@ -180,4 +182,39 @@ function loadProfileIntoAppStore(profileId: string): void {
       settings,
     });
   }
+}
+
+/** Validate recording sort orders loaded from localStorage, dropping invalid values. */
+function validateRecordingSortOrders(
+  raw: Record<string, Record<string, string>> | undefined,
+): Record<string, Record<string, RecordingSortOrder>> | undefined {
+  if (!raw) return undefined;
+  const result: Record<string, Record<string, RecordingSortOrder>> = {};
+  for (const [courseId, tabs] of Object.entries(raw)) {
+    if (typeof tabs !== 'object' || tabs === null) continue;
+    const validTabs: Record<string, RecordingSortOrder> = {};
+    for (const [tabId, value] of Object.entries(tabs)) {
+      if (isRecordingSortOrder(value)) {
+        validTabs[tabId] = value;
+      }
+    }
+    if (Object.keys(validTabs).length > 0) {
+      result[courseId] = validTabs;
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
+/** Validate homework sort orders loaded from localStorage, dropping invalid values. */
+function validateHomeworkSortOrders(
+  raw: Record<string, string> | undefined,
+): Record<string, HomeworkSortOrder> | undefined {
+  if (!raw) return undefined;
+  const result: Record<string, HomeworkSortOrder> = {};
+  for (const [courseId, value] of Object.entries(raw)) {
+    if (isHomeworkSortOrder(value)) {
+      result[courseId] = value;
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
 }

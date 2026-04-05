@@ -1,5 +1,6 @@
 /**
- * DOM utility functions — XSS-safe HTML escaping.
+ * DOM utility functions — XSS-safe HTML escaping, typed event helpers,
+ * and keyboard activation handlers.
  */
 
 import { HTML_ENTITIES } from '@/constants';
@@ -14,4 +15,45 @@ export function escapeHtml(text: string): string {
     /[&<>"']/g,
     (char) => HTML_ENTITIES[char] ?? char,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Typed event helpers (#99)
+// ---------------------------------------------------------------------------
+
+/** Extract `.value` from an `<input>` event target. */
+export function getInputValue(e: Event): string {
+  return (e.target as HTMLInputElement).value;
+}
+
+/** Extract `.value` from a `<select>` event target. */
+export function getSelectValue(e: Event): string {
+  return (e.target as HTMLSelectElement).value;
+}
+
+/** Extract `.value` from a `<textarea>` event target. */
+export function getTextAreaValue(e: Event): string {
+  return (e.target as HTMLTextAreaElement).value;
+}
+
+/** Extract `.checked` from an `<input type="checkbox">` event target. */
+export function getInputChecked(e: Event): boolean {
+  return (e.target as HTMLInputElement).checked;
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard activation helper (#98)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns an `onKeyDown` handler that calls `callback` on Enter or Space,
+ * matching WAI-ARIA button activation pattern.
+ */
+export function handleKeyActivate(callback: () => void) {
+  return (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      callback();
+    }
+  };
 }

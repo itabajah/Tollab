@@ -9,6 +9,7 @@ import { useCallback, useState } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
 import type { RecordingItem } from '@/types';
+import { getInputValue } from '@/utils/dom';
 import { validateUrl } from '@/utils/validation';
 
 interface RecordingEditorProps {
@@ -64,7 +65,7 @@ export function RecordingEditor({
           className="recording-edit-input"
           type="text"
           value={editName}
-          onInput={(e) => setEditName((e.target as HTMLInputElement).value)}
+          onInput={(e) => setEditName(getInputValue(e))}
           onKeyDown={handleKeyDown}
         />
       </div>
@@ -75,7 +76,7 @@ export function RecordingEditor({
           type="url"
           value={editVideo}
           placeholder="Video URL..."
-          onInput={(e) => setEditVideo((e.target as HTMLInputElement).value)}
+          onInput={(e) => setEditVideo(getInputValue(e))}
           onKeyDown={handleKeyDown}
         />
       </div>
@@ -86,7 +87,7 @@ export function RecordingEditor({
           type="url"
           value={editSlides}
           placeholder="Slides URL..."
-          onInput={(e) => setEditSlides((e.target as HTMLInputElement).value)}
+          onInput={(e) => setEditSlides(getInputValue(e))}
           onKeyDown={handleKeyDown}
         />
       </div>

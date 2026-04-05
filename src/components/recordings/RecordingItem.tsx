@@ -5,11 +5,13 @@
  * reorder buttons, and optional inline video preview.
  */
 
+import { memo } from 'preact/compat';
 import { useCallback } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
 import { useUiStore } from '@/store/ui-store';
 import type { RecordingItem as RecordingItemType } from '@/types';
+import { handleKeyActivate } from '@/utils/dom';
 import { getVideoEmbedInfo, supportsInlinePreview } from '@/utils/video';
 
 import { RecordingEditor } from './RecordingEditor';
@@ -31,7 +33,7 @@ interface RecordingItemProps {
   sortOrder: string;
 }
 
-export function RecordingItem({
+export const RecordingItem = memo(function RecordingItem({
   courseId,
   tabId,
   tabIndex,
@@ -150,12 +152,7 @@ export function RecordingItem({
             tabIndex={canEmbed ? 0 : undefined}
             onKeyDown={
               canEmbed
-                ? (e: KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleContentClick();
-                    }
-                  }
+                ? handleKeyActivate(handleContentClick)
                 : undefined
             }
           >
@@ -237,4 +234,4 @@ export function RecordingItem({
       </div>
     </div>
   );
-}
+});
