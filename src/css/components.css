@@ -2878,3 +2878,7 @@ input.hw-link-edit-url-input {
         padding-right: 50px;
     }
 }
+
+.fetch-status {
+    color: var(--text-secondary);
+}

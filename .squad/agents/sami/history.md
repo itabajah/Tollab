@@ -92,3 +92,43 @@ Malik and Noura reviewed PR #52 and requested changes. Original authors (Layla, 
 - `npm run lint` — 0 errors, 0 warnings from changed files ✅
 - `npm run build` — Pass (561ms) ✅
 - Pushed to `wave-6-courses-calendar` ✅
+
+## Wave 8 — Settings Modal, Profiles, Themes
+
+**Date:** 2026-04-06
+**Branch:** `wave-8-settings-profiles`
+**Commit:** `654c166` — `feat(settings): create SettingsModal with 4 tabs, useTheme hook`
+
+### What was delivered
+
+**9 files, 1,063 lines total:**
+
+#### Settings Tabs (`src/components/settings/`)
+- **ProfileTab.tsx** — Profile selector dropdown (switch between profiles), inline rename with Enter/Escape, export (downloads JSON with timestamped filename), import (file upload with validation, creates new profile), delete (confirmation guard, can't delete last profile). Cloud sync section shows placeholder status for Hana to wire.
+- **AppearanceTab.tsx** — Color theme selector (Rainbow/Monochromatic/Grayscale via `ColorTheme` enum), base hue slider with live HSL preview (only shown for monochromatic), reset colors button, dark/light mode toggle. All changes apply immediately.
+- **CalendarTab.tsx** — Start hour / end hour number inputs (0-23), visible days checkboxes (Sun-Sat, enforces at least 1 day), miniature calendar preview showing configured hours and days. Reads from current semester's `calendarSettings`.
+- **FetchDataTab.tsx** — ICS URL input with "Fetch Schedule" button (single mode), batch import toggle with semester range selectors (start/end semester+year), Cheesefork external link, Technion course catalog fetch button. Service calls placeholder for Wave 9+ wiring.
+- **index.ts** — Barrel exports for all 4 tab components.
+
+#### Settings Modal (`src/components/modals/`)
+- **SettingsModal.tsx** — 4-tab container (Profile, Appearance, Calendar, Fetch Data) with SVG tab icons matching legacy `index.legacy.html`. Uses `settings-modal-tabs` / `settings-modal-tab` / `settings-tab-panel` CSS classes from `modals.css`. Lazy-renders active tab only.
+
+#### Theme Hook (`src/hooks/`)
+- **useTheme.ts** — `useTheme()` hook: reads `settings.theme`, `colorTheme`, `baseColorHue` from app-store. Provides `toggleDarkMode`, `setColorTheme`, `setBaseHue`, `resetColors`. Applies `dark-mode` body class via `useEffect`. Persists theme mode to localStorage.
+
+#### Header Update (`src/components/layout/`)
+- **Header.tsx** — Wired settings gear button to open `SettingsModal` via local `useState`. Added `useCallback` imports. Replaced placeholder comment with actual modal state management.
+
+### Design decisions
+- SettingsModal lives in `src/components/modals/` (alongside other modals), tab components live in `src/components/settings/` (domain-specific).
+- useTheme hook applies body class changes in `useEffect` — no manual DOM manipulation needed in components.
+- Color preview swatch uses inline `style={{ backgroundColor }}` — only exception to no-inline-styles rule, per task spec for dynamic hue preview.
+- FetchDataTab service calls are placeholder (`setTimeout` stubs) — will be wired to actual ICS/Technion services in Wave 9+.
+- Profile delete has two-step confirmation (click → confirm/cancel) without using ConfirmDialog to keep it inline.
+- Tab panels use CSS `display: none` / `display: block` via `.settings-tab-panel.active` class + conditional rendering for lazy loading.
+
+### CI status
+- `npm run typecheck` — 0 errors ✅
+- `npm run lint` — 0 errors, 0 warnings from new files (28 pre-existing warnings in services/) ✅
+- `npm run build` — Pass (494ms, 80 modules) ✅
+- Pushed to `wave-8-settings-profiles` ✅
