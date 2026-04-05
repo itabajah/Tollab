@@ -44,3 +44,19 @@
 - N5: Fragile scroll-lock cleanup using DOM query count instead of ref-counting
 **Positives:** Zero `any` types, no onclick strings, proper props typing, clean toast provider pattern, good focus trap in Modal.tsx, proper timer cleanup, strong accessibility intent
 **Decision file:** `.squad/decisions/inbox/malik-wave5-review.md`
+
+### 2026-04-06: PR #52 — Wave 6 Course & Calendar Components
+**Verdict:** 🔴 REQUEST CHANGES
+**Scope:** 11 files across `src/components/courses/`, `src/components/calendar/`, `src/components/modals/` (CourseModal.tsx, AddSemesterModal.tsx)
+**CI:** typecheck ✅ | lint ✅ | build ✅
+**Blocking issues:**
+- B1: CourseCard has `role="button" tabIndex={0}` but no `onKeyDown` handler — keyboard users cannot activate cards (WCAG 2.1 SC 2.1.1 violation)
+- B2: Static inline `style={{ fontSize: '18px' }}` on CourseList.tsx:69 — violates project rule "all styling via CSS classes"
+**Non-blocking findings:**
+- N1: Missing `key` on Fragment in TimeGrid.tsx `hours.map()` — reconciliation risk
+- N2: `dangerouslySetInnerHTML` for SVG tab icons in CourseModal (repeat of Wave 5 N1)
+- N3: `class` vs `className` inconsistency between CourseModal and AddSemesterModal (repeat of Wave 5 N4)
+- N4: Suppressed exhaustive-deps in CourseModal useEffect without explicit eslint-disable comment
+- N5: Redundant semester store lookup in WeeklySchedule — courses derivable from already-fetched semester
+**Positives:** Zero `any` types, clean narrow store selectors, good form validation with inline errors, empty states handled, proper cleanup/memoization, clean schedule builder logic, good ARIA on form controls
+**Decision file:** `.squad/decisions/inbox/malik-wave6-review.md`

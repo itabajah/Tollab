@@ -1,7 +1,7 @@
 /**
  * CourseModal — 3-tab modal for course editing.
  *
- * Tab 1: Recordings (placeholder for Wave 7)
+ * Tab 1: Recordings
  * Tab 2: Homework   (placeholder for Wave 7)
  * Tab 3: Details    (name, number, instructor, color, schedule builder, etc.)
  *
@@ -11,12 +11,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 
-import { DAY_NAMES_FULL, DAY_NAMES_SHORT } from '@/constants';
+import { DAY_NAMES_FULL, DAY_NAMES_SHORT, HOMEWORK_SORT_ORDERS } from '@/constants';
+import { HomeworkItem } from '@/components/homework';
+import { RecordingsPanel } from '@/components/recordings';
 import { useAppStore } from '@/store/app-store';
-import { useCourseById, useCurrentSemester } from '@/store/selectors';
+import { useCourseById, useCurrentSemester, useSortedHomework } from '@/store/selectors';
 import { useUiStore } from '@/store/ui-store';
-import type { ScheduleSlot } from '@/types';
+import type { Homework, HomeworkSortOrder, ScheduleSlot } from '@/types';
 
+import { FetchVideosModal } from './FetchVideosModal';
 import { Modal } from './Modal';
 
 // ---------------------------------------------------------------------------
@@ -131,12 +134,14 @@ export function CourseModal() {
   // -- Validation -----------------------------------------------------------
   const [nameError, setNameError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [fetchModalOpen, setFetchModalOpen] = useState(false);
 
   // -- Populate form on open / courseId change ------------------------------
   useEffect(() => {
     if (!isOpen) return;
 
     setDeleteConfirm(false);
+    setFetchModalOpen(false);
     setNameError('');
     setNewDay(0);
     setNewStart('');
@@ -295,18 +300,26 @@ export function CourseModal() {
       {/* Tab panels                                                       */}
       {/* ================================================================ */}
 
-      {/* Recordings tab (placeholder) */}
-      {activeTab === 'recordings' && (
-        <div className="course-tab-panel active">
-          <p className="form-group">Recordings will be available here</p>
-        </div>
+      {/* Recordings tab */}
+      {activeTab === 'recordings' && editingCourseId && (
+        <>
+          <RecordingsPanel
+            courseId={editingCourseId}
+            onOpenFetchModal={() => setFetchModalOpen(true)}
+          />
+          <FetchVideosModal
+            isOpen={fetchModalOpen}
+            onClose={() => setFetchModalOpen(false)}
+            courseId={editingCourseId}
+            tabId={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.id ?? ''}
+            existingCount={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.items.length ?? 0}
+          />
+        </>
       )}
 
-      {/* Homework tab (placeholder) */}
-      {activeTab === 'homework' && (
-        <div className="course-tab-panel active">
-          <p className="form-group">Homework will be available here</p>
-        </div>
+      {/* Homework tab */}
+      {activeTab === 'homework' && editingCourseId && (
+        <CourseHomeworkTab courseId={editingCourseId} courseName={course?.name ?? ''} courseColor={course?.color ?? ''} />
       )}
 
       {/* Details tab */}
@@ -535,5 +548,140 @@ export function CourseModal() {
         </div>
       )}
     </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CourseHomeworkTab — Homework list within the course modal
+// ---------------------------------------------------------------------------
+
+interface CourseHomeworkTabProps {
+  courseId: string;
+  courseName: string;
+  courseColor: string;
+}
+
+/** Homework sort option labels for the dropdown. */
+const HW_SORT_LABELS: Record<HomeworkSortOrder, string> = {
+  date_asc: 'Date (Earliest)',
+  date_desc: 'Date (Latest)',
+  incomplete_first: 'Incomplete First',
+  completed_first: 'Completed First',
+  name_asc: 'Name (A-Z)',
+  manual: 'Manual',
+};
+
+function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomeworkTabProps) {
+  const sortedHomework = useSortedHomework(courseId);
+  const addHomework = useAppStore((s) => s.addHomework);
+  const setHomeworkSortOrder = useAppStore((s) => s.setHomeworkSortOrder);
+  const showCompleted = useUiStore((s) => s.showCompletedHomework);
+  const toggleShowCompleted = useUiStore((s) => s.toggleShowCompletedHomework);
+
+  const currentSort: HomeworkSortOrder =
+    (useAppStore((s) => s.homeworkSortOrders[courseId]) as HomeworkSortOrder | undefined) ?? 'manual';
+
+  const visibleHomework = showCompleted
+    ? sortedHomework
+    : sortedHomework.filter((h) => !h.item.completed);
+
+  const [newTitle, setNewTitle] = useState('');
+  const [newDate, setNewDate] = useState('');
+
+  const handleAdd = useCallback(() => {
+    const title = newTitle.trim();
+    if (!title) return;
+    const hw: Homework = {
+      title,
+      dueDate: newDate,
+      completed: false,
+      notes: '',
+      links: [],
+    };
+    addHomework(courseId, hw);
+    setNewTitle('');
+    setNewDate('');
+  }, [newTitle, newDate, courseId, addHomework]);
+
+  const handleSortChange = useCallback(
+    (e: Event) => {
+      const order = (e.target as HTMLSelectElement).value as HomeworkSortOrder;
+      setHomeworkSortOrder(courseId, order);
+    },
+    [courseId, setHomeworkSortOrder],
+  );
+
+  return (
+    <div className="course-tab-panel active">
+      {/* Sort controls + Show Done toggle */}
+      <div className="list-sort-controls">
+        <span className="sort-label">Sort:</span>
+        <select
+          className="sort-select"
+          value={currentSort}
+          onChange={handleSortChange}
+          aria-label="Sort homework"
+        >
+          {(Object.keys(HOMEWORK_SORT_ORDERS) as (keyof typeof HOMEWORK_SORT_ORDERS)[]).map(
+            (key) => {
+              const value = HOMEWORK_SORT_ORDERS[key];
+              return (
+                <option key={value} value={value}>
+                  {HW_SORT_LABELS[value]}
+                </option>
+              );
+            },
+          )}
+        </select>
+        <label className="recordings-show-watched-toggle">
+          <input
+            type="checkbox"
+            checked={showCompleted}
+            onChange={toggleShowCompleted}
+          />
+          <span>Show Done</span>
+        </label>
+      </div>
+
+      <div className="lecture-list">
+        {visibleHomework.map((indexed, i) => (
+          <HomeworkItem
+            key={`${courseId}-${indexed.originalIndex}`}
+            courseId={courseId}
+            courseName={courseName}
+            courseColor={courseColor}
+            homework={indexed.item}
+            homeworkIndex={indexed.originalIndex}
+            variant="modal"
+            isFirst={i === 0}
+            isLast={i === visibleHomework.length - 1}
+            sortOrder={currentSort}
+          />
+        ))}
+        {visibleHomework.length === 0 && (
+          <div className="hw-empty-msg">
+            {sortedHomework.length > 0
+              ? 'All homework is completed. Toggle "Show Done" to see them.'
+              : 'No homework yet. Add one below.'}
+          </div>
+        )}
+      </div>
+      <div className="hw-add-row">
+        <input
+          type="text"
+          placeholder="Assignment title..."
+          value={newTitle}
+          onInput={(e) => setNewTitle((e.target as HTMLInputElement).value)}
+        />
+        <input
+          type="date"
+          value={newDate}
+          onInput={(e) => setNewDate((e.target as HTMLInputElement).value)}
+        />
+        <button type="button" className="btn-secondary" onClick={handleAdd}>
+          Add
+        </button>
+      </div>
+    </div>
   );
 }

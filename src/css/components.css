@@ -835,6 +835,33 @@ input:focus, textarea:focus {
     white-space: nowrap;
 }
 
+/* Urgency section label (sidebar grouping headers) */
+.urgency-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+    margin-top: 8px;
+}
+
+/* Sidebar add-row top spacing */
+.hw-add-row-top {
+    margin-top: 10px;
+}
+
+/* Course select in sidebar add-row */
+.hw-course-select {
+    flex: 0 0 auto;
+    max-width: 120px;
+}
+
+/* Clickable homework elements */
+.event-card.homework,
+.hw-title-row {
+    cursor: pointer;
+}
+
 /* Links Display (always visible) */
 .hw-links-display {
     display: flex;

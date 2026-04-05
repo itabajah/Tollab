@@ -1,5 +1,7 @@
 import type { ComponentChildren } from 'preact';
 
+import { HomeworkSidebar } from '@/components/homework';
+
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -59,14 +61,7 @@ export function MainLayout({ courseListSlot, sidebarSlot }: MainLayoutProps) {
               </div>
             </div>
 
-            <div class="homework-section-header">
-              <h3 class="homework-section-title">
-                Homework
-              </h3>
-            </div>
-            <div id="homework-sidebar-list" class="upcoming-list">
-              {/* Homework will be rendered by Wave 7+ components */}
-            </div>
+            <HomeworkSidebar />
           </>
         )}
       </div>
