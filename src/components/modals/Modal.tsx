@@ -7,6 +7,8 @@
 import { useCallback, useEffect, useRef } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 
+import { useFocusTrap } from './useFocusTrap';
+
 export type ModalSize = 'sm' | 'md' | 'lg';
 
 const SIZE_CLASS: Record<ModalSize, string> = {
@@ -14,6 +16,9 @@ const SIZE_CLASS: Record<ModalSize, string> = {
   md: '',
   lg: 'modal-wide',
 };
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface ModalProps {
   isOpen: boolean;
@@ -25,38 +30,19 @@ interface ModalProps {
   className?: string;
 }
 
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 export function Modal({ isOpen, onClose, title, children, size = 'md', className }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<Element | null>(null);
+  const { handleTabKey } = useFocusTrap(modalRef, isOpen);
 
-  // Scroll lock and focus management
+  // Focus first focusable element on open
   useEffect(() => {
     if (isOpen) {
-      previousFocusRef.current = document.activeElement;
-      document.body.style.overflow = 'hidden';
-
-      // Focus first focusable element
       requestAnimationFrame(() => {
         const el = modalRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
         el?.focus();
       });
     }
-
-    return () => {
-      // Restore scroll only if no other modals remain
-      const activeModals = document.querySelectorAll('.modal-overlay.active');
-      if (activeModals.length <= 1) {
-        document.body.style.overflow = '';
-      }
-      // Restore previous focus
-      if (previousFocusRef.current instanceof HTMLElement) {
-        previousFocusRef.current.focus();
-      }
-    };
   }, [isOpen]);
 
   // Keyboard: Escape to close + focus trap
@@ -66,29 +52,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', className
         onClose();
         return;
       }
-
-      // Focus trap
-      if (e.key === 'Tab' && modalRef.current) {
-        const focusable = modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-        if (focusable.length === 0) return;
-
-        const first = focusable[0]!;
-        const last = focusable[focusable.length - 1]!;
-
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
-      }
+      handleTabKey(e);
     },
-    [onClose],
+    [onClose, handleTabKey],
   );
 
   // Backdrop click
