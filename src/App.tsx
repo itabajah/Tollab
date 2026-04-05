@@ -10,8 +10,7 @@ import {
 } from '@/components/layout';
 import { CourseList } from '@/components/courses';
 import { AddSemesterModal } from '@/components/modals';
-
-// TODO: Import ToastContainer from Sami's toast system when ready (Wave 5)
+import { ToastContainer, ToastProvider } from '@/components/toast';
 
 /**
  * Root application shell.
@@ -28,7 +27,7 @@ export function App() {
   }, [theme]);
 
   return (
-    <>
+    <ToastProvider>
       <MainLayout
         courseListSlot={
           <>
@@ -41,7 +40,7 @@ export function App() {
       />
       <Footer />
       <AddSemesterModal />
-      {/* <ToastContainer /> — will be added when Sami's toast system lands */}
-    </>
+      <ToastContainer />
+    </ToastProvider>
   );
 }

@@ -84,7 +84,7 @@ function CloudSyncIcon({ state }: { state: FirebaseSyncState }) {
   switch (state) {
     case FirebaseSyncState.Synced:
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--green, #22c55e)" stroke-width="2" style={style}>
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--success-border, #22c55e)" stroke-width="2" style={style}>
           <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
           <polyline points="13 13 9 17 7 15" />
         </svg>
@@ -97,7 +97,7 @@ function CloudSyncIcon({ state }: { state: FirebaseSyncState }) {
       );
     case FirebaseSyncState.Error:
       return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--red, #ef4444)" stroke-width="2" style={style}>
+        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="var(--error-border, #ef4444)" stroke-width="2" style={style}>
           <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />

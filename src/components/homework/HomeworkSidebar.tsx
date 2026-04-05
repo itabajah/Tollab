@@ -188,6 +188,9 @@ export function HomeworkSidebar() {
             onInput={(e) =>
               setNewTitle((e.target as HTMLInputElement).value)
             }
+            onKeyDown={(e: KeyboardEvent) => {
+              if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
+            }}
           />
           <input
             type="date"
@@ -195,6 +198,9 @@ export function HomeworkSidebar() {
             onInput={(e) =>
               setNewDate((e.target as HTMLInputElement).value)
             }
+            onKeyDown={(e: KeyboardEvent) => {
+              if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
+            }}
           />
           <button type="button" class="btn-secondary" onClick={handleAdd}>
             Add
