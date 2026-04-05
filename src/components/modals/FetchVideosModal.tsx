@@ -36,6 +36,8 @@ type FetchSource = 'youtube' | 'panopto';
 const PANOPTO_SCRIPT =
   `copy(JSON.stringify([...document.querySelectorAll('tr[aria-label][id]')].filter(r=>/^[a-f0-9-]{36}$/i.test(r.id)).map(r=>({t:r.getAttribute('aria-label'),u:location.origin+'/Panopto/Pages/Viewer.aspx?id='+r.id}))))`;
 
+const SCRIPT_COPIED_TIMEOUT_MS = 2000;
+const IMPORT_CLOSE_DELAY_MS = 1000;
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -144,15 +146,16 @@ export function FetchVideosModal({
       }
 
       // Fallback: legacy console script format { t, u }
-      const data = JSON.parse(panoptoData) as Array<{ t: string; u: string }>;
-      if (!Array.isArray(data) || data.length === 0) {
+      const raw: unknown = JSON.parse(panoptoData);
+      if (!Array.isArray(raw) || raw.length === 0) {
         setStatus('No videos found in pasted data.');
         showToast('No videos found in pasted data', ToastType.Warning);
         return;
       }
+      const data = raw as Array<Record<string, unknown>>;
       const parsed: FetchedVideo[] = data.map((item) => ({
-        title: item.t || 'Untitled',
-        url: item.u || '',
+        title: typeof item['t'] === 'string' ? item['t'] || 'Untitled' : 'Untitled',
+        url: typeof item['u'] === 'string' ? item['u'] || '' : '',
         selected: true,
       }));
       setVideos(parsed);
@@ -192,7 +195,7 @@ export function FetchVideosModal({
       }
     }
     setScriptCopied(true);
-    setTimeout(() => setScriptCopied(false), 2000);
+    setTimeout(() => setScriptCopied(false), SCRIPT_COPIED_TIMEOUT_MS);
   }, []);
 
   // -- Selection ------------------------------------------------------------
@@ -242,7 +245,7 @@ export function FetchVideosModal({
       setPlaylistUrl('');
       setPanoptoData('');
       onClose();
-    }, 1000);
+    }, IMPORT_CLOSE_DELAY_MS);
   }, [videos, useOriginalNames, existingCount, courseId, tabId, addRecording, onClose, showToast]);
 
   // -- Close handler --------------------------------------------------------
