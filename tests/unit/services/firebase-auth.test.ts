@@ -187,20 +187,20 @@ describe('firebase-auth', () => {
   // =========================================================================
 
   describe('onAuthStateChange', () => {
-    it('returns null when auth is not configured', () => {
+    it('returns null when auth is not configured', async () => {
       const callback = vi.fn();
-      const result = onAuthStateChange(callback);
+      const result = await onAuthStateChange(callback);
       expect(result).toBeNull();
       expect(mockOnAuthStateChanged).not.toHaveBeenCalled();
     });
 
-    it('returns unsubscribe function when auth is configured', () => {
+    it('returns unsubscribe function when auth is configured', async () => {
       mockAuth = makeFakeAuth();
       const unsubscribe = vi.fn();
       mockOnAuthStateChanged.mockReturnValue(unsubscribe);
       const callback = vi.fn();
 
-      const result = onAuthStateChange(callback);
+      const result = await onAuthStateChange(callback);
 
       expect(result).toBe(unsubscribe);
       expect(mockOnAuthStateChanged).toHaveBeenCalledWith(mockAuth, callback);

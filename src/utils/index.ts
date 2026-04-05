@@ -3,7 +3,14 @@
  */
 
 // DOM utilities
-export { escapeHtml } from './dom';
+export {
+  escapeHtml,
+  getInputChecked,
+  getInputValue,
+  getSelectValue,
+  getTextAreaValue,
+  handleKeyActivate,
+} from './dom';
 
 // Date utilities
 export {

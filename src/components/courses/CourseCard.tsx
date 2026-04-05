@@ -1,9 +1,11 @@
+import { memo } from 'preact/compat';
 import { useCallback } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
 import { useCurrentSemester } from '@/store/selectors';
 import { useUiStore } from '@/store/ui-store';
 import type { Course } from '@/types';
+import { handleKeyActivate } from '@/utils/dom';
 
 import { CourseProgress } from './CourseProgress';
 
@@ -48,7 +50,7 @@ interface CourseCardProps {
  *       .course-meta-right
  *       CourseProgress rows
  */
-export function CourseCard({ course, index, totalCourses }: CourseCardProps) {
+export const CourseCard = memo(function CourseCard({ course, index, totalCourses }: CourseCardProps) {
   const semester = useCurrentSemester();
   const reorderCourse = useAppStore((s) => s.reorderCourse);
   const openCourseModal = useUiStore((s) => s.openCourseModal);
@@ -62,12 +64,7 @@ export function CourseCard({ course, index, totalCourses }: CourseCardProps) {
   }, [course.id, openCourseModal, pushModal]);
 
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handleClick();
-      }
-    },
+    handleKeyActivate(handleClick),
     [handleClick],
   );
 
@@ -146,4 +143,4 @@ export function CourseCard({ course, index, totalCourses }: CourseCardProps) {
       </div>
     </div>
   );
-}
+});

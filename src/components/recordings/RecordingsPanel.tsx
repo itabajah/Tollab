@@ -12,6 +12,7 @@ import { useAppStore } from '@/store/app-store';
 import { useCourseById, useSortedRecordings } from '@/store/selectors';
 import { useUiStore } from '@/store/ui-store';
 import type { RecordingSortOrder } from '@/types';
+import { getInputValue, getSelectValue } from '@/utils/dom';
 
 import { RecordingItem } from './RecordingItem';
 import { RecordingsTabs } from './RecordingsTabs';
@@ -63,7 +64,7 @@ export function RecordingsPanel({ courseId, onOpenFetchModal }: RecordingsPanelP
 
   const handleSortChange = useCallback(
     (e: Event) => {
-      const order = (e.target as HTMLSelectElement).value as RecordingSortOrder;
+      const order = getSelectValue(e) as RecordingSortOrder;
       setRecordingSortOrder(courseId, tabId, order);
     },
     [courseId, tabId, setRecordingSortOrder],
@@ -186,7 +187,7 @@ export function RecordingsPanel({ courseId, onOpenFetchModal }: RecordingsPanelP
           className={`recordings-add-input${newLinkError ? ' input-error' : ''}`}
           placeholder="Paste video link (YouTube, Panopto, etc.)..."
           value={newLink}
-          onInput={(e) => { setNewLink((e.target as HTMLInputElement).value); setNewLinkError(''); }}
+          onInput={(e) => { setNewLink(getInputValue(e)); setNewLinkError(''); }}
           onKeyDown={handleAddKeyDown}
         />
         <button

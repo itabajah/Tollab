@@ -10,6 +10,7 @@ import { useCallback } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
 import { DAY_NAMES } from '@/constants';
+import { getInputValue } from '@/utils/dom';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -29,7 +30,7 @@ export function CalendarTab() {
 
   const handleStartHourChange = useCallback(
     (e: Event) => {
-      const val = parseInt((e.target as HTMLInputElement).value, 10);
+      const val = parseInt(getInputValue(e), 10);
       if (!isNaN(val) && val >= 0 && val <= 23 && currentSemesterId) {
         updateCalendarSettings(currentSemesterId, { startHour: val });
       }
@@ -39,7 +40,7 @@ export function CalendarTab() {
 
   const handleEndHourChange = useCallback(
     (e: Event) => {
-      const val = parseInt((e.target as HTMLInputElement).value, 10);
+      const val = parseInt(getInputValue(e), 10);
       if (!isNaN(val) && val >= 0 && val <= 23 && currentSemesterId) {
         updateCalendarSettings(currentSemesterId, { endHour: val });
       }

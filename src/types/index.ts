@@ -25,7 +25,7 @@ export type {
   HomeworkSortOrder,
   RecordingSortOrder,
 } from './settings';
-export { ColorTheme, ThemeMode } from './settings';
+export { ColorTheme, ThemeMode, isHomeworkSortOrder, isRecordingSortOrder } from './settings';
 
 // Validation
 export type {

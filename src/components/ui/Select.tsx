@@ -4,6 +4,7 @@
  */
 
 import type { JSX } from 'preact';
+import { getSelectValue } from '@/utils/dom';
 
 export interface SelectOption {
   value: string;
@@ -33,7 +34,7 @@ export function Select({
   'aria-label': ariaLabel,
 }: SelectProps) {
   const handleChange = (e: JSX.TargetedEvent<HTMLSelectElement>) => {
-    onChange((e.target as HTMLSelectElement).value);
+    onChange(getSelectValue(e));
   };
 
   return (

@@ -18,6 +18,7 @@ import {
 import type { HomeworkByUrgency, HomeworkWithCourse } from '@/store/selectors';
 import { useUiStore } from '@/store/ui-store';
 import type { Homework } from '@/types';
+import { getInputValue, getSelectValue } from '@/utils/dom';
 
 import { HomeworkItem } from './HomeworkItem';
 
@@ -100,12 +101,7 @@ export function HomeworkSidebar() {
   if (!semester) {
     return (
       <div class="upcoming-list">
-        <div
-          style={{
-            color: 'var(--text-tertiary)',
-            fontStyle: 'italic',
-          }}
-        >
+        <div class="hw-empty-message">
           No active semester.
         </div>
       </div>
@@ -130,12 +126,7 @@ export function HomeworkSidebar() {
       {/* Homework list */}
       <div class="upcoming-list">
         {totalItems === 0 ? (
-          <div
-            style={{
-              color: 'var(--text-tertiary)',
-              fontStyle: 'italic',
-            }}
-          >
+          <div class="hw-empty-message">
             No homework found.
           </div>
         ) : (
@@ -174,7 +165,7 @@ export function HomeworkSidebar() {
               <select
                 value={addCourseId || courses[0]?.id || ''}
                 onChange={(e) =>
-                  setAddCourseId((e.target as HTMLSelectElement).value)
+                  setAddCourseId(getSelectValue(e))
                 }
                 class="hw-course-select"
               >
@@ -193,7 +184,7 @@ export function HomeworkSidebar() {
               placeholder="Assignment title..."
               value={newTitle}
               onInput={(e) => {
-                setNewTitle((e.target as HTMLInputElement).value);
+                setNewTitle(getInputValue(e));
                 setTitleError('');
               }}
               onKeyDown={(e: KeyboardEvent) => {
@@ -204,7 +195,7 @@ export function HomeworkSidebar() {
               type="date"
               value={newDate}
               onInput={(e) =>
-                setNewDate((e.target as HTMLInputElement).value)
+                setNewDate(getInputValue(e))
               }
               onKeyDown={(e: KeyboardEvent) => {
                 if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }

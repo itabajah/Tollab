@@ -8,7 +8,10 @@
  * Uses the `.schedule-block` CSS class from calendar.css.
  */
 
+import { memo } from 'preact/compat';
+
 import type { Course, ScheduleSlot } from '@/types';
+import { handleKeyActivate } from '@/utils/dom';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -39,7 +42,7 @@ interface EventChipProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function EventChip({ course, slot, onClick }: EventChipProps) {
+export const EventChip = memo(function EventChip({ course, slot, onClick }: EventChipProps) {
   const start = parseTime(slot.start);
   const end = parseTime(slot.end);
 
@@ -55,12 +58,7 @@ export function EventChip({ course, slot, onClick }: EventChipProps) {
     .filter(Boolean)
     .join('\n');
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick?.();
-    }
-  };
+  const handleKeyDown = handleKeyActivate(() => onClick?.());
 
   return (
     <div
@@ -79,4 +77,4 @@ export function EventChip({ course, slot, onClick }: EventChipProps) {
       {course.name}
     </div>
   );
-}
+});

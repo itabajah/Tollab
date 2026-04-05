@@ -14,6 +14,7 @@ import type { YouTubeVideo } from '@/services/youtube';
 import { useAppStore } from '@/store/app-store';
 import type { RecordingItem } from '@/types';
 import { ToastType } from '@/types';
+import { getInputValue, getSelectValue, getTextAreaValue } from '@/utils/dom';
 
 import { Modal } from '../modals/Modal';
 
@@ -282,7 +283,7 @@ export function FetchVideosModal({
         <select
           value={source}
           onChange={(e) => {
-            setSource((e.target as HTMLSelectElement).value as FetchSource);
+            setSource(getSelectValue(e) as FetchSource);
             setVideos([]);
             setStatus('');
           }}
@@ -301,7 +302,7 @@ export function FetchVideosModal({
               type="url"
               placeholder="https://www.youtube.com/playlist?list=..."
               value={playlistUrl}
-              onInput={(e) => setPlaylistUrl((e.target as HTMLInputElement).value)}
+              onInput={(e) => setPlaylistUrl(getInputValue(e))}
             />
           </div>
           <button
@@ -350,7 +351,7 @@ export function FetchVideosModal({
               className="panopto-paste-area"
               placeholder="Paste the copied JSON data here..."
               value={panoptoData}
-              onInput={(e) => setPanoptoData((e.target as HTMLTextAreaElement).value)}
+              onInput={(e) => setPanoptoData(getTextAreaValue(e))}
             />
           </div>
 
