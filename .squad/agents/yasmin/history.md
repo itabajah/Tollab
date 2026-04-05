@@ -24,3 +24,16 @@
 - **Strengths:** Excellent test structure/naming, good edge-case coverage for tested functions, proper test isolation with fake timers, assertions test behavior not implementation.
 - **Non-blocking:** ICS parser partial-match branch untested, withRetry tests slow due to real delays.
 **Action:** Review written to `.squad/decisions/inbox/yasmin-wave3-review.md`. ~45–55 new tests needed to close gaps.
+
+### 2026-04-05: Wave 11 — Integration Tests for Store→UI Data Flow
+**What:** Created 6 integration test files (68 new tests) covering all CRUD flows across the Zustand stores and storage service.
+**Files created:**
+- `tests/integration/course-crud.test.tsx` — 9 tests: add/update/delete/move course, sort order cleanup, reorder
+- `tests/integration/semester-management.test.tsx` — 9 tests: add/delete/switch/rename semester, calendar settings, cascade delete
+- `tests/integration/recording-management.test.tsx` — 10 tests: recording item CRUD, toggle watched, tab CRUD, sort orders, clear tab
+- `tests/integration/homework-management.test.tsx` — 7 tests: homework CRUD, toggle completed, reorder, sort orders, urgency grouping
+- `tests/integration/profile-management.test.tsx` — 14 tests: profile CRUD, switch, export/import, name dedup, raw format import
+- `tests/integration/import-export.test.tsx` — 19 tests: storage save/load round-trip, export JSON shape, import validation, full round-trip
+**Config:** Updated `vite.config.ts` include pattern to pick up `tests/integration/**`.
+**Results:** All 362 tests pass (294 existing + 68 new). Typecheck clean. Committed and pushed to `wave-11-tests-docs`.
+**Learnings:** Zustand stores can be tested purely via `getState()`/`setState()` without rendering — fast and reliable for action→selector integration tests.
