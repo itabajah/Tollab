@@ -350,21 +350,21 @@ export function FetchVideosModal({
       )}
 
       {/* Use original names toggle */}
-      <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+      <div className="form-group fetch-names-toggle">
         <input
           type="checkbox"
           checked={useOriginalNames}
           onChange={() => setUseOriginalNames((prev) => !prev)}
-          style={{ width: 'auto', margin: '0' }}
+          className="fetch-names-checkbox"
         />
-        <label style={{ margin: '0', textTransform: 'none', fontSize: '14px' }}>
+        <label className="fetch-names-label">
           Use original video titles
         </label>
       </div>
 
       {/* Status */}
       {status && (
-        <div style={{ margin: '12px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+        <div className="fetch-status" style={{ color: 'var(--text-secondary)' }}>
           {status}
         </div>
       )}
@@ -374,7 +374,7 @@ export function FetchVideosModal({
         <div className="panopto-extracted-list">
           <div className="panopto-extracted-header">
             <span>{selectedCount} of {videos.length} selected</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="fetch-select-actions">
               <button type="button" className="btn-link" onClick={handleSelectAll}>
                 Select All
               </button>
@@ -403,10 +403,9 @@ export function FetchVideosModal({
       {videos.length > 0 && (
         <button
           type="button"
-          className="btn-primary"
+          className="btn-primary fetch-import-btn"
           onClick={handleImport}
           disabled={selectedCount === 0}
-          style={{ marginTop: '12px', width: '100%' }}
         >
           Import {selectedCount} Video{selectedCount !== 1 ? 's' : ''}
         </button>

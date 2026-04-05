@@ -140,14 +140,7 @@ export function HomeworkSidebar() {
             return (
               <div key={section.key}>
                 <div
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    color: 'var(--text-tertiary)',
-                    marginBottom: '6px',
-                    marginTop: '8px',
-                  }}
+                  class="urgency-section-label"
                 >
                   {section.label}
                 </div>
@@ -170,14 +163,14 @@ export function HomeworkSidebar() {
 
       {/* Add homework form */}
       {courses.length > 0 && (
-        <div class="hw-add-row" style={{ marginTop: '10px' }}>
+        <div class="hw-add-row hw-add-row-top">
           {courses.length > 1 && (
             <select
               value={addCourseId || courses[0]?.id || ''}
               onChange={(e) =>
                 setAddCourseId((e.target as HTMLSelectElement).value)
               }
-              style={{ flex: '0 0 auto', maxWidth: '120px' }}
+              class="hw-course-select"
             >
               {courses.map((c) => (
                 <option key={c.id} value={c.id}>

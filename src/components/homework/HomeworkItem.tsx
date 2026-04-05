@@ -26,6 +26,25 @@ interface HomeworkItemProps {
   homeworkIndex: number;
   /** Variant: "sidebar" for compact sidebar display, "modal" for in-modal list. */
   variant?: 'sidebar' | 'modal';
+  /** Whether this is the first item in the visible list (modal only). */
+  isFirst?: boolean;
+  /** Whether this is the last item in the visible list (modal only). */
+  isLast?: boolean;
+  /** Current sort order — reorder buttons shown when 'manual' (modal only). */
+  sortOrder?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function handleKeyActivate(handler: () => void) {
+  return (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handler();
+    }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -88,9 +107,13 @@ export function HomeworkItem({
   homework,
   homeworkIndex,
   variant = 'sidebar',
+  isFirst = false,
+  isLast = false,
+  sortOrder,
 }: HomeworkItemProps) {
   const toggleHomeworkCompleted = useAppStore((s) => s.toggleHomeworkCompleted);
   const deleteHomework = useAppStore((s) => s.deleteHomework);
+  const reorderHomework = useAppStore((s) => s.reorderHomework);
   const openCourseModal = useUiStore((s) => s.openCourseModal);
 
   const [expanded, setExpanded] = useState(false);
@@ -141,6 +164,14 @@ export function HomeworkItem({
     [courseId, homeworkIndex, deleteHomework],
   );
 
+  const handleMoveUp = useCallback(() => {
+    reorderHomework(courseId, homeworkIndex, 'up');
+  }, [courseId, homeworkIndex, reorderHomework]);
+
+  const handleMoveDown = useCallback(() => {
+    reorderHomework(courseId, homeworkIndex, 'down');
+  }, [courseId, homeworkIndex, reorderHomework]);
+
   // -- Build links display for sidebar variant ------------------------------
 
   const links = homework.links || [];
@@ -176,11 +207,13 @@ export function HomeworkItem({
       <div
         class={`event-card homework`}
         style={{
-          cursor: 'pointer',
           opacity: homework.completed ? '0.6' : undefined,
           borderLeftColor: courseColor || undefined,
         }}
         onClick={handleExpand}
+        role="button"
+        tabIndex={0}
+        onKeyDown={handleKeyActivate(handleExpand)}
       >
         <div class="sidebar-hw-row">
           <input
@@ -208,7 +241,13 @@ export function HomeworkItem({
               {homework.title}
               {hasNotes && <span class="hw-indicators">has notes</span>}
             </div>
-            <div class="event-course" onClick={handleCourseClick}>
+            <div
+              class="event-course"
+              onClick={handleCourseClick}
+              role="button"
+              tabIndex={0}
+              onKeyDown={handleKeyActivate(() => openCourseModal(courseId))}
+            >
               {courseName}
             </div>
           </div>
@@ -234,13 +273,42 @@ export function HomeworkItem({
   return (
     <div class={`homework-item${homework.completed ? ' completed' : ''}`}>
       <div class="hw-main-row">
+        {/* Reorder buttons (only in manual sort) */}
+        {sortOrder === 'manual' && (
+          <div class="item-reorder-buttons hw-reorder-buttons">
+            <button
+              type="button"
+              class="reorder-btn"
+              disabled={isFirst}
+              onClick={handleMoveUp}
+              aria-label="Move up"
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              class="reorder-btn"
+              disabled={isLast}
+              onClick={handleMoveDown}
+              aria-label="Move down"
+            >
+              ▼
+            </button>
+          </div>
+        )}
         <input
           type="checkbox"
           class="hw-checkbox"
           checked={homework.completed}
           onChange={handleToggle}
         />
-        <div class="hw-title-row" onClick={handleExpand} style={{ cursor: 'pointer' }}>
+        <div
+          class="hw-title-row"
+          onClick={handleExpand}
+          role="button"
+          tabIndex={0}
+          onKeyDown={handleKeyActivate(handleExpand)}
+        >
           <span class="hw-title">{homework.title}</span>
           {homework.dueDate ? (
             <span class="hw-due-date">
