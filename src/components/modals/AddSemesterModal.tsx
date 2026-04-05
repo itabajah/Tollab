@@ -148,9 +148,6 @@ export function AddSemesterModal() {
         {error && <div class="form-error">{error}</div>}
 
         <div class="modal-footer">
-          <button type="button" class="btn-secondary" onClick={handleClose}>
-            Cancel
-          </button>
           <button type="submit" class="btn-primary">
             Create Semester
           </button>

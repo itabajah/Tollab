@@ -1,5 +1,6 @@
 import { render } from 'preact';
 import { App } from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { initStorePersistence } from './services/store-persistence';
 import './css/base.css';
 import './css/layout.css';
@@ -12,4 +13,9 @@ import './css/utils.css';
 // Bootstrap stores from localStorage before first render
 initStorePersistence();
 
-render(<App />, document.getElementById('app')!);
+render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
+  document.getElementById('app')!,
+);
