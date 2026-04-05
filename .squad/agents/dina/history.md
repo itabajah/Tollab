@@ -36,3 +36,52 @@ Created 5 files in `src/components/calendar/`:
 - Mobile single-day mode filters `visibleDays` to `[today]` and adds `.single-day-mode` class to `.calendar-scroll-wrapper`.
 - Preact uses `class` not `className` in JSX (jsxImportSource: preact).
 - `noUncheckedIndexedAccess` is enabled — all array accesses may return `undefined`.
+
+### Wave 7 — Review Fixes for PR #53 (2026-04-07)
+**Branch:** `wave-7-recordings-homework`
+**Commit:** `50fbb63` — `fix(ui): address Wave 7 review — keyboard a11y, inline styles, homework modal features`
+
+Fixed all 5 blocking issues from Malik (code quality) and Noura (UI fidelity) reviews. Omar and Layla locked out per Reviewer Rejection Protocol.
+
+**B1 (Malik): HomeworkItem keyboard accessibility**
+- Added `role="button"`, `tabIndex={0}`, `onKeyDown` (Enter/Space) to 3 clickable `<div>` elements: sidebar event-card, modal hw-title-row, sidebar event-course badge.
+- Created `handleKeyActivate()` helper for consistent keyboard handling.
+- Added `handleMoveUp`/`handleMoveDown` handlers + new props (`isFirst`, `isLast`, `sortOrder`) for reorder support.
+
+**B2 (Malik): Inline styles in HomeworkSidebar.tsx**
+- Extracted urgency section header styles → `.urgency-section-label` CSS class.
+- Extracted add-row top margin → `.hw-add-row-top` CSS class.
+- Extracted course select layout → `.hw-course-select` CSS class.
+- Moved `cursor: pointer` from inline styles to CSS (`.event-card.homework`, `.hw-title-row`).
+
+**B3 (Malik): Inline styles in FetchVideosModal.tsx**
+- Extracted 6 inline style blocks → CSS classes: `.fetch-names-toggle`, `.fetch-names-checkbox`, `.fetch-names-label`, `.fetch-status`, `.fetch-select-actions`, `.fetch-import-btn`.
+- Kept `color: var(--text-secondary)` inline on `.fetch-status` (dynamic).
+
+**B3 (Noura): Homework modal sort controls + Show Done toggle**
+- Added `<div class="list-sort-controls">` with sort dropdown (6 options matching legacy) and Show Done toggle to `CourseHomeworkTab`.
+- Wired to `setHomeworkSortOrder` (new store action) and `toggleShowCompletedHomework` (existing ui-store action).
+- Added filtering logic: hides completed items when Show Done is unchecked.
+- Added `HW_SORT_LABELS` record for dropdown display text.
+
+**B4 (Noura): Homework modal reorder buttons**
+- Added ▲/▼ reorder buttons to `HomeworkItem` modal variant, gated on `sortOrder === 'manual'`.
+- Uses `.item-reorder-buttons.hw-reorder-buttons` classes (CSS already existed).
+- Added `reorderHomework` store action (swaps array items + sets sort to manual).
+- Added `setHomeworkSortOrder` store action.
+
+**B5 (Noura): Sort label text**
+- Changed `Sort` → `Sort:` in `RecordingsPanel.tsx` to match legacy.
+
+**Files changed (8):**
+- `src/components/homework/HomeworkItem.tsx` — keyboard a11y, reorder buttons, new props
+- `src/components/homework/HomeworkSidebar.tsx` — inline styles → CSS classes
+- `src/components/modals/CourseModal.tsx` — sort controls, Show Done toggle, filtering
+- `src/components/modals/FetchVideosModal.tsx` — inline styles → CSS classes
+- `src/components/recordings/RecordingsPanel.tsx` — "Sort:" label fix
+- `src/css/components.css` — 5 new CSS classes
+- `src/css/modals.css` — 6 new CSS classes
+- `src/store/app-store.ts` — `reorderHomework` + `setHomeworkSortOrder` actions
+
+**Verification:** typecheck ✅, lint ✅ (0 errors, 22 warnings all pre-existing), build ✅ (67 modules, 449ms).
+**Pushed:** `wave-7-recordings-homework` → origin.
