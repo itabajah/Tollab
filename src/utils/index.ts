@@ -11,7 +11,9 @@ export {
   getCurrentWeekRange,
   getDayOfWeekFromDate,
   isDateInCurrentWeek,
+  parseDate,
   parseICSDate,
+  startOfDay,
 } from './date';
 
 // Color utilities

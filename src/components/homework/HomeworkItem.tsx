@@ -13,6 +13,7 @@ import { useUiStore } from '@/store/ui-store';
 import type { Homework } from '@/types';
 
 import { HomeworkEditor } from './HomeworkEditor';
+import { parseDate, startOfDay } from '@/utils/date';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -56,18 +57,6 @@ const DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
 });
-
-function parseDate(ymd: string): Date | null {
-  if (!ymd) return null;
-  const [y, m, d] = ymd.split('-').map(Number);
-  if (y === undefined || m === undefined || d === undefined) return null;
-  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
-  return new Date(y, m - 1, d);
-}
-
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
 
 interface DaysLeftInfo {
   text: string;

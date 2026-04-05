@@ -176,8 +176,9 @@ export async function batchImportSemesters(
         count: courses.length,
       });
     } catch (error: unknown) {
-      const message =
+      const raw =
         error instanceof Error ? error.message : 'Unknown import error';
+      const message = raw.split('\n')[0]?.replace(/https?:\/\/\S+/g, '[url]') ?? 'Import failed';
       results.push({
         url,
         success: false,

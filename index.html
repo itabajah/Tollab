@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tollab — طُلّاب</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src  'self';
+        style-src   'self' 'unsafe-inline';
+        img-src     'self' data: https://*.googleapis.com https://*.firebaseapp.com;
+        font-src    'self';
+        connect-src 'self'
+                    https://*.googleapis.com
+                    https://*.firebaseio.com
+                    https://*.firebaseapp.com
+                    https://api.codetabs.com
+                    https://corsproxy.org
+                    https://api.allorigins.win
+                    https://raw.githubusercontent.com;
+        frame-src   https://www.youtube.com https://*.panopto.com https://*.panopto.eu;
+        object-src  'none';
+        base-uri    'self';
+      "
+    />
   </head>
   <body>
     <div id="app"></div>
