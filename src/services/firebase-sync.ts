@@ -147,6 +147,21 @@ function isEmptyProfile(entry: CloudProfileEntry): boolean {
   );
 }
 
+/**
+ * Runtime shape check for a CloudPayload received from Firebase.
+ * Verifies expected top-level keys and types to reject corrupted or
+ * malicious payloads before they are used.
+ */
+function isValidCloudPayload(data: unknown): boolean {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  const obj = data as Record<string, unknown>;
+  if (typeof obj['version'] !== 'number') return false;
+  if (typeof obj['updatedAt'] !== 'string') return false;
+  if (typeof obj['activeProfileId'] !== 'string') return false;
+  if (!Array.isArray(obj['profiles'])) return false;
+  return true;
+}
+
 /** Get a DatabaseReference for a user path, or null if database is unavailable. */
 function getUserRef(uid: string): DatabaseReference | null {
   if (!database) return null;
@@ -335,7 +350,12 @@ export async function pullFromFirebase(
   const val = snapshot.val() as Record<string, unknown> | null;
   if (!val) return null;
 
-  return (val['payload'] ?? val) as CloudPayload;
+  const raw = (val['payload'] ?? val) as Record<string, unknown>;
+  if (!isValidCloudPayload(raw)) {
+    console.warn(LOG, 'Invalid cloud payload shape — ignoring');
+    return null;
+  }
+  return raw as unknown as CloudPayload;
 }
 
 /**
@@ -366,7 +386,12 @@ export function subscribeToFirebase(
     const val = snapshot.val() as Record<string, unknown>;
     const writeId = val['writeId'] as string | undefined;
     const origin = val['clientId'] as string | undefined;
-    const payload = (val['payload'] ?? val) as CloudPayload;
+    const rawPayload = (val['payload'] ?? val) as Record<string, unknown>;
+    if (!isValidCloudPayload(rawPayload)) {
+      console.warn(LOG, 'Invalid realtime payload shape — ignoring');
+      return;
+    }
+    const payload = rawPayload as unknown as CloudPayload;
 
     // Echo prevention: ignore our own writes
     if (origin && origin === cid) {

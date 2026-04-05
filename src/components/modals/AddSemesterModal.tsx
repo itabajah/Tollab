@@ -111,7 +111,7 @@ export function AddSemesterModal() {
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add Semester" size="sm">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Add Semester" size="md">
       <form onSubmit={handleSubmit}>
         <div class="form-group">
           <label for="new-semester-select">Select Semester</label>

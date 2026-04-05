@@ -9,7 +9,7 @@
  * course exists; "Edit Course" mode when the course is found in the store.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 
 import { DAY_NAMES_FULL, DAY_NAMES_SHORT, HOMEWORK_SORT_ORDERS } from '@/constants';
 import { HomeworkItem } from '@/components/homework';
@@ -111,6 +111,36 @@ export function CourseModal() {
 
   // -- Active tab -----------------------------------------------------------
   const [activeTab, setActiveTab] = useState<CourseTabId>('details');
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  const handleTabKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const tabs = isEditMode ? TABS : TABS.filter((t) => t.id === 'details');
+      const idx = tabs.findIndex((t) => t.id === activeTab);
+      let nextIdx: number | null = null;
+
+      if (e.key === 'ArrowRight') {
+        nextIdx = (idx + 1) % tabs.length;
+      } else if (e.key === 'ArrowLeft') {
+        nextIdx = (idx - 1 + tabs.length) % tabs.length;
+      } else if (e.key === 'Home') {
+        nextIdx = 0;
+      } else if (e.key === 'End') {
+        nextIdx = tabs.length - 1;
+      }
+
+      if (nextIdx !== null) {
+        e.preventDefault();
+        const next = tabs[nextIdx];
+        if (next) {
+          setActiveTab(next.id);
+          const btn = tablistRef.current?.querySelector<HTMLElement>(`#course-tab-${next.id}`);
+          btn?.focus();
+        }
+      }
+    },
+    [activeTab, isEditMode],
+  );
 
   // -- Form state -----------------------------------------------------------
   const [name, setName] = useState('');
@@ -273,27 +303,41 @@ export function CourseModal() {
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={modalTitle} size="lg">
       {/* Tab bar */}
-      <div className="course-modal-tabs">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`course-modal-tab${activeTab === tab.id ? ' active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox={tab.id === 'recordings' ? RECORDINGS_VIEWBOX : DEFAULT_VIEWBOX}
-              fill={tab.id === 'recordings' ? 'currentColor' : 'none'}
-              stroke={tab.id === 'recordings' ? undefined : 'currentColor'}
-              stroke-width={tab.id === 'recordings' ? undefined : '2'}
-              dangerouslySetInnerHTML={{ __html: tab.icon }}
-            />
-            <span>{tab.label}</span>
-          </button>
-        ))}
+      <div
+        ref={tablistRef}
+        className="course-modal-tabs"
+        role="tablist"
+        aria-label="Course tabs"
+      >
+        {visibleTabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              id={`course-tab-${tab.id}`}
+              type="button"
+              className={`course-modal-tab${isActive ? ' active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+              onKeyDown={handleTabKeyDown}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`course-panel-${tab.id}`}
+              tabIndex={isActive ? 0 : -1}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox={tab.id === 'recordings' ? RECORDINGS_VIEWBOX : DEFAULT_VIEWBOX}
+                fill={tab.id === 'recordings' ? 'currentColor' : 'none'}
+                stroke={tab.id === 'recordings' ? undefined : 'currentColor'}
+                stroke-width={tab.id === 'recordings' ? undefined : '2'}
+                dangerouslySetInnerHTML={{ __html: tab.icon }}
+              />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ================================================================ */}
@@ -302,7 +346,7 @@ export function CourseModal() {
 
       {/* Recordings tab */}
       {activeTab === 'recordings' && editingCourseId && (
-        <>
+        <div id="course-panel-recordings" role="tabpanel" aria-labelledby="course-tab-recordings">
           <RecordingsPanel
             courseId={editingCourseId}
             onOpenFetchModal={() => setFetchModalOpen(true)}
@@ -314,17 +358,19 @@ export function CourseModal() {
             tabId={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.id ?? ''}
             existingCount={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.items.length ?? 0}
           />
-        </>
+        </div>
       )}
 
       {/* Homework tab */}
       {activeTab === 'homework' && editingCourseId && (
-        <CourseHomeworkTab courseId={editingCourseId} courseName={course?.name ?? ''} courseColor={course?.color ?? ''} />
+        <div id="course-panel-homework" role="tabpanel" aria-labelledby="course-tab-homework">
+          <CourseHomeworkTab courseId={editingCourseId} courseName={course?.name ?? ''} courseColor={course?.color ?? ''} />
+        </div>
       )}
 
       {/* Details tab */}
       {activeTab === 'details' && (
-        <div className="course-tab-panel active">
+        <div id="course-panel-details" role="tabpanel" aria-labelledby="course-tab-details" className="course-tab-panel active">
           {/* Course Name */}
           <div className="form-group">
             <label for="cm-course-name">Course Name</label>
@@ -587,10 +633,15 @@ function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomework
 
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState('');
+  const [titleError, setTitleError] = useState('');
 
   const handleAdd = useCallback(() => {
     const title = newTitle.trim();
-    if (!title) return;
+    if (!title) {
+      setTitleError('Please enter an assignment title.');
+      return;
+    }
+    setTitleError('');
     const hw: Homework = {
       title,
       dueDate: newDate,
@@ -669,19 +720,29 @@ function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomework
       <div className="hw-add-row">
         <input
           type="text"
+          className={titleError ? 'input-error' : undefined}
           placeholder="Assignment title..."
           value={newTitle}
-          onInput={(e) => setNewTitle((e.target as HTMLInputElement).value)}
+          onInput={(e) => { setNewTitle((e.target as HTMLInputElement).value); setTitleError(''); }}
+          onKeyDown={(e: KeyboardEvent) => {
+            if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
+          }}
         />
         <input
           type="date"
           value={newDate}
           onInput={(e) => setNewDate((e.target as HTMLInputElement).value)}
+          onKeyDown={(e: KeyboardEvent) => {
+            if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
+          }}
         />
         <button type="button" className="btn-secondary" onClick={handleAdd}>
           Add
         </button>
       </div>
+      {titleError && (
+        <div className="validation-error" role="alert">{titleError}</div>
+      )}
     </div>
   );
 }
