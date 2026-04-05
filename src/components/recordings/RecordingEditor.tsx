@@ -9,6 +9,7 @@ import { useCallback, useState } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
 import type { RecordingItem } from '@/types';
+import { validateUrl } from '@/utils/validation';
 
 interface RecordingEditorProps {
   courseId: string;
@@ -32,10 +33,14 @@ export function RecordingEditor({
   const [editSlides, setEditSlides] = useState(recording.slideLink);
 
   const handleSave = useCallback(() => {
+    const videoTrimmed = editVideo.trim();
+    const slideTrimmed = editSlides.trim();
+    const safeVideo = videoTrimmed && validateUrl(videoTrimmed).valid ? videoTrimmed : '';
+    const safeSlides = slideTrimmed && validateUrl(slideTrimmed).valid ? slideTrimmed : '';
     updateRecording(courseId, tabId, recordingIndex, {
       name: editName.trim() || recording.name,
-      videoLink: editVideo.trim(),
-      slideLink: editSlides.trim(),
+      videoLink: safeVideo,
+      slideLink: safeSlides,
     });
     onClose();
   }, [

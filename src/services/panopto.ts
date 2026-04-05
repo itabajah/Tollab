@@ -245,7 +245,12 @@ function decodeHtmlEntities(text: string): string {
  * `{id, title, url}`) objects as serialized JSON text, or a single object.
  */
 export function parsePanoptoClipboard(jsonText: string): PanoptoVideo[] {
-  const parsed: unknown = JSON.parse(jsonText);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    return [];
+  }
   const items: unknown[] = Array.isArray(parsed) ? parsed : [parsed];
   const videos: PanoptoVideo[] = [];
 

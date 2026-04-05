@@ -13,6 +13,21 @@ export interface VideoEmbedInfo {
   platform: VideoPlatform;
 }
 
+/** Allowed Panopto hostname suffixes for iframe embedding. */
+const ALLOWED_PANOPTO_DOMAINS = ['.panopto.com', '.panopto.eu'];
+
+/** Returns `true` when the origin belongs to a recognised Panopto domain. */
+function isAllowedPanoptoDomain(origin: string): boolean {
+  try {
+    const { hostname } = new URL(origin);
+    return ALLOWED_PANOPTO_DOMAINS.some(
+      (suffix) => hostname === suffix.slice(1) || hostname.endsWith(suffix),
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Detects the video platform from a URL string.
  */
@@ -54,7 +69,10 @@ export function getVideoEmbedInfo(url: string): VideoEmbedInfo {
     const domainMatch = url.match(/(https?:\/\/[^/]+)/);
     if (idMatch && domainMatch) {
       const videoId = idMatch[1];
-      const domain = domainMatch[1];
+      const domain = domainMatch[1]!;
+      if (!isAllowedPanoptoDomain(domain)) {
+        return { embedUrl: null, platform };
+      }
       return {
         embedUrl: `${domain}/Panopto/Pages/Embed.aspx?id=${videoId}&autoplay=false&offerviewer=true&showtitle=true&showbrand=false&captions=true&interactivity=all`,
         platform,
