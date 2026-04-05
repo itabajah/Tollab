@@ -65,19 +65,7 @@ export interface CourseProgress {
 // Date helpers (pure, no side effects)
 // ---------------------------------------------------------------------------
 
-/** Strip the time component and return a Date at midnight local. */
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-/** Parse a "YYYY-MM-DD" string to a midnight-local Date, or null. */
-function parseDate(ymd: string): Date | null {
-  if (!ymd) return null;
-  const [y, m, d] = ymd.split('-').map(Number);
-  if (y === undefined || m === undefined || d === undefined) return null;
-  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
-  return new Date(y, m - 1, d);
-}
+import { parseDate, startOfDay } from '@/utils/date';
 
 function daysBetween(a: Date, b: Date): number {
   const msPerDay = 86_400_000;

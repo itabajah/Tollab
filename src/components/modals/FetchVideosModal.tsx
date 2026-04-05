@@ -5,7 +5,7 @@
  * Panopto: run console script → paste JSON → parse via service → select → import.
  */
 
-import { useCallback, useState } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 
 import { useToast } from '@/components/toast/ToastContext';
 import { parsePanoptoClipboard } from '@/services/panopto';
@@ -59,6 +59,17 @@ export function FetchVideosModal({
 }: FetchVideosModalProps) {
   const addRecording = useAppStore((s) => s.addRecording);
   const { showToast } = useToast();
+
+  const scriptCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const importCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (scriptCopiedTimerRef.current !== null) clearTimeout(scriptCopiedTimerRef.current);
+      if (importCloseTimerRef.current !== null) clearTimeout(importCloseTimerRef.current);
+    };
+  }, []);
 
   const [source, setSource] = useState<FetchSource>('youtube');
   const [playlistUrl, setPlaylistUrl] = useState('');
@@ -195,7 +206,8 @@ export function FetchVideosModal({
       }
     }
     setScriptCopied(true);
-    setTimeout(() => setScriptCopied(false), SCRIPT_COPIED_TIMEOUT_MS);
+    if (scriptCopiedTimerRef.current !== null) clearTimeout(scriptCopiedTimerRef.current);
+    scriptCopiedTimerRef.current = setTimeout(() => setScriptCopied(false), SCRIPT_COPIED_TIMEOUT_MS);
   }, []);
 
   // -- Selection ------------------------------------------------------------
@@ -239,7 +251,8 @@ export function FetchVideosModal({
     );
     setStatus(`Imported ${String(selected.length)} videos!`);
     // Reset and close after short delay
-    setTimeout(() => {
+    if (importCloseTimerRef.current !== null) clearTimeout(importCloseTimerRef.current);
+    importCloseTimerRef.current = setTimeout(() => {
       setVideos([]);
       setStatus('');
       setPlaylistUrl('');

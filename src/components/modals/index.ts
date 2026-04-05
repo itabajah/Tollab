@@ -12,3 +12,5 @@ export type { AlertType } from './AlertDialog';
 export { AddSemesterModal } from './AddSemesterModal';
 export { SettingsModal } from './SettingsModal';
 export { SyncConflictModal } from './SyncConflictModal';
+export { FetchVideosModal } from './FetchVideosModal';
+export { useFocusTrap } from './useFocusTrap';

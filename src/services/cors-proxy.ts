@@ -214,11 +214,14 @@ export async function fetchViaProxy(
     }
   }
 
-  // All proxies failed
+  // All proxies failed — sanitize error summary for UI display
+  const sanitized = errors.map((e) =>
+    e.replace(/https?:\/\/\S+/g, '[url]').split('\n')[0] ?? '',
+  );
   const errorSummary =
-    errors.length > 0
-      ? `Tried ${String(totalProxies)} proxies. Last errors: ${errors.slice(-3).join('; ')}`
+    sanitized.length > 0
+      ? `Tried ${String(totalProxies)} proxies. Last errors: ${sanitized.slice(-3).join('; ')}`
       : 'All CORS proxies failed';
 
-  throw new ProxyFetchError(errorSummary, errors);
+  throw new ProxyFetchError(errorSummary, sanitized);
 }

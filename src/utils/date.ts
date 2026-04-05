@@ -68,3 +68,24 @@ export function getDayOfWeekFromDate(dateStr: string): number {
   if (!dateStr) return -1;
   return new Date(dateStr).getDay();
 }
+
+// ---------------------------------------------------------------------------
+// Shared date helpers (used by selectors and components)
+// ---------------------------------------------------------------------------
+
+/** Strip the time component and return a Date at midnight local. */
+export function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Parse a `YYYY-MM-DD` string to a midnight-local Date, or `null` if
+ * the input is empty or malformed.
+ */
+export function parseDate(ymd: string): Date | null {
+  if (!ymd) return null;
+  const [y, m, d] = ymd.split('-').map(Number);
+  if (y === undefined || m === undefined || d === undefined) return null;
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+  return new Date(y, m - 1, d);
+}
