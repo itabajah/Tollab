@@ -60,3 +60,23 @@
 - N5: Redundant semester store lookup in WeeklySchedule — courses derivable from already-fetched semester
 **Positives:** Zero `any` types, clean narrow store selectors, good form validation with inline errors, empty states handled, proper cleanup/memoization, clean schedule builder logic, good ARIA on form controls
 **Decision file:** `.squad/decisions/inbox/malik-wave6-review.md`
+
+### 2026-04-07: Review 1 — Code Quality Deep Scan
+**Scope:** All files in `src/components/` (9 dirs, ~40 files) and `src/hooks/` (5 files)
+**Branch:** `review-1-audit`
+**12 quality criteria checked, 12 findings filed.**
+**Key results:**
+- ✅ Zero `any` types, zero `@ts-ignore`/`@ts-expect-error`, all effects cleaned up, all empty states handled
+- ⚠️ 50+ repetitive `e.target as HTML*Element` assertions → extract typed helpers (#75)
+- ⚠️ Static inline styles in HomeworkSidebar/Header (#81)
+- ⚠️ Magic numbers: mobile breakpoint 768 (#82), timeouts/offsets (#83)
+- ⚠️ useFirebaseSync errors not surfaced to user (#91)
+- 🔴 EventChip not keyboard-accessible — WCAG 2.1.1 (#92)
+- ⚠️ HomeworkEditor link buttons lack aria-labels (#93)
+- 🔴 CourseModal tab bar lacks ARIA tablist pattern — WCAG 4.1.2 (#97)
+- ⚠️ Duplicated handleKeyActivate pattern (#98)
+- ⚠️ Add forms lack Enter-key submission (#101)
+- ⚠️ Add forms silently reject empty input (#109)
+- ⚠️ Unsafe JSON.parse type assertion (#110)
+**Blocking:** #92 (EventChip a11y), #97 (CourseModal ARIA tabs)
+**Decision file:** `.squad/decisions/inbox/malik-review1-quality.md`
