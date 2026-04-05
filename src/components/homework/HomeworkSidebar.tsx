@@ -53,12 +53,17 @@ export function HomeworkSidebar() {
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState('');
   const [addCourseId, setAddCourseId] = useState('');
+  const [titleError, setTitleError] = useState('');
 
   const courses = semester?.courses ?? [];
 
   const handleAdd = useCallback(() => {
     const title = newTitle.trim();
-    if (!title) return;
+    if (!title) {
+      setTitleError('Please enter an assignment title.');
+      return;
+    }
+    setTitleError('');
     // Pick a course: use selected, or first available
     const targetCourseId = addCourseId || courses[0]?.id;
     if (!targetCourseId) return;
@@ -163,49 +168,56 @@ export function HomeworkSidebar() {
 
       {/* Add homework form */}
       {courses.length > 0 && (
-        <div class="hw-add-row hw-add-row-top">
-          {courses.length > 1 && (
-            <select
-              value={addCourseId || courses[0]?.id || ''}
-              onChange={(e) =>
-                setAddCourseId((e.target as HTMLSelectElement).value)
+        <>
+          <div class="hw-add-row hw-add-row-top">
+            {courses.length > 1 && (
+              <select
+                value={addCourseId || courses[0]?.id || ''}
+                onChange={(e) =>
+                  setAddCourseId((e.target as HTMLSelectElement).value)
+                }
+                class="hw-course-select"
+              >
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name.length > 15
+                      ? c.name.slice(0, 15) + '…'
+                      : c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <input
+              type="text"
+              className={titleError ? 'input-error' : undefined}
+              placeholder="Assignment title..."
+              value={newTitle}
+              onInput={(e) => {
+                setNewTitle((e.target as HTMLInputElement).value);
+                setTitleError('');
+              }}
+              onKeyDown={(e: KeyboardEvent) => {
+                if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
+              }}
+            />
+            <input
+              type="date"
+              value={newDate}
+              onInput={(e) =>
+                setNewDate((e.target as HTMLInputElement).value)
               }
-              class="hw-course-select"
-            >
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name.length > 15
-                    ? c.name.slice(0, 15) + '…'
-                    : c.name}
-                </option>
-              ))}
-            </select>
+              onKeyDown={(e: KeyboardEvent) => {
+                if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
+              }}
+            />
+            <button type="button" class="btn-secondary" onClick={handleAdd}>
+              Add
+            </button>
+          </div>
+          {titleError && (
+            <div className="validation-error" role="alert">{titleError}</div>
           )}
-          <input
-            type="text"
-            placeholder="Assignment title..."
-            value={newTitle}
-            onInput={(e) =>
-              setNewTitle((e.target as HTMLInputElement).value)
-            }
-            onKeyDown={(e: KeyboardEvent) => {
-              if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
-            }}
-          />
-          <input
-            type="date"
-            value={newDate}
-            onInput={(e) =>
-              setNewDate((e.target as HTMLInputElement).value)
-            }
-            onKeyDown={(e: KeyboardEvent) => {
-              if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
-            }}
-          />
-          <button type="button" class="btn-secondary" onClick={handleAdd}>
-            Add
-          </button>
-        </div>
+        </>
       )}
     </>
   );

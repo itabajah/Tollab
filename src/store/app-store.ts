@@ -161,7 +161,6 @@ interface AppActions {
   importCourses: (semesterId: string, courses: Course[]) => void;
 
   // -- Persistence ----------------------------------------------------------
-  saveData: () => void;
   loadData: (data: {
     semesters: Semester[];
     settings: AppSettings;
@@ -644,12 +643,6 @@ export const useAppStore = create<AppStore>()(
     // ======================================================================
     // Persistence
     // ======================================================================
-
-    saveData: () => {
-      set((state) => {
-        state.lastModified = new Date().toISOString();
-      });
-    },
 
     loadData: (data) => {
       set((state) => {

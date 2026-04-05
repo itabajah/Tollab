@@ -150,6 +150,8 @@ export async function fetchSemesterList(): Promise<SAPSemester[]> {
 /**
  * Fetches course metadata for a single course by its catalog number.
  *
+ * Used by CourseModal for auto-fill enrichment in Wave 12.
+ *
  * Builds a catalog from all available semesters and looks up the course.
  *
  * @throws {Error} When the semester list can't be fetched or the course
@@ -216,6 +218,8 @@ export async function buildCourseCatalog(
 /**
  * Enriches a single course with metadata from the catalog, filling in
  * only fields that are currently empty.
+ *
+ * Used internally by enrichCoursesWithCatalog; exported for CourseModal in Wave 12.
  *
  * Returns a new course object (does not mutate the input).
  */

@@ -283,6 +283,8 @@ export function parsePanoptoClipboard(jsonText: string): PanoptoVideo[] {
 /**
  * Fetches and parses a Panopto folder page via CORS proxy.
  *
+ * Used by FetchVideosModal for URL-based import in Wave 12.
+ *
  * @throws {Error} When the folder ID or domain can't be extracted, or the
  *   fetch fails.
  */
@@ -310,6 +312,8 @@ export async function fetchPanoptoFolder(url: string): Promise<PanoptoVideo[]> {
 
 /**
  * Parses a locally saved Panopto HTML file to extract videos.
+ *
+ * Used by FetchVideosModal for file-based import in Wave 12.
  *
  * Uses `<tr>` row patterns with `aria-label` attributes as the primary
  * strategy, falling back to direct Viewer.aspx link extraction.
