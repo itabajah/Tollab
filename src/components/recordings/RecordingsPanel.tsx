@@ -41,6 +41,7 @@ export function RecordingsPanel({ courseId, onOpenFetchModal }: RecordingsPanelP
   const updateSettings = useAppStore((s) => s.updateSettings);
 
   const [newLink, setNewLink] = useState('');
+  const [newLinkError, setNewLinkError] = useState('');
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const tabs = course?.recordings.tabs ?? [];
@@ -70,7 +71,12 @@ export function RecordingsPanel({ courseId, onOpenFetchModal }: RecordingsPanelP
 
   const handleAddRecording = useCallback(() => {
     const link = newLink.trim();
-    if (!link || !tabId) return;
+    if (!link || !tabId) {
+      if (!link) setNewLinkError('Please enter a video link.');
+      return;
+    }
+
+    setNewLinkError('');
 
     // Auto-generate name from URL or use generic name
     const tabItemCount = activeTab?.items.length ?? 0;
@@ -177,10 +183,10 @@ export function RecordingsPanel({ courseId, onOpenFetchModal }: RecordingsPanelP
       <div className="recordings-add-section">
         <input
           type="text"
-          className="recordings-add-input"
+          className={`recordings-add-input${newLinkError ? ' input-error' : ''}`}
           placeholder="Paste video link (YouTube, Panopto, etc.)..."
           value={newLink}
-          onInput={(e) => setNewLink((e.target as HTMLInputElement).value)}
+          onInput={(e) => { setNewLink((e.target as HTMLInputElement).value); setNewLinkError(''); }}
           onKeyDown={handleAddKeyDown}
         />
         <button
@@ -191,6 +197,9 @@ export function RecordingsPanel({ courseId, onOpenFetchModal }: RecordingsPanelP
           Add
         </button>
       </div>
+      {newLinkError && (
+        <div className="validation-error" role="alert">{newLinkError}</div>
+      )}
     </div>
   );
 }

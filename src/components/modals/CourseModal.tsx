@@ -633,10 +633,15 @@ function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomework
 
   const [newTitle, setNewTitle] = useState('');
   const [newDate, setNewDate] = useState('');
+  const [titleError, setTitleError] = useState('');
 
   const handleAdd = useCallback(() => {
     const title = newTitle.trim();
-    if (!title) return;
+    if (!title) {
+      setTitleError('Please enter an assignment title.');
+      return;
+    }
+    setTitleError('');
     const hw: Homework = {
       title,
       dueDate: newDate,
@@ -715,9 +720,10 @@ function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomework
       <div className="hw-add-row">
         <input
           type="text"
+          className={titleError ? 'input-error' : undefined}
           placeholder="Assignment title..."
           value={newTitle}
-          onInput={(e) => setNewTitle((e.target as HTMLInputElement).value)}
+          onInput={(e) => { setNewTitle((e.target as HTMLInputElement).value); setTitleError(''); }}
           onKeyDown={(e: KeyboardEvent) => {
             if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
           }}
@@ -734,6 +740,9 @@ function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomework
           Add
         </button>
       </div>
+      {titleError && (
+        <div className="validation-error" role="alert">{titleError}</div>
+      )}
     </div>
   );
 }

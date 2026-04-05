@@ -3,6 +3,9 @@
  *
  * Each hook reads from one or more Zustand stores and returns
  * computed / filtered / sorted data ready for components to consume.
+ *
+ * Selectors that return computed objects/arrays use shallow equality
+ * to prevent unnecessary re-renders.
  */
 
 import type {
@@ -14,7 +17,7 @@ import type {
   Semester,
 } from '@/types';
 
-import { useAppStore } from './app-store';
+import { type AppStore, useAppStore } from './app-store';
 
 // ---------------------------------------------------------------------------
 // Exported helper types
@@ -210,6 +213,51 @@ function sortHomeworkItems(
 }
 
 // ---------------------------------------------------------------------------
+// Equality helpers for memoized selectors
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates a memoized selector that returns the previous result reference
+ * when the new result is structurally equal to the old one.
+ * This prevents Zustand from triggering unnecessary re-renders.
+ */
+function memoize<S, R>(
+  selector: (state: S) => R,
+  eq: (a: R, b: R) => boolean,
+): (state: S) => R {
+  let cached: { result: R } | null = null;
+  return (state: S) => {
+    const result = selector(state);
+    if (cached !== null && eq(cached.result, result)) {
+      return cached.result;
+    }
+    cached = { result };
+    return result;
+  };
+}
+
+/** Shallow array equality — same length, same item references. */
+function shallowArray<T>(a: readonly T[], b: readonly T[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+/** Shallow equality for HomeworkByUrgency — all five arrays compared by reference. */
+function homeworkByUrgencyEqual(a: HomeworkByUrgency, b: HomeworkByUrgency): boolean {
+  return (
+    shallowArray(a.overdue, b.overdue) &&
+    shallowArray(a.today, b.today) &&
+    shallowArray(a.thisWeek, b.thisWeek) &&
+    shallowArray(a.upcoming, b.upcoming) &&
+    shallowArray(a.noDate, b.noDate)
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Selector hooks
 // ---------------------------------------------------------------------------
 
@@ -230,19 +278,26 @@ export function useCourseById(courseId: string): Course | undefined {
   });
 }
 
-/** All courses in the current semester. */
-export function useAllCourses(): Course[] {
-  return useAppStore((state) => {
+/** All courses in the current semester. Memoized to prevent unnecessary re-renders. */
+const allCoursesSelector = memoize(
+  (state: AppStore) => {
     const semester = state.semesters.find(
       (s) => s.id === state.currentSemesterId,
     );
-    return semester?.courses ?? [];
-  });
+    return semester?.courses ?? EMPTY_COURSES;
+  },
+  shallowArray,
+);
+
+export function useAllCourses(): Course[] {
+  return useAppStore(allCoursesSelector);
 }
 
+const EMPTY_COURSES: Course[] = [];
+
 /** Homework across all courses in the current semester, grouped by urgency. */
-export function useHomeworkByUrgency(): HomeworkByUrgency {
-  return useAppStore((state) => {
+const homeworkByUrgencySelector = memoize(
+  (state: AppStore) => {
     const result: HomeworkByUrgency = {
       overdue: [],
       today: [],
@@ -300,83 +355,111 @@ export function useHomeworkByUrgency(): HomeworkByUrgency {
     }
 
     return result;
-  });
+  },
+  homeworkByUrgencyEqual,
+);
+
+export function useHomeworkByUrgency(): HomeworkByUrgency {
+  return useAppStore(homeworkByUrgencySelector);
 }
 
-/** Recording and homework progress for a course. */
+/** Recording and homework progress for a course. Memoized via structural equality. */
 export function useCourseProgress(courseId: string): CourseProgress {
-  return useAppStore((state) => {
-    const result: CourseProgress = {
-      watchedCount: 0,
-      totalRecordings: 0,
-      completedHomework: 0,
-      totalHomework: 0,
-    };
+  return useAppStore(
+    memoize(
+      (state: AppStore) => {
+        const result: CourseProgress = {
+          watchedCount: 0,
+          totalRecordings: 0,
+          completedHomework: 0,
+          totalHomework: 0,
+        };
 
-    const semester = state.semesters.find(
-      (s) => s.id === state.currentSemesterId,
-    );
-    if (!semester) return result;
+        const semester = state.semesters.find(
+          (s) => s.id === state.currentSemesterId,
+        );
+        if (!semester) return result;
 
-    const course = semester.courses.find((c) => c.id === courseId);
-    if (!course) return result;
+        const course = semester.courses.find((c) => c.id === courseId);
+        if (!course) return result;
 
-    for (const tab of course.recordings.tabs) {
-      for (const item of tab.items) {
-        result.totalRecordings++;
-        if (item.watched) result.watchedCount++;
-      }
-    }
+        for (const tab of course.recordings.tabs) {
+          for (const item of tab.items) {
+            result.totalRecordings++;
+            if (item.watched) result.watchedCount++;
+          }
+        }
 
-    result.totalHomework = course.homework.length;
-    result.completedHomework = course.homework.filter(
-      (h) => h.completed,
-    ).length;
+        result.totalHomework = course.homework.length;
+        result.completedHomework = course.homework.filter(
+          (h) => h.completed,
+        ).length;
 
-    return result;
-  });
+        return result;
+      },
+      (a, b) =>
+        a.watchedCount === b.watchedCount &&
+        a.totalRecordings === b.totalRecordings &&
+        a.completedHomework === b.completedHomework &&
+        a.totalHomework === b.totalHomework,
+    ),
+  );
 }
 
-/** Sorted recordings for a given course and tab index. */
+/** Sorted recordings for a given course and tab index. Memoized via shallow equality. */
 export function useSortedRecordings(
   courseId: string,
   tabIndex: number,
 ): IndexedRecording[] {
-  return useAppStore((state) => {
-    const semester = state.semesters.find(
-      (s) => s.id === state.currentSemesterId,
-    );
-    if (!semester) return [];
+  return useAppStore(
+    memoize(
+      (state: AppStore) => {
+        const semester = state.semesters.find(
+          (s) => s.id === state.currentSemesterId,
+        );
+        if (!semester) return EMPTY_RECORDINGS;
 
-    const course = semester.courses.find((c) => c.id === courseId);
-    if (!course) return [];
+        const course = semester.courses.find((c) => c.id === courseId);
+        if (!course) return EMPTY_RECORDINGS;
 
-    const tab = course.recordings.tabs[tabIndex];
-    if (!tab) return [];
+        const tab = course.recordings.tabs[tabIndex];
+        if (!tab) return EMPTY_RECORDINGS;
 
-    const tabSortOrders = state.recordingSortOrders[courseId];
-    const order: RecordingSortOrder =
-      (tabSortOrders?.[tab.id] as RecordingSortOrder | undefined) ?? 'default';
+        const tabSortOrders = state.recordingSortOrders[courseId];
+        const order: RecordingSortOrder =
+          (tabSortOrders?.[tab.id] as RecordingSortOrder | undefined) ?? 'default';
 
-    return sortRecordingItems(tab.items, order);
-  });
+        return sortRecordingItems(tab.items, order);
+      },
+      shallowArray,
+    ),
+  );
 }
 
-/** Sorted homework for a given course. */
+const EMPTY_RECORDINGS: IndexedRecording[] = [];
+
+/** Sorted homework for a given course. Memoized via shallow equality. */
 export function useSortedHomework(courseId: string): IndexedHomework[] {
-  return useAppStore((state) => {
-    const semester = state.semesters.find(
-      (s) => s.id === state.currentSemesterId,
-    );
-    if (!semester) return [];
+  return useAppStore(
+    memoize(
+      (state: AppStore) => {
+        const semester = state.semesters.find(
+          (s) => s.id === state.currentSemesterId,
+        );
+        if (!semester) return EMPTY_HOMEWORK;
 
-    const course = semester.courses.find((c) => c.id === courseId);
-    if (!course) return [];
+        const course = semester.courses.find((c) => c.id === courseId);
+        if (!course) return EMPTY_HOMEWORK;
 
-    const order: HomeworkSortOrder =
-      (state.homeworkSortOrders[courseId] as HomeworkSortOrder | undefined) ??
-      'manual';
+        const order: HomeworkSortOrder =
+          (state.homeworkSortOrders[courseId] as HomeworkSortOrder | undefined) ??
+          'manual';
 
-    return sortHomeworkItems(course.homework, order);
-  });
+        return sortHomeworkItems(course.homework, order);
+      },
+      shallowArray,
+    ),
+  );
 }
+
+const EMPTY_HOMEWORK: IndexedHomework[] = [];

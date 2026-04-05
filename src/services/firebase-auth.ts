@@ -61,6 +61,8 @@ export async function signOut(): Promise<void> {
 /**
  * Subscribe to auth state changes. Returns an unsubscribe function, or null
  * if Firebase is not configured.
+ *
+ * Used by sync status UI in Wave 12.
  */
 export function onAuthStateChange(
   callback: (user: User | null) => void,
@@ -69,7 +71,7 @@ export function onAuthStateChange(
   return onAuthStateChanged(auth, callback);
 }
 
-/** Get the currently signed-in user, or null. */
+/** Get the currently signed-in user, or null. Used by sync status UI in Wave 12. */
 export function getCurrentUser(): User | null {
   if (!auth) return null;
   return auth.currentUser;

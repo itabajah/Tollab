@@ -454,6 +454,17 @@ input:focus, textarea:focus {
     margin-top: 4px;
 }
 
+.validation-error {
+    display: block;
+    color: var(--error-border);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.input-error {
+    border-color: var(--error-border) !important;
+}
+
 .form-control {
     width: 100%;
     padding: 12px 14px;
