@@ -1,7 +1,7 @@
 /**
  * CourseModal — 3-tab modal for course editing.
  *
- * Tab 1: Recordings (placeholder for Wave 7)
+ * Tab 1: Recordings
  * Tab 2: Homework   (placeholder for Wave 7)
  * Tab 3: Details    (name, number, instructor, color, schedule builder, etc.)
  *
@@ -13,11 +13,13 @@ import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 
 import { DAY_NAMES_FULL, DAY_NAMES_SHORT } from '@/constants';
 import { HomeworkItem } from '@/components/homework';
+import { RecordingsPanel } from '@/components/recordings';
 import { useAppStore } from '@/store/app-store';
 import { useCourseById, useCurrentSemester, useSortedHomework } from '@/store/selectors';
 import { useUiStore } from '@/store/ui-store';
 import type { Homework, ScheduleSlot } from '@/types';
 
+import { FetchVideosModal } from './FetchVideosModal';
 import { Modal } from './Modal';
 
 // ---------------------------------------------------------------------------
@@ -132,12 +134,14 @@ export function CourseModal() {
   // -- Validation -----------------------------------------------------------
   const [nameError, setNameError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [fetchModalOpen, setFetchModalOpen] = useState(false);
 
   // -- Populate form on open / courseId change ------------------------------
   useEffect(() => {
     if (!isOpen) return;
 
     setDeleteConfirm(false);
+    setFetchModalOpen(false);
     setNameError('');
     setNewDay(0);
     setNewStart('');
@@ -296,11 +300,21 @@ export function CourseModal() {
       {/* Tab panels                                                       */}
       {/* ================================================================ */}
 
-      {/* Recordings tab (placeholder) */}
-      {activeTab === 'recordings' && (
-        <div className="course-tab-panel active">
-          <p className="form-group">Recordings will be available here</p>
-        </div>
+      {/* Recordings tab */}
+      {activeTab === 'recordings' && editingCourseId && (
+        <>
+          <RecordingsPanel
+            courseId={editingCourseId}
+            onOpenFetchModal={() => setFetchModalOpen(true)}
+          />
+          <FetchVideosModal
+            isOpen={fetchModalOpen}
+            onClose={() => setFetchModalOpen(false)}
+            courseId={editingCourseId}
+            tabId={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.id ?? ''}
+            existingCount={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.items.length ?? 0}
+          />
+        </>
       )}
 
       {/* Homework tab */}
