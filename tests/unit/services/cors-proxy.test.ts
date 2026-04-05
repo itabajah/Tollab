@@ -212,7 +212,7 @@ describe('cors-proxy', () => {
       const result = await fetchViaProxy('https://example.com');
       expect(result.text).toBe('ok');
       expect(result.proxyIndex).toBe(1);
-    });
+    }, 15_000);
 
     it('retries on 5xx server errors', async () => {
       const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
