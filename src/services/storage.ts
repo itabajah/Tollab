@@ -173,6 +173,7 @@ export function loadSettings(): AppSettings {
 
 /**
  * Delete a profile's data from localStorage.
+ * Used by SettingsPanel for profile management in Wave 12.
  */
 export function deleteProfileData(profileId: string): void {
   try {
@@ -184,6 +185,8 @@ export function deleteProfileData(profileId: string): void {
 
 /**
  * Estimate current localStorage usage.
+ *
+ * Used by SettingsPanel for storage indicator in Wave 12.
  *
  * Iterates all keys and sums the UTF-16 character lengths (each char = 2 bytes
  * in the localStorage DOMString model).
@@ -212,6 +215,8 @@ export function getStorageUsage(): StorageUsage {
 /**
  * Export all Tollab data (profiles list + every profile's data + settings)
  * as a single JSON string suitable for file download / backup.
+ *
+ * Used by SettingsPanel for data export in Wave 12.
  */
 export function exportAllData(): string {
   const profiles = loadProfileList() ?? [];
@@ -238,6 +243,8 @@ export function exportAllData(): string {
 
 /**
  * Validate and import data from a JSON string (as produced by `exportAllData`).
+ *
+ * Used by SettingsPanel for data import in Wave 12.
  */
 export function importData(jsonString: string): ImportResult {
   let parsed: unknown;

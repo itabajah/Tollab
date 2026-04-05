@@ -177,19 +177,22 @@ export function FetchVideosModal({
   const handleCopyScript = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(PANOPTO_SCRIPT);
-      setScriptCopied(true);
-      setTimeout(() => setScriptCopied(false), 2000);
     } catch {
-      // Fallback
-      const el = document.createElement('textarea');
-      el.value = PANOPTO_SCRIPT;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      setScriptCopied(true);
-      setTimeout(() => setScriptCopied(false), 2000);
+      // Fallback for insecure contexts or denied permissions
+      const textArea = document.createElement('textarea');
+      textArea.value = PANOPTO_SCRIPT;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } finally {
+        document.body.removeChild(textArea);
+      }
     }
+    setScriptCopied(true);
+    setTimeout(() => setScriptCopied(false), 2000);
   }, []);
 
   // -- Selection ------------------------------------------------------------

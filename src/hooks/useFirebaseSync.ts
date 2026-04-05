@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import type { User } from 'firebase/auth';
 
+import { useToast } from '@/components/toast/ToastContext';
 import { isFirebaseConfigured } from '@/services/firebase-config';
 import {
   signOut as firebaseSignOut,
@@ -26,17 +27,19 @@ import {
   buildLocalPayload,
   cancelPendingSync,
   debouncedSync,
+  getIsApplyingRemote,
   mergeLocalAndCloud,
   pullFromFirebase,
   pushToFirebase,
   subscribeToFirebase,
 } from '@/services/firebase-sync';
+import { useAppStore } from '@/store/app-store';
 import type {
   CloudPayload,
   SyncConflictInfo,
   SyncConflictResolution,
 } from '@/types';
-import { FirebaseSyncState } from '@/types';
+import { FirebaseSyncState, ToastType } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -131,6 +134,7 @@ export function useFirebaseSync({
   const [syncState, setSyncState] = useState<FirebaseSyncState>(
     FirebaseSyncState.Disconnected,
   );
+  const { showToast } = useToast();
 
   // Refs to avoid stale closures
   const getAppDataRef = useRef(getAppData);
@@ -204,8 +208,11 @@ export function useFirebaseSync({
       console.error(LOG, 'Initial sync failed:', err);
       setSyncStatus('error');
       setSyncState(FirebaseSyncState.Error);
+      showToast('Initial sync failed', ToastType.Error, {
+        description: err instanceof Error ? err.message : 'Could not sync with cloud.',
+      });
     }
-  }, []);
+  }, [showToast]);
 
   // ----- Set up realtime listener after initial sync -----------------------
   const setupRealtimeListener = useCallback((uid: string) => {
@@ -246,8 +253,11 @@ export function useFirebaseSync({
       console.error(LOG, 'Sign-in failed:', err);
       setSyncStatus('error');
       setSyncState(FirebaseSyncState.Error);
+      showToast('Sign-in failed', ToastType.Error, {
+        description: err instanceof Error ? err.message : 'Could not sign in to Google.',
+      });
     }
-  }, [handleInitialSync, setupRealtimeListener]);
+  }, [handleInitialSync, setupRealtimeListener, showToast]);
 
   // ----- Sign out ----------------------------------------------------------
   const signOut = useCallback(async () => {
@@ -282,16 +292,23 @@ export function useFirebaseSync({
       console.error(LOG, 'Force sync failed:', err);
       setSyncStatus('error');
       setSyncState(FirebaseSyncState.Error);
+      showToast('Sync failed', ToastType.Error, {
+        description: err instanceof Error ? err.message : 'Could not push data to cloud.',
+      });
     }
-  }, [user]);
+  }, [user, showToast]);
 
-  // ----- Debounced auto-sync on data changes --------------------------------
+  // ----- Debounced auto-sync on app-store data changes ----------------------
   useEffect(() => {
     if (!user) return;
 
-    // Trigger debounced sync whenever this effect re-runs with a signed-in user
-    const data = getAppDataRef.current();
-    debouncedSync(user.uid, data);
+    const unsub = useAppStore.subscribe(() => {
+      if (getIsApplyingRemote()) return;
+      const data = getAppDataRef.current();
+      debouncedSync(user.uid, data);
+    });
+
+    return unsub;
   }, [user]);
 
   return {

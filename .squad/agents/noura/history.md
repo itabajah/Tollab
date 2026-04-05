@@ -29,3 +29,29 @@
 **Scope:** CourseCard, CourseList, CourseProgress, WeeklySchedule, TimeGrid, EventChip, CurrentTimeLine, CourseModal (Details tab), AddSemesterModal
 **Findings:** 6 missing CSS classes (`.course-info`, `.course-list-empty`, `.schedule-section-actions`, `.form-control`, `.form-error`, `.modal-footer`). CSS selector mismatch: `.full-spectrum` targets legacy ID `#course-color-hue` but new component uses `#cm-color-hue` — rainbow gradient won't render. CourseModal color hue range 0–360 vs legacy 0–180. AddSemesterModal text deviations (label, button text, placeholder). Calendar collapse toggle (`#toggle-calendar-btn`) missing. All calendar grid classes (`.weekly-schedule`, `.schedule-header`, `.schedule-time-col`, `.schedule-cell`, `.schedule-block`, `.current-time-line`) verified present. CourseCard structure, colored border approach, and metadata layout match legacy perfectly.
 **Review file:** `.squad/decisions/inbox/noura-wave6-review.md`
+
+### 2026-04-07: Review 1 Iteration 1 — Full UI Fidelity Audit
+**Verdict:** ❌ REQUEST CHANGES (7 findings)
+**Scope:** All 40+ components across layout, toast, modals, UI primitives, courses, calendar, homework, recordings, and settings — audited against `index.legacy.html` for spacing, colors, font sizes, animations, hover states, focus states, scroll behavior, mobile layout, missing CSS classes, and dark mode.
+**Findings:**
+1. **#102** — Missing `#toggle-calendar-btn` (calendar collapse/expand toggle absent from WeeklySchedule)
+2. **#103** — AddSemesterModal uses `size="sm"` (400px) instead of default `size="md"` (600px)
+3. **#104** — AddSemesterModal has extra Cancel button + `modal-footer` not present in legacy
+4. **#105** — HeaderTicker always renders, even with empty messages (legacy starts hidden)
+5. **#106** — CloudSyncIcon uses undefined `--green`/`--red` CSS vars (should use `--success-border`/`--error-border`)
+6. **#107** — No `:focus-visible` styles for `tabIndex={0}` elements (CourseCard, HomeworkItem, event-card)
+7. **#108** — ToastContainer commented out in App.tsx — all toast notifications invisible
+
+**Verified OK:**
+- All 7 CSS files present and imported. CSS variable coverage complete for light/dark modes.
+- All structural CSS classes referenced by components exist in stylesheets.
+- Previous Wave 6 color-hue issue fixed (`#cm-color-hue` with `.full-spectrum` class, range 0-180).
+- Modal transitions (opacity + translateY), toast animations (slide-in/out + progress bar), ticker crossfade all match legacy patterns.
+- Responsive breakpoints at 900px, 768px, 640px, 480px, 360px all present.
+- Footer, Header (brand, subtitle, theme toggle, settings), SemesterControls all pixel-match legacy.
+- Course card structure, colored border, reorder buttons, metadata layout — all match.
+- Recordings tabs, action panel, collapsible actions, add/edit/delete — all match.
+- Homework sidebar grouping, urgency sections, inline add form — all match.
+- Settings modal 4-tab system with WCAG-compliant tab pattern — correct.
+
+**Review file:** `.squad/decisions/inbox/noura-review1-ui.md`

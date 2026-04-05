@@ -55,11 +55,21 @@ export function EventChip({ course, slot, onClick }: EventChipProps) {
     .filter(Boolean)
     .join('\n');
 
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+
   return (
     <div
       class="schedule-block"
       title={title}
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       style={{
         top: `${String(topOffset)}px`,
         height: `${String(height)}px`,
