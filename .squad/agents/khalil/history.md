@@ -48,3 +48,31 @@
 - `tsconfig.json` includes both `src` and `tests` directories
 - Branch: `wave-0-tooling` (pushed to origin)
 
+### Wave 10 — Build Finalization (completed)
+
+**Build output verified (`npm run build`):**
+- `dist/index.html` — 0.50 KB (entry point)
+- `dist/assets/index-*.js` — 122 KB raw / **41 KB gzipped** (well under 200 KB budget)
+- `dist/assets/index-*.css` — 68 KB raw / 11 KB gzipped
+- `dist/favicon.svg` — copied from `public/`
+- `dist/CNAME` — copied from `public/` (tollab.co.il)
+
+**Config verified:**
+- `base: '/'` in `vite.config.ts` — correct for custom domain on GitHub Pages
+- CI workflow (`ci.yml`) runs lint → typecheck → test → build on PRs to squad-branch
+- Deploy workflow (`deploy.yml`) ready but disabled (`if: false`) until migration complete
+
+**Fixes applied:**
+- Added `react` and `react-dom` as npm aliases to `@preact/compat` in devDependencies — fixes Zustand's `import from 'react'` in test environment (vitest). The `@preact/preset-vite` plugin handles this for builds, but vitest's Node.js ESM resolution for node_modules bypasses Vite aliases.
+- Fixed `src/App.test.tsx` — replaced `@testing-library/preact`'s `render()` with direct `preactRender()` to avoid `act()` infinite hang when multiple Zustand-subscribed components are in the tree. Known Preact compat issue with testing-library's act wrapper.
+
+**All npm scripts verified:**
+- `npm run dev` — starts Vite dev server ✓
+- `npm run build` — produces dist/ with correct output ✓
+- `npm run lint` — 0 errors, 28 warnings (all `no-console` in Firebase services) ✓
+- `npm run typecheck` — passes ✓
+- `npm test` — 10 files, 294 tests pass ✓
+- `npm run preview` — serves built app, returns HTTP 200 ✓
+
+- Branch: `wave-10-cleanup` (pushed to origin)
+
