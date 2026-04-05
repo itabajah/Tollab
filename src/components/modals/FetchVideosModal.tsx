@@ -1,15 +1,19 @@
 /**
  * FetchVideosModal — Import videos from YouTube playlists or Panopto folders.
  *
- * YouTube: paste playlist URL → fetch → select videos → import.
- * Panopto: run console script → paste JSON → parse → select videos → import.
+ * YouTube: paste playlist URL → fetch via service → select videos → import.
+ * Panopto: run console script → paste JSON → parse via service → select → import.
  */
 
 import { useCallback, useState } from 'preact/hooks';
 
-import { CORS_PROXIES } from '@/constants';
+import { useToast } from '@/components/toast/ToastContext';
+import { parsePanoptoClipboard } from '@/services/panopto';
+import { fetchYouTubePlaylist } from '@/services/youtube';
+import type { YouTubeVideo } from '@/services/youtube';
 import { useAppStore } from '@/store/app-store';
 import type { RecordingItem } from '@/types';
+import { ToastType } from '@/types';
 
 import { Modal } from '../modals/Modal';
 
@@ -26,63 +30,11 @@ interface FetchedVideo {
 type FetchSource = 'youtube' | 'panopto';
 
 // ---------------------------------------------------------------------------
-// YouTube parsing helpers
+// Constants
 // ---------------------------------------------------------------------------
 
 const PANOPTO_SCRIPT =
   `copy(JSON.stringify([...document.querySelectorAll('tr[aria-label][id]')].filter(r=>/^[a-f0-9-]{36}$/i.test(r.id)).map(r=>({t:r.getAttribute('aria-label'),u:location.origin+'/Panopto/Pages/Viewer.aspx?id='+r.id}))))`;
-
-function extractPlaylistId(url: string): string | null {
-  const match = url.match(/[?&]list=([^&#]+)/);
-  return match?.[1] ?? null;
-}
-
-function parseYouTubeHtml(html: string): FetchedVideo[] {
-  const videos: FetchedVideo[] = [];
-  // Look for video data in the HTML using common playlist patterns
-  const titleRegex = /\"title\":\{\"runs\":\[\{\"text\":\"(.*?)\"\}\]/g;
-  const idRegex = /\"videoId\":\"([A-Za-z0-9_-]{11})\"/g;
-
-  const titles: string[] = [];
-  const ids: string[] = [];
-
-  let match;
-  while ((match = titleRegex.exec(html)) !== null) {
-    if (match[1]) titles.push(match[1]);
-  }
-  while ((match = idRegex.exec(html)) !== null) {
-    if (match[1] && !ids.includes(match[1])) ids.push(match[1]);
-  }
-
-  // Pair titles with IDs
-  const count = Math.min(titles.length, ids.length);
-  for (let i = 0; i < count; i++) {
-    videos.push({
-      title: titles[i]!,
-      url: `https://www.youtube.com/watch?v=${ids[i]}`,
-      selected: true,
-    });
-  }
-
-  // If regex approach didn't work, try simpler pattern
-  if (videos.length === 0) {
-    const simpleRegex = /watch\?v=([A-Za-z0-9_-]{11})/g;
-    const seenIds = new Set<string>();
-    while ((match = simpleRegex.exec(html)) !== null) {
-      const id = match[1];
-      if (id && !seenIds.has(id)) {
-        seenIds.add(id);
-        videos.push({
-          title: `Video ${videos.length + 1}`,
-          url: `https://www.youtube.com/watch?v=${id}`,
-          selected: true,
-        });
-      }
-    }
-  }
-
-  return videos;
-}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -104,6 +56,7 @@ export function FetchVideosModal({
   existingCount,
 }: FetchVideosModalProps) {
   const addRecording = useAppStore((s) => s.addRecording);
+  const { showToast } = useToast();
 
   const [source, setSource] = useState<FetchSource>('youtube');
   const [playlistUrl, setPlaylistUrl] = useState('');
@@ -117,9 +70,8 @@ export function FetchVideosModal({
   // -- YouTube fetch --------------------------------------------------------
 
   const handleFetchYouTube = useCallback(async () => {
-    const listId = extractPlaylistId(playlistUrl);
-    if (!listId) {
-      setStatus('Invalid playlist URL. Must contain ?list=...');
+    if (!playlistUrl.trim()) {
+      setStatus('Please enter a playlist URL.');
       return;
     }
 
@@ -127,44 +79,75 @@ export function FetchVideosModal({
     setStatus('Fetching playlist...');
     setVideos([]);
 
-    const targetUrl = `https://www.youtube.com/playlist?list=${listId}`;
+    try {
+      const ytVideos: YouTubeVideo[] = await fetchYouTubePlaylist(
+        playlistUrl,
+        (proxyIndex, totalProxies, proxyStatus) => {
+          setStatus(
+            proxyStatus === 'trying'
+              ? `Trying proxy ${String(proxyIndex)}/${String(totalProxies)}...`
+              : `Retrying proxy ${String(proxyIndex)}/${String(totalProxies)}...`,
+          );
+        },
+      );
 
-    for (const proxyFn of CORS_PROXIES) {
-      try {
-        const proxyUrl = proxyFn(targetUrl);
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-
-        const response = await fetch(proxyUrl, { signal: controller.signal });
-        clearTimeout(timeout);
-
-        if (!response.ok) continue;
-
-        const html = await response.text();
-        const parsed = parseYouTubeHtml(html);
-
-        if (parsed.length > 0) {
-          setVideos(parsed);
-          setStatus(`Found ${parsed.length} videos`);
-          setLoading(false);
-          return;
-        }
-      } catch {
-        // Try next proxy
+      if (ytVideos.length > 0) {
+        const fetched: FetchedVideo[] = ytVideos.map((v) => ({
+          title: v.title,
+          url: v.url,
+          selected: true,
+        }));
+        setVideos(fetched);
+        setStatus(`Found ${String(fetched.length)} videos`);
+        showToast(
+          `Found ${String(fetched.length)} videos in playlist`,
+          ToastType.Success,
+        );
+      } else {
+        setStatus('No videos found in the playlist.');
+        showToast('No videos found in playlist', ToastType.Warning);
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch playlist';
+      setStatus(message);
+      showToast('YouTube fetch failed', ToastType.Error, {
+        description: message,
+      });
+    } finally {
+      setLoading(false);
     }
-
-    setStatus('Could not fetch playlist. Try a different URL or use Panopto import.');
-    setLoading(false);
-  }, [playlistUrl]);
+  }, [playlistUrl, showToast]);
 
   // -- Panopto parse --------------------------------------------------------
 
   const handleParsePanopto = useCallback(() => {
     try {
+      // First try the service's structured parser (supports SessionId/SessionName format)
+      try {
+        const serviceVideos = parsePanoptoClipboard(panoptoData);
+        if (serviceVideos.length > 0) {
+          const parsed: FetchedVideo[] = serviceVideos.map((v) => ({
+            title: v.title,
+            url: v.url,
+            selected: true,
+          }));
+          setVideos(parsed);
+          setStatus(`Parsed ${String(parsed.length)} videos`);
+          showToast(
+            `Parsed ${String(parsed.length)} Panopto videos`,
+            ToastType.Success,
+          );
+          return;
+        }
+      } catch {
+        // Service parser failed — try legacy console script format
+      }
+
+      // Fallback: legacy console script format { t, u }
       const data = JSON.parse(panoptoData) as Array<{ t: string; u: string }>;
       if (!Array.isArray(data) || data.length === 0) {
         setStatus('No videos found in pasted data.');
+        showToast('No videos found in pasted data', ToastType.Warning);
         return;
       }
       const parsed: FetchedVideo[] = data.map((item) => ({
@@ -173,11 +156,21 @@ export function FetchVideosModal({
         selected: true,
       }));
       setVideos(parsed);
-      setStatus(`Parsed ${parsed.length} videos`);
+      setStatus(`Parsed ${String(parsed.length)} videos`);
+      showToast(
+        `Parsed ${String(parsed.length)} Panopto videos`,
+        ToastType.Success,
+      );
     } catch {
-      setStatus('Invalid JSON data. Make sure you copied the output from the console script.');
+      setStatus(
+        'Invalid JSON data. Make sure you copied the output from the console script.',
+      );
+      showToast('Invalid Panopto data', ToastType.Error, {
+        description:
+          'Could not parse the pasted data. Make sure you copied the console script output.',
+      });
     }
-  }, [panoptoData]);
+  }, [panoptoData, showToast]);
 
   // -- Copy panopto script --------------------------------------------------
 
@@ -234,7 +227,11 @@ export function FetchVideosModal({
       addRecording(courseId, tabId, recording);
     });
 
-    setStatus(`Imported ${selected.length} videos!`);
+    showToast(
+      `Imported ${String(selected.length)} video${selected.length !== 1 ? 's' : ''}`,
+      ToastType.Success,
+    );
+    setStatus(`Imported ${String(selected.length)} videos!`);
     // Reset and close after short delay
     setTimeout(() => {
       setVideos([]);
@@ -243,7 +240,7 @@ export function FetchVideosModal({
       setPanoptoData('');
       onClose();
     }, 1000);
-  }, [videos, useOriginalNames, existingCount, courseId, tabId, addRecording, onClose]);
+  }, [videos, useOriginalNames, existingCount, courseId, tabId, addRecording, onClose, showToast]);
 
   // -- Close handler --------------------------------------------------------
 
@@ -364,7 +361,7 @@ export function FetchVideosModal({
 
       {/* Status */}
       {status && (
-        <div className="fetch-status" style={{ color: 'var(--text-secondary)' }}>
+        <div className="fetch-status">
           {status}
         </div>
       )}
