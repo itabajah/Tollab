@@ -70,3 +70,31 @@
 **Verification:** typecheck ✅, lint ✅ (0 errors), build ✅ (420ms).
 
 **Commit:** `eef3776` on `wave-7-recordings-homework`, pushed.
+
+### 2025-07-21 — Fix PR #54 review findings (Wave 8 settings, profiles, themes)
+
+**Task:** Address all blocking issues from Malik's code quality review and Noura's UI fidelity review on `wave-8-settings-profiles`. Sami and Hana were locked out.
+
+**B1 — WCAG tab bar (Malik):**
+- Added `role="tablist"` + `aria-label` to `.settings-modal-tabs` container.
+- Each tab button now has `role="tab"`, `aria-selected`, `aria-controls`, `id`, and `tabIndex` (roving tabindex: active=0, others=-1).
+- Each panel now has `role="tabpanel"`, `aria-labelledby`, and `id`.
+- Added `onKeyDown` handler with ArrowLeft/ArrowRight (wrapping), Home/End support + focus management.
+
+**B2 — SyncConflictModal inline styles (Malik):**
+- Replaced all 17 static `style={{…}}` props with CSS classes.
+- Created 9 new classes in `modals.css`: `.sync-conflict-icon`, `.sync-conflict-description`, `.sync-conflict-summary`, `.sync-conflict-summary-row`, `.sync-conflict-options`, `.sync-conflict-option-btn`, `.sync-conflict-option-label`, `.sync-conflict-option-desc`, `.sync-conflict-cancel-btn`.
+
+**B3 — 17 missing CSS class definitions (Noura):**
+- Added 13 new classes to `components.css`: `.settings-tab-content`, `.settings-section-title`, `.settings-subsection-title`, `.settings-description`, `.settings-day-checkbox`, `.settings-days-container`, `.settings-batch-label`, `.settings-batch-year`, `.settings-batch-hint`, `.settings-divider`, `.settings-status`, `.settings-external-link`, `.settings-unsaved-indicator`, `.settings-theme-buttons`.
+- 6 calendar preview classes no longer needed (preview removed per B4).
+
+**B4 — Extra non-legacy features (Noura):**
+- Removed "Display Mode" dark/light toggle from AppearanceTab (legacy toggle lives in Header only).
+- Added apply/cancel workflow to AppearanceTab: pending local state for theme/hue changes, Apply commits to store, Cancel reverts. Unsaved changes indicator matches legacy `#theme-unsaved-indicator`.
+- Removed calendar preview section from CalendarTab (not in legacy).
+- Also fixed N3 (inline style on visible-days container → `.settings-days-container` CSS class).
+
+**Verification:** typecheck ✅, lint ✅ (0 errors, 28 pre-existing warnings), build ✅ (476ms).
+
+**Commit:** `ef62968` on `wave-8-settings-profiles`, pushed.

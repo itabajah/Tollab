@@ -254,6 +254,42 @@
 **Why:** Verify feature parity + fidelity resolved per migration rules.
 **Impact:** PR #53 APPROVED by Noura. All blocking issues fully resolved. Feature parity restored. Ready to merge.
 
+### 2026-04-07T00:00:00Z: Wave 8 Settings Modal, Profile Management & Theme System
+**By:** Sami + Hana (Development)
+**What:** Wave 8 delivered complete settings tier with profile export/import, theme management, and sync conflict resolution: SettingsModal (4 tabs: Profile, Appearance, Calendar, Fetch Data), WCAG 2.1 compliant tab navigation with arrow-key support, useTheme hook with dark-mode class toggling, SyncConflictModal for Firebase conflict resolution, useFirebaseSync hook with real-time listener, 22 CSS classes for settings UI, 9 files (+1,063 lines). 3-reviewer cycle: Malik (REQUEST CHANGES: B1 tab ARIA pattern, B2 inline styles) → Noura (REQUEST CHANGES: 17 undefined CSS classes, extra Display Mode feature, missing Apply/Cancel buttons) → fixed by Omar (all 5 findings) → Malik APPROVED → Noura APPROVED. PR #54 squash-merged.
+**Why:** Settings tier closes user preferences loop + profile management enables multi-profile workflows + WCAG accessibility compliance enforced.
+**Impact:** PR #54 APPROVED. Wave 8 merged to squad-branch. Profile data now exportable, theme persists, sync conflicts resolvable. Foundation ready for Wave 9 course management UI.
+
+### 2026-04-07T00:00:00Z: PR #54 Review — Wave 8 Settings & Profiles (Malik Round 1)
+**By:** Malik (Code Quality)
+**What:** Code quality review of PR #54: 9 files (4 components, 1 hook pair, 2 CSS updates, 2 export), typecheck ✅, lint ✅ (0 errors, 28 warnings pre-existing), build ✅. Two **blocking issues**: (B1) SettingsModal tab bar missing WCAG roles — no `role="tablist"`, `role="tab"`, `role="tabpanel"` + no arrow-key navigation (SC 2.1.1, SC 4.1.2). (B2) SyncConflictModal contains 17 static inline styles — violates CSS-class-only rule (same blocking issue in Waves 5, 6). Non-blocking: class vs className inconsistency, ICS input missing label, CalendarTab one inline style, redundant enum checks, useFirebaseSync effect cleanup, SVG icon style duplication.
+**Why:** WCAG compliance mandatory. Inline style rule has been flagged in two previous waves — cannot regress.
+**Impact:** REQUEST CHANGES. Assigned to fix reviewer.
+
+### 2026-04-07T00:00:00Z: PR #54 Review — Wave 8 Settings & Profiles (Noura)
+**By:** Noura (UI Fidelity)
+**What:** Fidelity review of PR #54: SyncConflictModal structure 100% pixel-perfect. SettingsModal tab navigation correct. Three **blocking issues**: (M1) 17 CSS classes undefined in any stylesheet — all settings tab panels render as unstyled HTML (`.settings-tab-content`, `.settings-section-title`, `.settings-subsection-title`, `.settings-description`, `.settings-day-checkbox`, `.settings-calendar-preview`, `.settings-batch-label`, `.settings-batch-year`, `.settings-batch-hint`, `.settings-divider`, `.settings-status`, `.settings-external-link`, etc.). (M2) AppearanceTab adds "Display Mode" section not in legacy — extra UI feature. (M3) AppearanceTab missing Apply/Cancel buttons from legacy workflow — changes instant-apply instead of preview-confirm pattern.
+**Why:** CSS completeness mandatory. Feature parity with legacy required per migration rules.
+**Impact:** REQUEST CHANGES. Three major + six non-blocking findings. Assigned to fix reviewer.
+
+### 2026-04-07T00:00:00Z: PR #54 Fix — Wave 8 Settings & Profiles (Omar)
+**By:** Omar (Review Fixes)
+**What:** Resolved all 5 review findings: **Malik B1 (Tab ARIA pattern)**: Added `role="tablist"` + `aria-label` to container. Added `role="tab"` + `aria-selected` + `aria-controls` + roving `tabIndex` to tabs. Added `role="tabpanel"` + `aria-labelledby` to panels. Implemented `onKeyDown` with ArrowLeft/ArrowRight/Home/End handlers. **Malik B2 (Inline styles)**: Extracted all 17 static `style=` from SyncConflictModal to CSS classes in modals.css. SVG icons use `class="sync-conflict-icon"`. **Noura M1 (Missing CSS)**: Defined all 22 settings classes in components.css (tab-content, section-title, subsection-title, description, day-checkbox, batch-label, batch-year, batch-hint, divider, status, external-link, unsaved-indicator, theme-buttons, days-container, color-picker-row, color-preview-swatch, form-group, form-row, form-control, form-error, error-text, hidden). **Noura M2 (Display Mode removed)**: Deleted Display Mode toggle from AppearanceTab — header theme toggle (Wave 5) sole switch. **Noura M3 (Apply/Cancel restored)**: Added Apply and Cancel buttons to AppearanceTab, conditional render on `hasChanges` true. Verification: typecheck ✅, lint ✅, build ✅ 531ms.
+**Why:** Unblock Wave 8 merge. WCAG compliance + CSS completeness + feature parity + legacy workflow restoration.
+**Impact:** All 5 findings resolved. Ready for Malik & Noura re-review.
+
+### 2026-04-07T00:00:00Z: PR #54 Re-Review — Wave 8 Settings & Profiles (Malik Round 2)
+**By:** Malik (Code Quality)
+**What:** Re-review of PR #54 after Omar fixes. (B1) WCAG tab pattern verified: `role="tablist"` ✅, `aria-label` ✅, `role="tab"` + `aria-selected` ✅, `aria-controls` ✅, `role="tabpanel"` ✅, `aria-labelledby` ✅, roving `tabIndex` ✅, arrow-key handlers (Left/Right/Home/End) ✅, focus management ✅. Textbook WAI-ARIA Tabs implementation. (B2) Inline styles: 0 found. All 17 moved to CSS classes. Build passes: typecheck ✅, lint ✅, build ✅ (80 modules, 531ms).
+**Why:** Verify blockers resolved per quality standards.
+**Impact:** PR #54 APPROVED by Malik. Both blocking issues fully resolved. Ready to merge.
+
+### 2026-04-07T00:00:00Z: PR #54 Re-Review — Wave 8 Settings & Profiles (Noura)
+**By:** Noura (UI Fidelity)
+**What:** Re-review of PR #54 after Omar fixes. (M1) All 22 CSS classes audit complete — all defined in components.css. No undefined class references remain. (M2) Display Mode toggle ✅ removed. AppearanceTab focuses solely on Color Theme + base hue slider. (M3) Apply/Cancel buttons ✅ present (lines 131–136), conditionally rendered on `hasChanges` true, matches legacy workflow. Calendar Tab preview section confirmed removed.
+**Why:** Verify CSS coverage 100%, feature scope legacy-compliant, workflow fidelity restored.
+**Impact:** PR #54 APPROVED by Noura. All blocking issues fully resolved. CSS coverage 100%. Ship it.
+
 ## Governance
 
 - All meaningful changes require team consensus
