@@ -10,4 +10,5 @@ export { PromptDialog } from './PromptDialog';
 export { AlertDialog } from './AlertDialog';
 export type { AlertType } from './AlertDialog';
 export { AddSemesterModal } from './AddSemesterModal';
+export { SettingsModal } from './SettingsModal';
 export { SyncConflictModal } from './SyncConflictModal';
