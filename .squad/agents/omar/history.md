@@ -50,3 +50,23 @@
 **Verification:** typecheck ✅, lint ✅ (0 errors, 22 pre-existing warnings), build ✅ (426ms).
 
 **Commit:** `a3e9498` on `wave-6-courses-calendar`, pushed.
+
+### 2025-07-20 — Wave 7: Create Recording Components & FetchVideosModal
+
+**Task:** Create all recording-related components for the CourseModal recordings tab and the FetchVideosModal for importing videos.
+
+**What was built:**
+- **RecordingsPanel** (`src/components/recordings/RecordingsPanel.tsx`): Main recordings UI — tab bar via RecordingsTabs, sort dropdown (6 options from RECORDING_SORT_ORDERS), add-recording input (paste link → auto-named), filtered recording list using `useSortedRecordings` selector. Supports show/hide watched via `settings.showWatchedRecordings`.
+- **RecordingsTabs** (`src/components/recordings/RecordingsTabs.tsx`): Tab switching with count badges, collapsible Recording Actions panel (import, rename, clear, delete, show-done toggle). Add tab via prompt. Protected tabs (lectures/tutorials) cannot be deleted. All actions wired to app-store.
+- **RecordingItem** (`src/components/recordings/RecordingItem.tsx`): Watched checkbox toggle, clickable name area (opens inline preview for embeddable videos, external link otherwise), video/slides link chips, edit button (triggers inline editor), delete button, reorder up/down buttons (only in manual sort mode). Uses `getVideoEmbedInfo` from utils/video.
+- **VideoPreview** (`src/components/recordings/VideoPreview.tsx`): Inline iframe embed for YouTube/Panopto with close button. Platform-aware label. Only one preview open at a time (controlled by parent via `previewIndex` state).
+- **RecordingEditor** (`src/components/recordings/RecordingEditor.tsx`): Inline edit form for name, video link, slides link with save/cancel buttons. Enter to save, Escape to cancel. Calls `updateRecording` on save.
+- **FetchVideosModal** (`src/components/modals/FetchVideosModal.tsx`): YouTube playlist import (URL → CORS proxy fetch → parse HTML → video checklist) and Panopto import (console script copy → paste JSON → parse → video checklist). Select/deselect all, use original names toggle, import button adds selected videos to current tab via `addRecording`.
+- **Barrel exports** (`src/components/recordings/index.ts`): All 5 recording components exported.
+- **CourseModal wired** (`src/components/modals/CourseModal.tsx`): Recordings tab placeholder replaced with `RecordingsPanel` + `FetchVideosModal`. FetchModal open state managed locally.
+
+**CSS:** All existing recording CSS classes from components.css and modals.css used (recordings-control-panel, recording-item, recording-edit-section, panopto-import-guide, etc.). No new CSS added. Dynamic inline styles only for FetchVideosModal layout elements matching legacy HTML.
+
+**Verification:** typecheck ✅, lint ✅ (0 errors), build ✅ (420ms).
+
+**Commit:** `eef3776` on `wave-7-recordings-homework`, pushed.
