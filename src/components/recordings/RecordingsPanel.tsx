@@ -119,7 +119,7 @@ export function RecordingsPanel({ courseId, onOpenFetchModal }: RecordingsPanelP
 
       {/* Sort controls */}
       <div className="list-sort-controls">
-        <span className="sort-label">Sort</span>
+        <span className="sort-label">Sort:</span>
         <select
           className="sort-select"
           value={currentSort}
