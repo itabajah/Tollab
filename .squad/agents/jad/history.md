@@ -60,3 +60,19 @@
   - Import data validation: `validateImportedData()` in `validation.ts` validates structure recursively. ✅
   - All `<a>` tags with external links use `target="_blank" rel="noopener noreferrer"`. ✅
 - **Review written to:** `.squad/decisions/inbox/jad-review1-security.md`
+
+### 2025-07-25: Security Re-Scan — Wave 12+ Review Iteration 2
+- **Scope:** Verify iteration 1 fixes (7 issues), check remaining LOW issues (#80, #84), scan for new attack surfaces, deep security audit
+- **Verdict:** 7/7 fixes PASS, 1 new MEDIUM finding
+- **Fix verification (all PASS):**
+  1. #58 Panopto domain whitelist — `video.ts:17-29,73` ✅
+  2. #59 URL protocol validation — `RecordingEditor.tsx:38-39`, `HomeworkEditor.tsx:73,99` ✅
+  3. #60 localStorage shape guard — `store-persistence.ts:146-159` ✅
+  4. #65 Cheesefork JSON validation — `cheesefork.ts:96-102` ✅
+  5. #66 __proto__ guard — `profile-store.ts:168-176` ✅
+  6. #72 Proxy URL validation — `cors-proxy.ts:130-142` ✅
+  7. #74 Firebase payload validation — `firebase-sync.ts:155-163,354,390` ✅
+- **Remaining LOW (unchanged):** #80 (error message leakage), #84 (YouTube ID unsanitized) — both still exist, no severity change
+- **New finding filed:** #112 — Missing Content Security Policy (MEDIUM) — no CSP meta tag or headers in index.html
+- **Deep scan passed:** No eval/Function/document.write, no postMessage, no document.cookie, all HTTPS, no ReDoS, no open redirects, all external links use noopener noreferrer
+- **Review written to:** `.squad/decisions/inbox/jad-review2-security.md`
