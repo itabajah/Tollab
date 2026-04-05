@@ -33,3 +33,30 @@
 - CORS proxies are hardcoded in `src/constants/api.ts` — all three use `encodeURIComponent`. No user-injectable proxy URLs.
 - YouTube service reconstructs canonical URLs from extracted playlist IDs — never passes raw user URLs to fetch.
 - All HTML parsing in services uses regex only (no DOMParser, no innerHTML). Safe from script execution.
+
+### 2026-04-06: Security Audit — Wave 12+ Review Iteration 1 (Full Codebase)
+- **Scope:** Comprehensive security audit of entire codebase — src/components/, src/services/, src/store/, src/utils/, src/constants/, src/hooks/
+- **Verdict:** 9 findings filed (2 HIGH, 5 MEDIUM, 2 LOW)
+- **HIGH findings:**
+  1. **Panopto domain injection** (#58): `src/utils/video.ts:52-62` — user-controlled domain extracted from Panopto URL flows directly into iframe embed URL. No whitelist validation. Fix: validate against known Panopto domains.
+  2. **javascript: XSS in user-entered URLs** (#59): `RecordingEditor.tsx:37-38`, `HomeworkEditor.tsx:70-73` — video/slide/homework links stored without protocol validation, rendered in `<a href>` and `window.open()`. Fix: use existing `validateUrl()` before saving.
+- **MEDIUM findings:**
+  3. **localStorage UI state unvalidated** (#60): `store-persistence.ts:142-147` — `JSON.parse(raw) as typeof uiState` without shape guard. Corrupt data crashes app.
+  4. **Cheesefork JSON elements unvalidated** (#65): `cheesefork.ts:98-102` — array elements cast as `ParsedICSEvent[]` without per-element validation.
+  5. **Profile import missing __proto__ check** (#66): `profile-store.ts:150-194` — no dangerous-key stripping on import. Also applies to `storage.ts:safeGetItem()`.
+  6. **fetchViaProxy no URL validation** (#72): `cors-proxy.ts:126-141` — no protocol/host validation before passing to proxy.
+  7. **Firebase cloud payload unvalidated** (#74): `firebase-sync.ts:335-338, 366-369` — `pullFromFirebase` and `subscribeToFirebase` cast snapshot as `CloudPayload` without shape guard.
+- **LOW findings:**
+  8. **Error message leakage** (#80): `cors-proxy.ts:186-189`, `cheesefork.ts:179-180` — raw error messages may contain internal details.
+  9. **YouTube videoId unsanitized** (#84): `video.ts:38-49` — extracted ID not format-validated before interpolation (low risk: domain hardcoded).
+- **Passed (no issues):**
+  - `dangerouslySetInnerHTML`: 3 uses (Toast.tsx, AlertDialog.tsx, CourseModal.tsx) — all render static SVG icon constants, not user data. ✅
+  - `innerHTML` / `eval` / `DOMParser` / `document.write`: none found in src/. ✅
+  - HeaderTicker: uses `textContent` (safe), not `innerHTML`. Template resolution is string-only with no HTML. ✅
+  - localStorage in `storage.ts`: `loadFromLocalStorage()` validates shape via `isValidProfileData()`, `loadProfileList()` validates via `isValidProfile()`, `loadSettings()` validates via `isValidSettings()`. Falls back to defaults on failure. ✅
+  - CORS proxies: hardcoded HTTPS URLs in `constants/api.ts`, `encodeURIComponent()` on all parameters. ✅
+  - Firebase path: `tollab/users/${uid}/data` uses Firebase Auth SDK UID (not user-controlled). ✅
+  - Profile export filename: sanitized via regex in `ProfileTab.tsx:166`. ✅
+  - Import data validation: `validateImportedData()` in `validation.ts` validates structure recursively. ✅
+  - All `<a>` tags with external links use `target="_blank" rel="noopener noreferrer"`. ✅
+- **Review written to:** `.squad/decisions/inbox/jad-review1-security.md`
