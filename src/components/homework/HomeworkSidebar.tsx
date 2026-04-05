@@ -100,12 +100,7 @@ export function HomeworkSidebar() {
   if (!semester) {
     return (
       <div class="upcoming-list">
-        <div
-          style={{
-            color: 'var(--text-tertiary)',
-            fontStyle: 'italic',
-          }}
-        >
+        <div class="hw-empty-message">
           No active semester.
         </div>
       </div>
@@ -130,12 +125,7 @@ export function HomeworkSidebar() {
       {/* Homework list */}
       <div class="upcoming-list">
         {totalItems === 0 ? (
-          <div
-            style={{
-              color: 'var(--text-tertiary)',
-              fontStyle: 'italic',
-            }}
-          >
+          <div class="hw-empty-message">
             No homework found.
           </div>
         ) : (

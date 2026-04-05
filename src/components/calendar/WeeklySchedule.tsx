@@ -205,7 +205,7 @@ export function WeeklySchedule() {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              style={{ transform: calendarCollapsed ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}
+              class={`collapse-chevron${calendarCollapsed ? ' collapse-chevron-rotated' : ''}`}
             >
               <polyline points="18 15 12 9 6 15" />
             </svg>

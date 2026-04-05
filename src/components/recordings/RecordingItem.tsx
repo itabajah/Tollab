@@ -5,6 +5,7 @@
  * reorder buttons, and optional inline video preview.
  */
 
+import { memo } from 'preact/compat';
 import { useCallback } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
@@ -31,7 +32,7 @@ interface RecordingItemProps {
   sortOrder: string;
 }
 
-export function RecordingItem({
+export const RecordingItem = memo(function RecordingItem({
   courseId,
   tabId,
   tabIndex,
@@ -237,4 +238,4 @@ export function RecordingItem({
       </div>
     </div>
   );
-}
+});

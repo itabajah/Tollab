@@ -6,6 +6,7 @@
  * Click course name → opens course modal on homework tab.
  */
 
+import { memo } from 'preact/compat';
 import { useCallback, useState } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
@@ -89,7 +90,7 @@ function getDaysLeft(dueDate: string, completed: boolean): DaysLeftInfo | null {
 // Component
 // ---------------------------------------------------------------------------
 
-export function HomeworkItem({
+export const HomeworkItem = memo(function HomeworkItem({
   courseId,
   courseName,
   courseColor,
@@ -376,4 +377,4 @@ export function HomeworkItem({
       )}
     </div>
   );
-}
+});

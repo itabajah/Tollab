@@ -1,3 +1,4 @@
+import { memo } from 'preact/compat';
 import { useCallback } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
@@ -48,7 +49,7 @@ interface CourseCardProps {
  *       .course-meta-right
  *       CourseProgress rows
  */
-export function CourseCard({ course, index, totalCourses }: CourseCardProps) {
+export const CourseCard = memo(function CourseCard({ course, index, totalCourses }: CourseCardProps) {
   const semester = useCurrentSemester();
   const reorderCourse = useAppStore((s) => s.reorderCourse);
   const openCourseModal = useUiStore((s) => s.openCourseModal);
@@ -146,4 +147,4 @@ export function CourseCard({ course, index, totalCourses }: CourseCardProps) {
       </div>
     </div>
   );
-}
+});

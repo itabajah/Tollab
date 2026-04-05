@@ -4,6 +4,7 @@
  * Hover pauses auto-dismiss timer.
  */
 
+import { memo } from 'preact/compat';
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import { ToastType } from '@/types';
 import type { ToastOptions } from '@/types';
@@ -38,7 +39,7 @@ interface ToastProps {
   onDismiss: (id: string) => void;
 }
 
-export function Toast({ id, type, message, options, duration, onDismiss }: ToastProps) {
+export const Toast = memo(function Toast({ id, type, message, options, duration, onDismiss }: ToastProps) {
   const [visible, setVisible] = useState(false);
   const [hiding, setHiding] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,4 +150,4 @@ export function Toast({ id, type, message, options, duration, onDismiss }: Toast
       )}
     </div>
   );
-}
+});
