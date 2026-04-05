@@ -33,3 +33,20 @@
 **Verification:** typecheck ✅, lint ✅ (0 errors, 22 pre-existing warnings in services/), build ✅ (361ms).
 
 **Commit:** `3a6816b` on `wave-5-core-ui`, pushed.
+
+### 2025-07-19 — Wave 6: Create CourseModal (3-tab modal)
+
+**Task:** Create `src/components/modals/CourseModal.tsx` — the main course editing modal with 3-tab structure.
+
+**What was built:**
+- **3 tabs:** Recordings (Wave 7 placeholder), Homework (Wave 7 placeholder), Details (fully functional).
+- **Details tab:** Course name (validated), number, points, lecturer, faculty, location, grade, syllabus, notes, exam dates (Moed A/B), weekly schedule builder, color picker (hue slider with live preview).
+- **Schedule builder:** Lists current slots (day + time range), add new slot via day selector + start/end time inputs, remove slots. Wired to `ui-store.tempSchedule` actions.
+- **Add/Edit mode:** Determined by `editingCourseId` in ui-store. Add mode shows only Details tab; Edit mode shows all 3 tabs and populates form from existing course data.
+- **Connected to:** `app-store` (addCourse, updateCourse, deleteCourse), `ui-store` (editingCourseId, tempSchedule, closeCourseModal), selectors (useCourseById, useCurrentSemester).
+- **Delete course:** Two-click confirmation (button text changes to "Confirm Delete").
+- **CSS additions:** Added `.form-row`, `.error-text`, `.schedule-slot-list`, `.schedule-slot-row`, `.schedule-slot-label`, `.schedule-slot-remove`, `.schedule-add-row`, `.schedule-time-separator`, `.color-picker-row`, `.color-preview-swatch` classes to `components.css`. No inline styles except dynamic `backgroundColor` on the color preview swatch.
+
+**Verification:** typecheck ✅, lint ✅ (0 errors, 22 pre-existing warnings), build ✅ (426ms).
+
+**Commit:** `a3e9498` on `wave-6-courses-calendar`, pushed.

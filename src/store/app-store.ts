@@ -133,6 +133,12 @@ interface AppActions {
   ) => void;
   deleteHomework: (courseId: string, hwIndex: number) => void;
   toggleHomeworkCompleted: (courseId: string, hwIndex: number) => void;
+  reorderHomework: (
+    courseId: string,
+    index: number,
+    direction: 'up' | 'down',
+  ) => void;
+  setHomeworkSortOrder: (courseId: string, order: HomeworkSortOrder) => void;
 
   // -- Schedule -------------------------------------------------------------
   addScheduleSlot: (courseId: string, slot: ScheduleSlot) => void;
@@ -502,6 +508,31 @@ export const useAppStore = create<AppStore>()(
         if (!course) return;
         const hw = course.homework[hwIndex];
         if (hw) hw.completed = !hw.completed;
+      });
+    },
+
+    reorderHomework: (courseId, index, direction) => {
+      set((state) => {
+        const course = findCourseDraft(state.semesters, courseId);
+        if (!course) return;
+
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= course.homework.length) return;
+
+        const a = course.homework[index];
+        const b = course.homework[newIndex];
+        if (!a || !b) return;
+        course.homework[index] = b;
+        course.homework[newIndex] = a;
+
+        // Reordering implies manual sort
+        state.homeworkSortOrders[courseId] = 'manual';
+      });
+    },
+
+    setHomeworkSortOrder: (courseId, order) => {
+      set((state) => {
+        state.homeworkSortOrders[courseId] = order;
       });
     },
 

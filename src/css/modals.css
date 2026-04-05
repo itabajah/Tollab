@@ -492,6 +492,40 @@
     border-color: var(--accent);
 }
 
+/* FetchVideosModal — extracted inline styles */
+.fetch-names-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.fetch-names-checkbox {
+    width: auto;
+    margin: 0;
+}
+
+.fetch-names-label {
+    margin: 0;
+    text-transform: none;
+    font-size: 14px;
+}
+
+.fetch-status {
+    margin: 12px 0;
+    font-size: 13px;
+}
+
+.fetch-select-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.fetch-import-btn {
+    margin-top: 12px;
+    width: 100%;
+}
+
 /* ========================================
    MOBILE RESPONSIVENESS FOR MODALS
    ======================================== */
