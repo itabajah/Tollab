@@ -3,6 +3,14 @@
  * Weekly calendar grid and schedule-related styles
  */
 
+.collapse-chevron {
+    transition: transform 0.2s;
+}
+
+.collapse-chevron-rotated {
+    transform: rotate(180deg);
+}
+
 .calendar-container {
     flex: 2;
     background: var(--bg-secondary);

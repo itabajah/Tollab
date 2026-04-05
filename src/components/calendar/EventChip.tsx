@@ -8,6 +8,8 @@
  * Uses the `.schedule-block` CSS class from calendar.css.
  */
 
+import { memo } from 'preact/compat';
+
 import type { Course, ScheduleSlot } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -39,7 +41,7 @@ interface EventChipProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function EventChip({ course, slot, onClick }: EventChipProps) {
+export const EventChip = memo(function EventChip({ course, slot, onClick }: EventChipProps) {
   const start = parseTime(slot.start);
   const end = parseTime(slot.end);
 
@@ -79,4 +81,4 @@ export function EventChip({ course, slot, onClick }: EventChipProps) {
       {course.name}
     </div>
   );
-}
+});

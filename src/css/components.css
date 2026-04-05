@@ -1191,6 +1191,11 @@ input.hw-link-edit-url-input {
     font-style: italic;
 }
 
+.hw-empty-message {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
 .sidebar-hw-row {
     display: flex;
     gap: 10px;
