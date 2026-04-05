@@ -80,3 +80,19 @@
 - ⚠️ Unsafe JSON.parse type assertion (#110)
 **Blocking:** #92 (EventChip a11y), #97 (CourseModal ARIA tabs)
 **Decision file:** `.squad/decisions/inbox/malik-review1-quality.md`
+
+### 2026-04-07: Review 2 — Code Quality Re-Scan (Iteration 2)
+**Scope:** Full `src/components/`, `src/hooks/`, `src/services/`, `src/css/`, ESLint config
+**Branch:** `review-2-audit`
+**Verdict:** ✅ APPROVE — no blockers remaining
+**Iteration 1 verification:** All 6 HIGH a11y fixes verified correct (#92, #97, #93, #101, #107, #95)
+**Inline fixes applied:**
+- ESLint `no-console` override for services/hooks → 30 warnings → 0
+- Replaced hardcoded `768` with `MOBILE_BREAKPOINT` in WeeklySchedule (#82)
+- Extracted magic timeout constants in FetchVideosModal (#83)
+- Runtime validation for `JSON.parse` in FetchVideosModal (#110)
+- Expanded `focus-visible` CSS for buttons, selects (#107)
+**Still open (non-blocking):** #75 (type assertions), #96 (dangerouslySetInnerHTML SVGs), #98 (duplicated handleKeyActivate)
+**New findings (non-blocking):** Missing `memo()` on list items, missing error boundaries, minor prop drilling
+**CI:** typecheck ✅ | lint ✅ (0 warnings) | test ✅ (550/550) | build ✅
+**Decision file:** `.squad/decisions/inbox/malik-review2-quality.md`
