@@ -80,35 +80,35 @@
 
 /* Toast Types */
 .toast-success {
-    border-left: 4px solid #10b981;
+    border-left: 4px solid var(--status-success);
 }
 
 .toast-success .toast-icon {
-    color: #10b981;
+    color: var(--status-success);
 }
 
 .toast-error {
-    border-left: 4px solid #ef4444;
+    border-left: 4px solid var(--status-error);
 }
 
 .toast-error .toast-icon {
-    color: #ef4444;
+    color: var(--status-error);
 }
 
 .toast-warning {
-    border-left: 4px solid #f59e0b;
+    border-left: 4px solid var(--status-warning);
 }
 
 .toast-warning .toast-icon {
-    color: #f59e0b;
+    color: var(--status-warning);
 }
 
 .toast-info {
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid var(--status-info);
 }
 
 .toast-info .toast-icon {
-    color: #3b82f6;
+    color: var(--status-info);
 }
 
 /* Toast Icon */
@@ -161,7 +161,7 @@
 
 .toast-action:hover {
     background: var(--accent-color);
-    color: white;
+    color: var(--bg-secondary);
 }
 
 /* Toast Close Button */
@@ -200,19 +200,19 @@
 }
 
 .toast-success .toast-progress {
-    background: #10b981;
+    background: var(--status-success);
 }
 
 .toast-error .toast-progress {
-    background: #ef4444;
+    background: var(--status-error);
 }
 
 .toast-warning .toast-progress {
-    background: #f59e0b;
+    background: var(--status-warning);
 }
 
 .toast-info .toast-progress {
-    background: #3b82f6;
+    background: var(--status-info);
 }
 
 @keyframes toast-progress {
@@ -292,12 +292,12 @@
 }
 
 .prompt-dialog-input.input-error {
-    border-color: #ef4444;
+    border-color: var(--status-error);
 }
 
 .prompt-dialog-validation {
     font-size: 12px;
-    color: #ef4444;
+    color: var(--status-error);
     margin-top: 6px;
 }
 
@@ -343,23 +343,23 @@
 }
 
 .alert-dialog-info .alert-dialog-icon {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 0.1);
+    color: var(--status-info);
+    background: var(--status-info-bg);
 }
 
 .alert-dialog-success .alert-dialog-icon {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
+    color: var(--status-success);
+    background: var(--status-success-bg);
 }
 
 .alert-dialog-warning .alert-dialog-icon {
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.1);
+    color: var(--status-warning);
+    background: var(--status-warning-bg);
 }
 
 .alert-dialog-error .alert-dialog-icon {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
+    color: var(--status-error);
+    background: var(--status-error-bg);
 }
 
 .alert-dialog-message {
@@ -441,26 +441,10 @@
    DARK THEME ADJUSTMENTS
    ============================================================================ */
 
-[data-theme="dark"] .toast {
+body.dark-mode .toast {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-[data-theme="dark"] .toast-progress {
+body.dark-mode .toast-progress {
     opacity: 0.8;
-}
-
-[data-theme="dark"] .alert-dialog-info .alert-dialog-icon {
-    background: rgba(59, 130, 246, 0.2);
-}
-
-[data-theme="dark"] .alert-dialog-success .alert-dialog-icon {
-    background: rgba(16, 185, 129, 0.2);
-}
-
-[data-theme="dark"] .alert-dialog-warning .alert-dialog-icon {
-    background: rgba(245, 158, 11, 0.2);
-}
-
-[data-theme="dark"] .alert-dialog-error .alert-dialog-icon {
-    background: rgba(239, 68, 68, 0.2);
 }

@@ -372,7 +372,7 @@ input[type="range"]#base-color-hue::-webkit-slider-thumb {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: white;
+    background: var(--bg-secondary);
     border: 2px solid var(--border-primary);
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -384,7 +384,7 @@ input[type="range"]#base-color-hue::-moz-range-thumb {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: white;
+    background: var(--bg-secondary);
     border: 2px solid var(--border-primary);
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -436,7 +436,7 @@ input:focus, textarea:focus {
 
 .btn-danger:hover {
     background: var(--error-border);
-    color: white;
+    color: var(--bg-secondary);
 }
 
 /* ========================================
@@ -636,7 +636,7 @@ input:focus, textarea:focus {
 }
 
 .settings-unsaved-indicator {
-    color: #e74c3c;
+    color: var(--error-border);
     font-size: 11px;
     font-weight: normal;
     margin-left: 8px;
@@ -710,7 +710,7 @@ input:focus, textarea:focus {
 }
 
 .icon-action.active {
-    color: #ef4444; /* Heart color */
+    color: var(--status-error); /* Heart color */
 }
 
 /* Homework Item Styles */
@@ -1820,8 +1820,8 @@ input.hw-link-edit-url-input {
 }
 
 .recording-action-btn.liked {
-    color: #ef4444;
-    border-color: #ef4444;
+    color: var(--status-error);
+    border-color: var(--status-error);
 }
 
 .recording-action-btn-danger {
@@ -2840,7 +2840,7 @@ input.hw-link-edit-url-input {
     }
     
     #scroll-to-homework-btn:hover svg {
-        stroke: white;
+        stroke: var(--bg-secondary);
     }
     
     #scroll-to-homework-btn:active {

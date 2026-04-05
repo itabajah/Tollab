@@ -21,9 +21,15 @@ import { useUiStore } from '@/store/ui-store';
 import type { Homework, HomeworkSortOrder, ScheduleSlot } from '@/types';
 import { getInputValue, getSelectValue, getTextAreaValue } from '@/utils/dom';
 
-import { FetchVideosModal } from './FetchVideosModal';
+import { lazy, Suspense } from 'preact/compat';
+
 import { Modal } from './Modal';
 import type { JSX } from 'preact';
+
+// Lazy-loaded — only fetched when user opens the fetch-videos dialog
+const LazyFetchVideosModal = lazy(() =>
+  import('./FetchVideosModal').then((m) => ({ default: m.FetchVideosModal })),
+);
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -329,13 +335,17 @@ export function CourseModal() {
             courseId={editingCourseId}
             onOpenFetchModal={() => setFetchModalOpen(true)}
           />
-          <FetchVideosModal
-            isOpen={fetchModalOpen}
-            onClose={() => setFetchModalOpen(false)}
-            courseId={editingCourseId}
-            tabId={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.id ?? ''}
-            existingCount={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.items.length ?? 0}
-          />
+          {fetchModalOpen && (
+            <Suspense fallback={null}>
+              <LazyFetchVideosModal
+                isOpen={fetchModalOpen}
+                onClose={() => setFetchModalOpen(false)}
+                courseId={editingCourseId}
+                tabId={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.id ?? ''}
+                existingCount={course?.recordings.tabs[useUiStore.getState().currentRecordingsTab]?.items.length ?? 0}
+              />
+            </Suspense>
+          )}
         </div>
       )}
 
