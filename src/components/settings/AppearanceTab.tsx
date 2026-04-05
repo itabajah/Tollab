@@ -5,10 +5,10 @@
  * - Color theme selector: Rainbow / Mono / Grayscale
  * - Base hue slider with live preview (inline style for dynamic preview)
  * - Reset colors button
- * - Dark/light mode toggle
+ * - Apply / Cancel workflow matching legacy settings modal
  */
 
-import { useCallback } from 'preact/hooks';
+import { useCallback, useState } from 'preact/hooks';
 
 import { useTheme } from '@/hooks/useTheme';
 import { Button, Select } from '@/components/ui';
@@ -31,53 +31,67 @@ const COLOR_THEME_OPTIONS: readonly SelectOption[] = [
 
 export function AppearanceTab() {
   const {
-    isDark,
     colorTheme,
     baseColorHue,
-    toggleDarkMode,
     setColorTheme,
     setBaseHue,
     resetColors,
   } = useTheme();
 
-  const handleThemeChange = useCallback(
-    (value: string) => {
-      const ct = value as ColorTheme;
-      setColorTheme(ct);
-    },
-    [setColorTheme],
-  );
+  // Pending (preview) state — only committed on Apply
+  const [pendingTheme, setPendingTheme] = useState<ColorTheme | null>(null);
+  const [pendingHue, setPendingHue] = useState<number | null>(null);
 
-  const handleHueChange = useCallback(
-    (e: Event) => {
-      const val = parseInt((e.target as HTMLInputElement).value, 10);
-      if (!isNaN(val)) {
-        setBaseHue(val);
-      }
-    },
-    [setBaseHue],
-  );
+  const effectiveTheme = pendingTheme ?? colorTheme;
+  const effectiveHue = pendingHue ?? baseColorHue;
+  const hasChanges = pendingTheme !== null || pendingHue !== null;
 
-  const showHueSlider = colorTheme === ColorTheme.Single || colorTheme === 'single';
+  const handleThemeChange = useCallback((value: string) => {
+    setPendingTheme(value as ColorTheme);
+  }, []);
+
+  const handleHueChange = useCallback((e: Event) => {
+    const val = parseInt((e.target as HTMLInputElement).value, 10);
+    if (!isNaN(val)) {
+      setPendingHue(val);
+    }
+  }, []);
+
+  const handleApply = useCallback(() => {
+    if (pendingTheme !== null) setColorTheme(pendingTheme);
+    if (pendingHue !== null) setBaseHue(pendingHue);
+    setPendingTheme(null);
+    setPendingHue(null);
+  }, [pendingTheme, pendingHue, setColorTheme, setBaseHue]);
+
+  const handleCancel = useCallback(() => {
+    setPendingTheme(null);
+    setPendingHue(null);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    resetColors();
+    setPendingTheme(null);
+    setPendingHue(null);
+  }, [resetColors]);
+
+  const showHueSlider = effectiveTheme === ColorTheme.Single;
 
   return (
     <div class="settings-tab-content">
-      {/* Dark/Light Mode */}
-      <div class="form-group">
-        <h3 class="settings-section-title">Display Mode</h3>
-        <Button variant="secondary" onClick={toggleDarkMode}>
-          {isDark ? '☀️ Switch to Light Mode' : '🌙 Switch to Dark Mode'}
-        </Button>
-      </div>
-
       {/* Color Theme */}
       <div class="form-group">
-        <h3 class="settings-section-title">Color Theme</h3>
+        <h3 class="settings-section-title">
+          Color Theme
+          {hasChanges && (
+            <span class="settings-unsaved-indicator">(unsaved changes)</span>
+          )}
+        </h3>
         <label htmlFor="color-theme-select">Theme Style</label>
         <Select
           id="color-theme-select"
           options={COLOR_THEME_OPTIONS}
-          value={typeof colorTheme === 'string' ? colorTheme : ColorTheme.Colorful}
+          value={typeof effectiveTheme === 'string' ? effectiveTheme : ColorTheme.Colorful}
           onChange={handleThemeChange}
           aria-label="Color theme"
         />
@@ -93,26 +107,36 @@ export function AppearanceTab() {
               id="base-color-hue"
               min="1"
               max="360"
-              value={baseColorHue}
+              value={effectiveHue}
               onInput={handleHueChange}
             />
             <div
               class="color-preview-swatch"
-              style={{ backgroundColor: `hsl(${baseColorHue}, 45%, 50%)` }}
-              aria-label={`Color preview: hue ${baseColorHue}`}
+              style={{ backgroundColor: `hsl(${effectiveHue}, 45%, 50%)` }}
+              aria-label={`Color preview: hue ${effectiveHue}`}
             />
           </div>
         </div>
       )}
 
-      {/* Reset Colors */}
-      {colorTheme !== ColorTheme.Mono && colorTheme !== 'mono' && (
-        <div class="form-group">
-          <Button variant="secondary" onClick={resetColors}>
+      {/* Theme buttons */}
+      <div class="form-group">
+        {effectiveTheme !== ColorTheme.Mono && (
+          <Button variant="secondary" onClick={handleReset}>
             Reset Colors
           </Button>
-        </div>
-      )}
+        )}
+        {hasChanges && (
+          <div class="form-row settings-theme-buttons">
+            <Button variant="primary" onClick={handleApply}>
+              Apply
+            </Button>
+            <Button variant="secondary" onClick={handleCancel}>
+              Cancel
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -3,9 +3,10 @@
  *
  * Tabs: Profile, Appearance, Calendar, Fetch Data
  * Uses the base Modal component from Wave 5.
+ * WCAG 2.1 compliant tab pattern with roving tabindex and arrow-key nav.
  */
 
-import { useCallback, useState } from 'preact/hooks';
+import { useCallback, useRef, useState } from 'preact/hooks';
 
 import { Modal } from './Modal';
 import { ProfileTab } from '@/components/settings/ProfileTab';
@@ -118,23 +119,64 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTabId>('profile');
+  const tablistRef = useRef<HTMLDivElement>(null);
 
   const handleTabClick = useCallback((tabId: SettingsTabId) => {
     setActiveTab(tabId);
   }, []);
 
+  const handleTabKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const idx = TABS.findIndex((t) => t.id === activeTab);
+      let nextIdx: number | null = null;
+
+      if (e.key === 'ArrowRight') {
+        nextIdx = (idx + 1) % TABS.length;
+      } else if (e.key === 'ArrowLeft') {
+        nextIdx = (idx - 1 + TABS.length) % TABS.length;
+      } else if (e.key === 'Home') {
+        nextIdx = 0;
+      } else if (e.key === 'End') {
+        nextIdx = TABS.length - 1;
+      }
+
+      if (nextIdx !== null) {
+        e.preventDefault();
+        const next = TABS[nextIdx];
+        if (next) {
+          setActiveTab(next.id);
+          const btn = tablistRef.current?.querySelector<HTMLElement>(`#settings-tab-${next.id}`);
+          btn?.focus();
+        }
+      }
+    },
+    [activeTab],
+  );
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Settings" size="lg">
       {/* Tab Navigation */}
-      <div class="settings-modal-tabs">
+      <div
+        ref={tablistRef}
+        class="settings-modal-tabs"
+        role="tablist"
+        aria-label="Settings tabs"
+      >
         {TABS.map((tab) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
-              class={`settings-modal-tab${activeTab === tab.id ? ' active' : ''}`}
+              id={`settings-tab-${tab.id}`}
+              class={`settings-modal-tab${isActive ? ' active' : ''}`}
               onClick={() => handleTabClick(tab.id)}
+              onKeyDown={handleTabKeyDown}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`settings-panel-${tab.id}`}
+              tabIndex={isActive ? 0 : -1}
             >
               <Icon />
               <span>{tab.label}</span>
@@ -145,22 +187,34 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
       {/* Tab Panels */}
       <div
+        id="settings-panel-profile"
         class={`settings-tab-panel${activeTab === 'profile' ? ' active' : ''}`}
+        role="tabpanel"
+        aria-labelledby="settings-tab-profile"
       >
         {activeTab === 'profile' && <ProfileTab />}
       </div>
       <div
+        id="settings-panel-appearance"
         class={`settings-tab-panel${activeTab === 'appearance' ? ' active' : ''}`}
+        role="tabpanel"
+        aria-labelledby="settings-tab-appearance"
       >
         {activeTab === 'appearance' && <AppearanceTab />}
       </div>
       <div
+        id="settings-panel-calendar"
         class={`settings-tab-panel${activeTab === 'calendar' ? ' active' : ''}`}
+        role="tabpanel"
+        aria-labelledby="settings-tab-calendar"
       >
         {activeTab === 'calendar' && <CalendarTab />}
       </div>
       <div
+        id="settings-panel-sync"
         class={`settings-tab-panel${activeTab === 'sync' ? ' active' : ''}`}
+        role="tabpanel"
+        aria-labelledby="settings-tab-sync"
       >
         {activeTab === 'sync' && <FetchDataTab />}
       </div>
