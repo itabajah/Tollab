@@ -12,10 +12,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 
 import { DAY_NAMES_FULL, DAY_NAMES_SHORT } from '@/constants';
+import { HomeworkItem } from '@/components/homework';
 import { useAppStore } from '@/store/app-store';
-import { useCourseById, useCurrentSemester } from '@/store/selectors';
+import { useCourseById, useCurrentSemester, useSortedHomework } from '@/store/selectors';
 import { useUiStore } from '@/store/ui-store';
-import type { ScheduleSlot } from '@/types';
+import type { Homework, ScheduleSlot } from '@/types';
 
 import { Modal } from './Modal';
 
@@ -302,11 +303,9 @@ export function CourseModal() {
         </div>
       )}
 
-      {/* Homework tab (placeholder) */}
-      {activeTab === 'homework' && (
-        <div className="course-tab-panel active">
-          <p className="form-group">Homework will be available here</p>
-        </div>
+      {/* Homework tab */}
+      {activeTab === 'homework' && editingCourseId && (
+        <CourseHomeworkTab courseId={editingCourseId} courseName={course?.name ?? ''} courseColor={course?.color ?? ''} />
       )}
 
       {/* Details tab */}
@@ -535,5 +534,75 @@ export function CourseModal() {
         </div>
       )}
     </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CourseHomeworkTab — Homework list within the course modal
+// ---------------------------------------------------------------------------
+
+interface CourseHomeworkTabProps {
+  courseId: string;
+  courseName: string;
+  courseColor: string;
+}
+
+function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomeworkTabProps) {
+  const sortedHomework = useSortedHomework(courseId);
+  const addHomework = useAppStore((s) => s.addHomework);
+
+  const [newTitle, setNewTitle] = useState('');
+  const [newDate, setNewDate] = useState('');
+
+  const handleAdd = useCallback(() => {
+    const title = newTitle.trim();
+    if (!title) return;
+    const hw: Homework = {
+      title,
+      dueDate: newDate,
+      completed: false,
+      notes: '',
+      links: [],
+    };
+    addHomework(courseId, hw);
+    setNewTitle('');
+    setNewDate('');
+  }, [newTitle, newDate, courseId, addHomework]);
+
+  return (
+    <div className="course-tab-panel active">
+      <div className="lecture-list">
+        {sortedHomework.map((indexed) => (
+          <HomeworkItem
+            key={`${courseId}-${indexed.originalIndex}`}
+            courseId={courseId}
+            courseName={courseName}
+            courseColor={courseColor}
+            homework={indexed.item}
+            homeworkIndex={indexed.originalIndex}
+            variant="modal"
+          />
+        ))}
+        {sortedHomework.length === 0 && (
+          <div className="hw-empty-msg">No homework yet. Add one below.</div>
+        )}
+      </div>
+      <div className="hw-add-row">
+        <input
+          type="text"
+          placeholder="Assignment title..."
+          value={newTitle}
+          onInput={(e) => setNewTitle((e.target as HTMLInputElement).value)}
+        />
+        <input
+          type="date"
+          value={newDate}
+          onInput={(e) => setNewDate((e.target as HTMLInputElement).value)}
+        />
+        <button type="button" className="btn-secondary" onClick={handleAdd}>
+          Add
+        </button>
+      </div>
+    </div>
   );
 }
