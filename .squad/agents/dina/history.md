@@ -85,3 +85,25 @@ Fixed all 5 blocking issues from Malik (code quality) and Noura (UI fidelity) re
 
 **Verification:** typecheck ✅, lint ✅ (0 errors, 22 warnings all pre-existing), build ✅ (67 modules, 449ms).
 **Pushed:** `wave-7-recordings-homework` → origin.
+
+### Wave 9 — Full Header Ticker Migration (2026-04-09)
+**Branch:** `wave-9-import-ticker`
+**Commit:** `5c052c0` — `feat(ticker): migrate full header ticker with 100+ templates`
+
+Migrated the entire header-ticker.js (1,500 lines legacy) into 3 typed files:
+
+1. **src/constants/ticker-templates.ts** — All 130+ message templates organized by 26 categories (no_semester, no_courses, no_schedule, no_classes_today, all_clear, late_night, morning, weekend, class_now, class_soon, class_next, class_tomorrow, hw_nodate, hw_many, hw_all_done, hw_overdue, hw_today, hw_tomorrow, hw_soon, exam, exam_today, exam_tomorrow, exam_soon, recordings_backlog, recordings_big, recordings_clear, general, general_course_roast). Every single template from the legacy file ported exactly.
+
+2. **src/hooks/useTickerMessages.ts** — Full context-aware message selection engine:
+   - Reads semester/courses/homework/exams/recordings from Zustand store
+   - Priority system matching legacy exactly: class_now (10) > exam_today/class_soon (9) > hw_overdue/hw_today (8) > hw_many (5) > class_tomorrow/recordings (4) > late_night/no_classes_today (3) > weekend/all_clear (2) > morning/general (1)
+   - Time-of-day boundaries: late night 23:00–04:00, morning 05:00–10:00, weekend Fri 17:00+ / Sat / Sun <18:00
+   - Deterministic per-day template shuffling via xorshift32 (same as legacy)
+   - Stable course-roast-of-the-day via djb2 hash
+   - De-duplication, priority sorting, placeholder resolution
+   - Exports `useTickerMessages()` hook and `TickerMessage` type
+
+3. **Updated src/components/layout/HeaderTicker.tsx** — Replaced placeholder messages with real `useTickerMessages()` hook. Dynamic badge text from message context. Rotation interval changed from 6s to 8s (matching legacy 9s interval more closely). Ref-based message tracking for stable interval callbacks.
+
+**Verification:** typecheck ✅, lint ✅ (0 new issues), build ✅ (90 modules, 590ms).
+**Pushed:** `wave-9-import-ticker` → origin.
