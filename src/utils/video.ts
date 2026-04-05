@@ -13,6 +13,9 @@ export interface VideoEmbedInfo {
   platform: VideoPlatform;
 }
 
+/** Regex for valid YouTube video IDs: 11 URL-safe base64 chars. */
+const YOUTUBE_ID_RE = /^[A-Za-z0-9_-]{11}$/;
+
 /** Allowed Panopto hostname suffixes for iframe embedding. */
 const ALLOWED_PANOPTO_DOMAINS = ['.panopto.com', '.panopto.eu'];
 
@@ -56,7 +59,7 @@ export function getVideoEmbedInfo(url: string): VideoEmbedInfo {
       const match = url.match(/[?&]v=([^&#]+)/);
       videoId = match?.[1];
     }
-    if (videoId) {
+    if (videoId && YOUTUBE_ID_RE.test(videoId)) {
       return {
         embedUrl: `https://www.youtube.com/embed/${videoId}`,
         platform,
