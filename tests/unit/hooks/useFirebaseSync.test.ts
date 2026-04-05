@@ -74,7 +74,7 @@ vi.mock('@/services/firebase-sync', () => ({
 }));
 
 vi.mock('@/store/app-store', () => ({
-  useAppStore: Object.assign(vi.fn(), { subscribe: (...args: unknown[]) => (mockSubscribe as (...a: unknown[]) => unknown)(...args) }),
+  useAppStore: Object.assign(vi.fn(), { subscribe: (...args: unknown[]) => mockSubscribe(...(args as [])) }),
 }));
 
 // ---------------------------------------------------------------------------

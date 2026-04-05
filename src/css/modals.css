@@ -465,13 +465,13 @@
 .panopto-copy-btn:hover {
     background: var(--accent);
     border-color: var(--accent);
-    color: white;
+    color: var(--bg-secondary);
 }
 
 .panopto-copy-btn.copied {
     background: var(--green);
     border-color: var(--green);
-    color: white;
+    color: var(--bg-secondary);
 }
 
 .panopto-paste-area {

@@ -207,9 +207,9 @@
 
 /* Dark Mode Overrides */
 body.dark-mode .schedule-block {
-    background: #404040;
-    color: #fafafa;
-    border: 1px solid #525252;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-secondary);
 }
 
 body.dark-mode .schedule-event-chip {

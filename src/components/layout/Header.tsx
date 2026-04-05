@@ -1,8 +1,13 @@
+import { lazy, Suspense } from 'preact/compat';
 import { useCallback, useState } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
-import { SettingsModal } from '@/components/modals';
 import { FirebaseSyncState } from '@/types';
+
+// Lazy-loaded — only fetched on first gear-click
+const LazySettingsModal = lazy(() =>
+  import('@/components/modals/SettingsModal').then((m) => ({ default: m.SettingsModal })),
+);
 
 // ---------------------------------------------------------------------------
 // SVG icons — identical to index.legacy.html
@@ -187,7 +192,11 @@ export function Header({
           <SettingsIcon />
         </button>
       </div>
-      <SettingsModal isOpen={settingsOpen} onClose={handleCloseSettings} />
+      {settingsOpen && (
+        <Suspense fallback={null}>
+          <LazySettingsModal isOpen={settingsOpen} onClose={handleCloseSettings} />
+        </Suspense>
+      )}
     </header>
   );
 }
