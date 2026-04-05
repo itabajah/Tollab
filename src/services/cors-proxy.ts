@@ -127,6 +127,20 @@ export async function fetchViaProxy(
   url: string,
   config?: FetchConfig,
 ): Promise<ProxyResult> {
+  // Validate target URL protocol
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      throw new ProxyFetchError(
+        `Refused to proxy URL with disallowed protocol: ${parsed.protocol}`,
+        [`Invalid protocol: ${parsed.protocol}`],
+      );
+    }
+  } catch (e) {
+    if (e instanceof ProxyFetchError) throw e;
+    throw new ProxyFetchError('Invalid target URL', ['Could not parse URL']);
+  }
+
   const {
     maxRetriesPerProxy = DEFAULT_MAX_RETRIES_PER_PROXY,
     timeout = DEFAULT_FETCH_TIMEOUT,

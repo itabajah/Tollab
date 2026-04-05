@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'preact/hooks';
 
 import { useAppStore } from '@/store/app-store';
 import type { HomeworkLink } from '@/types';
+import { validateUrl } from '@/utils/validation';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -69,6 +70,7 @@ export function HomeworkEditor({
   const handleAddLink = useCallback(() => {
     const url = newLinkUrl.trim();
     if (!url) return;
+    if (!validateUrl(url).valid) return;
     const label = newLinkLabel.trim() || extractDomain(url);
     setLinks((prev) => [...prev, { label, url }]);
     setNewLinkUrl('');
@@ -94,6 +96,7 @@ export function HomeworkEditor({
     if (editingLinkIdx === null) return;
     const url = editLinkUrl.trim();
     if (!url) return;
+    if (!validateUrl(url).valid) return;
     const label = editLinkLabel.trim() || extractDomain(url);
     setLinks((prev) =>
       prev.map((l, i) => (i === editingLinkIdx ? { label, url } : l)),

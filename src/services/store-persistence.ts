@@ -141,7 +141,26 @@ function loadProfileIntoAppStore(profileId: string): void {
     } = {};
     try {
       const raw = localStorage.getItem(`tollab_ui_${profileId}`);
-      if (raw) uiState = JSON.parse(raw) as typeof uiState;
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          const obj = parsed as Record<string, unknown>;
+          // Only accept expected shapes — reject unexpected data
+          if (
+            (obj['currentSemesterId'] === undefined ||
+              obj['currentSemesterId'] === null ||
+              typeof obj['currentSemesterId'] === 'string') &&
+            (obj['recordingSortOrders'] === undefined ||
+              (typeof obj['recordingSortOrders'] === 'object' &&
+                obj['recordingSortOrders'] !== null)) &&
+            (obj['homeworkSortOrders'] === undefined ||
+              (typeof obj['homeworkSortOrders'] === 'object' &&
+                obj['homeworkSortOrders'] !== null))
+          ) {
+            uiState = obj as typeof uiState;
+          }
+        }
+      }
     } catch {
       // Corrupt — ignore
     }

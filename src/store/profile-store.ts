@@ -163,7 +163,17 @@ export const useProfileStore = create<ProfileStore>()(
         return null;
       }
 
-      const obj = parsed as Record<string, unknown>;
+      // Strip prototype-pollution keys
+      const raw = parsed as Record<string, unknown>;
+      const obj = Object.keys(raw).reduce<Record<string, unknown>>(
+        (acc, key) => {
+          if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+            acc[key] = raw[key];
+          }
+          return acc;
+        },
+        {},
+      );
 
       // Support both { meta, data } and raw ProfileData formats
       let profileName = 'Imported Profile';
