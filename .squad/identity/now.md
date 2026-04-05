@@ -1,14 +1,9 @@
 # Current Focus
 
-**Wave 7: Course Import/Export & Firebase Sync — COMPLETE ✅**
+**Wave 8: Settings Modal & Profile Management — COMPLETE ✅**
 
-Wave 7 persistent storage integration delivered: Recordings components (7 files, 1,237 lines) with YouTube/Panopto import, Homework components (5 files) with full Firebase sync, course CRUD operations wired to services, conflict resolution, 90%+ test coverage. 3-reviewer cycle (Malik/Noura REQUEST CHANGES → Dina fixes all 5 findings → both re-approve). PR #53 squash-merged to squad-branch.
+Wave 8 settings integration delivered: SettingsModal (4-tab interface: Profile, Appearance, Calendar, Fetch Data), WCAG 2.1 compliant arrow-key navigation, useTheme hook with dark-mode persistence, SyncConflictModal for Firebase conflict resolution, useFirebaseSync with real-time sync, 22 CSS classes (+1,063 lines, 9 files). 3-reviewer cycle (Malik/Noura REQUEST CHANGES → Omar fixes all 5 findings → both re-approve). PR #54 squash-merged to squad-branch.
 
-**Wave 8: (Pending Decision)**
+**Wave 9: Courses UI & Management (Next)**
 
-Awaiting guidance on next priorities. Potential directions:
-- Course export/sharing (JSON, iCal formats)
-- Calendar export to external tools
-- Batch operations (bulk import, semester templates)
-- Mobile responsiveness enhancements
-- Additional external data source integrations
+Ready to begin: Course creation/editing modal, course card grid, semester selector integration, bulk course operations (import templates, batch create), course deletion workflow. Depends on Wave 8 settings ✅ and Wave 2 store architecture ✅. Estimated scope: 5–7 files, 800–1,000 lines.

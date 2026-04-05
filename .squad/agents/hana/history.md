@@ -47,3 +47,35 @@
 - Vite `import.meta.env` requires a `vite-env.d.ts` reference file in `src/` for TypeScript to recognize it
 - ESLint sort-imports rule requires alphabetical sorting by the local (aliased) name, not the imported name
 - Firebase modular `onValue` returns an `Unsubscribe` function directly (no `.off()` pattern needed)
+
+## Wave 8 — Firebase Sync UI Components
+
+**Date:** 2025-07-24
+**Branch:** wave-8-settings-profiles
+**Commit:** feat(sync): create SyncConflictModal, useFirebaseSync hook, cloud status UI
+
+### What was done
+
+1. **Created `src/components/modals/SyncConflictModal.tsx`** — Conflict resolution modal matching legacy `sync-conflict-modal` from index.legacy.html. Three buttons: Use Cloud Data, Use Local Data, Merge Both, plus Cancel. Shows profile counts and last-modified timestamps. Uses `useFocusTrap`, existing CSS classes (`modal-overlay`, `modal`, `btn-primary`, `btn-secondary`).
+2. **Created `src/hooks/useFirebaseSync.ts`** — Full sync lifecycle hook:
+   - State: `isSignedIn`, `user`, `syncStatus` (idle/syncing/error), `lastSyncTime`, `syncState` (FirebaseSyncState enum)
+   - Actions: `signIn()`, `signOut()`, `forceSyncNow()`
+   - Wires `firebase-auth` (initAuth, signInWithGoogle, signOut) and `firebase-sync` (buildLocalPayload, pullFromFirebase, pushToFirebase, mergeLocalAndCloud, subscribeToFirebase, debouncedSync)
+   - Conflict detection: compares profile IDs and lastModified timestamps, invokes `onConflict` callback for SyncConflictModal
+   - Echo prevention via firebase-sync's built-in clientId/writeId mechanism
+   - Debounced auto-sync on data changes
+   - Graceful offline handling — no crashes if Firebase unavailable
+3. **Updated `src/components/layout/Header.tsx`** — Replaced placeholder `cloudStatusLabel` with real `FirebaseSyncState`-driven status. Added `CloudSyncIcon` component showing green cloud (synced), accent cloud (syncing), red cloud with warning (error), or nothing (disconnected). Header now accepts optional `syncState` and `userEmail` props.
+4. **Updated `src/components/modals/index.ts`** — Added barrel export for `SyncConflictModal`.
+
+### Key decisions
+- SyncConflictModal uses direct `onResolve` callback (not Promise wrapper) matching ConfirmDialog pattern — the Promise wrapper belongs in the calling code (useFirebaseSync's `onConflict` option)
+- `useFirebaseSync` takes `getAppData`, `applyCloudPayload`, and `onConflict` options to stay decoupled from Zustand stores — ProfileTab or App component will provide these
+- Header receives sync state via props (not direct store subscription) to keep it pure and testable
+- `hasConflict` compares profile IDs and lastModified timestamps (lightweight check, not deep data diff)
+
+### Verification
+- `npm run typecheck` — 0 errors
+- `npm run lint` — 0 errors (28 `no-console` warnings — all in Firebase service debug logging)
+- `npm run build` — clean, 68 modules, 69 kB JS
+- Pushed to `origin/wave-8-settings-profiles`
