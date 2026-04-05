@@ -1,4 +1,7 @@
+import { useCallback, useState } from 'preact/hooks';
+
 import { useAppStore } from '@/store/app-store';
+import { SettingsModal } from '@/components/modals';
 import { FirebaseSyncState } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -135,16 +138,21 @@ export function Header({
   const theme = useAppStore((s) => s.settings.theme);
   const updateSettings = useAppStore((s) => s.updateSettings);
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   const handleToggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     updateSettings({ theme: next });
-    // Apply body class immediately for CSS variable swap
     document.body.classList.toggle('dark-mode', next === 'dark');
   };
 
-  const handleOpenSettings = () => {
-    // Wave 6+ will wire this to useUiStore.pushModal('settings')
-  };
+  const handleOpenSettings = useCallback(() => {
+    setSettingsOpen(true);
+  }, []);
+
+  const handleCloseSettings = useCallback(() => {
+    setSettingsOpen(false);
+  }, []);
 
   const label = cloudStatusLabel(syncState, userEmail);
 
@@ -180,6 +188,7 @@ export function Header({
           <SettingsIcon />
         </button>
       </div>
+      <SettingsModal isOpen={settingsOpen} onClose={handleCloseSettings} />
     </header>
   );
 }
