@@ -206,6 +206,7 @@ export function HomeworkEditor({
                   <button
                     type="button"
                     class="hw-link-edit-btn"
+                    aria-label="Edit link"
                     onClick={() => handleStartEditLink(idx)}
                   >
                     ✎
@@ -213,6 +214,7 @@ export function HomeworkEditor({
                   <button
                     type="button"
                     class="hw-link-remove-btn"
+                    aria-label="Remove link"
                     onClick={() => handleRemoveLink(idx)}
                   >
                     ×
@@ -232,6 +234,9 @@ export function HomeworkEditor({
           placeholder="Paste URL..."
           value={newLinkUrl}
           onInput={(e) => setNewLinkUrl((e.target as HTMLInputElement).value)}
+          onKeyDown={(e: KeyboardEvent) => {
+            if (e.key === 'Enter') { e.preventDefault(); handleAddLink(); }
+          }}
         />
         <input
           type="text"
@@ -239,6 +244,9 @@ export function HomeworkEditor({
           placeholder="Label (auto)"
           value={newLinkLabel}
           onInput={(e) => setNewLinkLabel((e.target as HTMLInputElement).value)}
+          onKeyDown={(e: KeyboardEvent) => {
+            if (e.key === 'Enter') { e.preventDefault(); handleAddLink(); }
+          }}
         />
         <button type="button" class="hw-add-link-btn" onClick={handleAddLink}>
           Add

@@ -65,6 +65,7 @@ export function WeeklySchedule() {
   // -- Mobile single-day toggle state ---------------------------------------
 
   const [singleDay, setSingleDay] = useState(false);
+  const [calendarCollapsed, setCalendarCollapsed] = useState(false);
 
   // Initialise from viewport width on mount
   useEffect(() => {
@@ -91,6 +92,10 @@ export function WeeklySchedule() {
 
   const handleToggleDay = useCallback(() => {
     setSingleDay((prev) => !prev);
+  }, []);
+
+  const handleToggleCalendar = useCallback(() => {
+    setCalendarCollapsed((prev) => !prev);
   }, []);
 
   const visibleDays = singleDay ? [todayDayIndex()] : undefined;
@@ -181,25 +186,49 @@ export function WeeklySchedule() {
             <CalendarIcon />
             <span>{singleDay ? 'Today' : 'All Days'}</span>
           </button>
+          <button
+            id="toggle-calendar-btn"
+            class="icon-btn"
+            title="Toggle Calendar"
+            aria-label={calendarCollapsed ? 'Expand calendar' : 'Collapse calendar'}
+            onClick={handleToggleCalendar}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style={{ transform: calendarCollapsed ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }}
+            >
+              <polyline points="18 15 12 9 6 15" />
+            </svg>
+          </button>
         </div>
       </div>
 
       {/* Calendar grid wrapper */}
-      <div
-        class={`calendar-scroll-wrapper${singleDay ? ' single-day-mode' : ''}`}
-      >
-        {hasCourses && hasSlots ? (
-          <TimeGrid
-            settings={settings}
-            visibleDaysOverride={visibleDays}
-            cellContent={cellContent}
-          />
-        ) : (
-          <div class="weekly-schedule">
-            <div class="schedule-placeholder">No classes scheduled.</div>
-          </div>
-        )}
-      </div>
+      {!calendarCollapsed && (
+        <div
+          class={`calendar-scroll-wrapper${singleDay ? ' single-day-mode' : ''}`}
+        >
+          {hasCourses && hasSlots ? (
+            <TimeGrid
+              settings={settings}
+              visibleDaysOverride={visibleDays}
+              cellContent={cellContent}
+            />
+          ) : (
+            <div class="weekly-schedule">
+              <div class="schedule-placeholder">No classes scheduled.</div>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }

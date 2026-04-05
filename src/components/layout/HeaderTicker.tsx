@@ -22,6 +22,8 @@ export function HeaderTicker() {
   const [activeSlot, setActiveSlot] = useState<'a' | 'b'>('a');
   const [messageIndex, setMessageIndex] = useState(0);
 
+  if (messages.length === 0) return null;
+
   const textARef = useRef<HTMLSpanElement>(null);
   const textBRef = useRef<HTMLSpanElement>(null);
 
