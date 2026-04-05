@@ -54,14 +54,12 @@ export const CourseCard = memo(function CourseCard({ course, index, totalCourses
   const semester = useCurrentSemester();
   const reorderCourse = useAppStore((s) => s.reorderCourse);
   const openCourseModal = useUiStore((s) => s.openCourseModal);
-  const pushModal = useUiStore((s) => s.pushModal);
 
   const metaParts = buildMetaParts(course);
 
   const handleClick = useCallback(() => {
     openCourseModal(course.id);
-    pushModal('course-modal');
-  }, [course.id, openCourseModal, pushModal]);
+  }, [course.id, openCourseModal]);
 
   const handleKeyDown = useCallback(
     handleKeyActivate(handleClick),

@@ -21,12 +21,10 @@ export function CourseList() {
   const semester = useCurrentSemester();
   const courses = useAllCourses();
   const openCourseModal = useUiStore((s) => s.openCourseModal);
-  const pushModal = useUiStore((s) => s.pushModal);
 
   const handleAddCourse = useCallback(() => {
     openCourseModal();
-    pushModal('course-modal');
-  }, [openCourseModal, pushModal]);
+  }, [openCourseModal]);
 
   // No semester selected
   if (!semester) {
