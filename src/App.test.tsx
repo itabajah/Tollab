@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { render } from '@testing-library/preact';
+import { h, render as preactRender } from 'preact';
 import { App } from './App';
 
 describe('App', () => {
   it('renders the Tollab heading', () => {
-    const { getByText } = render(<App />);
-    expect(getByText('Tollab')).toBeInTheDocument();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    preactRender(h(App, null), container);
+
+    expect(container.querySelector('h1')?.textContent).toBe('Tollab');
+
+    preactRender(null, container);
+    document.body.removeChild(container);
   });
 });
