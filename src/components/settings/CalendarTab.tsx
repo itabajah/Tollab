@@ -4,7 +4,6 @@
  * Features:
  * - Start hour / end hour inputs (0-23)
  * - Visible days checkboxes (Sun-Sat)
- * - Preview of calendar with current settings
  */
 
 import { useCallback } from 'preact/hooks';
@@ -110,7 +109,7 @@ export function CalendarTab() {
       {/* Visible Days */}
       <div class="form-group">
         <label>Visible Days</label>
-        <div class="form-row" style={{ flexWrap: 'wrap', gap: '15px' }}>
+        <div class="settings-days-container">
           {DAY_NAMES.map((name, index) => (
             <label
               key={index}
@@ -124,33 +123,6 @@ export function CalendarTab() {
               {name}
             </label>
           ))}
-        </div>
-      </div>
-
-      {/* Calendar Preview */}
-      <div class="form-group">
-        <label>Preview</label>
-        <div class="settings-calendar-preview">
-          <div class="settings-calendar-header">
-            {calendarSettings.visibleDays.map((d) => {
-              const dayName = DAY_NAMES[d];
-              return (
-                <span key={d} class="settings-calendar-day-header">
-                  {dayName}
-                </span>
-              );
-            })}
-          </div>
-          <div class="settings-calendar-hours">
-            {Array.from(
-              { length: Math.max(0, calendarSettings.endHour - calendarSettings.startHour) },
-              (_, i) => calendarSettings.startHour + i,
-            ).map((h) => (
-              <div key={h} class="settings-calendar-hour-row">
-                <span class="settings-calendar-hour-label">{String(h).padStart(2, '0')}:00</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

@@ -536,6 +536,99 @@ input:focus, textarea:focus {
     flex-shrink: 0;
 }
 
+/* ========================================
+   Settings Tab Content — class definitions
+   ======================================== */
+
+.settings-tab-content {
+    padding: 5px 0;
+}
+
+.settings-section-title {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.settings-subsection-title {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+}
+
+.settings-day-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: normal;
+    text-transform: none;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.settings-days-container {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.settings-batch-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 50px;
+}
+
+.settings-batch-year {
+    width: 80px;
+}
+
+.settings-batch-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
+}
+
+.settings-divider {
+    margin: 30px 0;
+    border: 0;
+    border-top: 1px solid var(--border-primary);
+}
+
+.settings-status {
+    font-size: 13px;
+}
+
+.settings-external-link {
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+}
+
+.settings-unsaved-indicator {
+    color: #e74c3c;
+    font-size: 11px;
+    font-weight: normal;
+    margin-left: 8px;
+}
+
+.settings-theme-buttons {
+    margin-top: 20px;
+}
+
+.settings-theme-buttons .btn-primary,
+.settings-theme-buttons .btn-secondary {
+    flex: 1;
+    padding: 10px 20px;
+}
+
 /* Lecture List in Modal */
 .lecture-list {
     list-style: none;

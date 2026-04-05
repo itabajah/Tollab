@@ -492,6 +492,62 @@
     border-color: var(--accent);
 }
 
+/* ========================================
+   SyncConflictModal — extracted inline styles
+   ======================================== */
+
+.sync-conflict-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.sync-conflict-description {
+    margin-bottom: 20px;
+    color: var(--text-secondary);
+}
+
+.sync-conflict-summary {
+    background: var(--bg-tertiary);
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 13px;
+}
+
+.sync-conflict-summary-row {
+    margin-bottom: 8px;
+}
+
+.sync-conflict-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sync-conflict-option-btn {
+    width: 100%;
+    text-align: left;
+    padding: 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.sync-conflict-option-label {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.sync-conflict-option-desc {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.sync-conflict-cancel-btn {
+    width: 100%;
+    margin-top: 8px;
+}
+
 /* FetchVideosModal — extracted inline styles */
 .fetch-names-toggle {
     display: flex;

@@ -35,7 +35,7 @@ function CloudIcon() {
       fill="none"
       stroke="currentColor"
       stroke-width="2"
-      style={{ flexShrink: 0, marginTop: 2 }}
+      class="sync-conflict-icon"
     >
       <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
       <polyline points="13 13 9 17 7 15" />
@@ -53,7 +53,7 @@ function LocalIcon() {
       fill="none"
       stroke="currentColor"
       stroke-width="2"
-      style={{ flexShrink: 0, marginTop: 2 }}
+      class="sync-conflict-icon"
     >
       <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
       <polyline points="13 2 13 9 20 9" />
@@ -71,7 +71,7 @@ function MergeIcon() {
       fill="none"
       stroke="currentColor"
       stroke-width="2"
-      style={{ flexShrink: 0, marginTop: 2 }}
+      class="sync-conflict-icon"
     >
       <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
     </svg>
@@ -116,19 +116,13 @@ export function SyncConflictModal({ isOpen, conflict, onResolve }: SyncConflictM
         </div>
 
         <div className="modal-body">
-          <p style={{ marginBottom: 20, color: 'var(--text-secondary)' }}>
+          <p class="sync-conflict-description">
             The cloud data is different from your local data. How would you like to resolve this?
           </p>
 
           {/* Conflict details summary */}
-          <div style={{
-            background: 'var(--bg-tertiary)',
-            padding: 15,
-            borderRadius: 4,
-            marginBottom: 20,
-            fontSize: 13,
-          }}>
-            <div style={{ marginBottom: 8 }}>
+          <div class="sync-conflict-summary">
+            <div class="sync-conflict-summary-row">
               <strong>Local:</strong> {conflict.localProfileCount} profile{conflict.localProfileCount !== 1 ? 's' : ''}
               {conflict.localLastModified ? ` · Last modified ${formatDate(conflict.localLastModified)}` : ''}
             </div>
@@ -139,50 +133,46 @@ export function SyncConflictModal({ isOpen, conflict, onResolve }: SyncConflictM
           </div>
 
           {/* Resolution buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div class="sync-conflict-options">
             <button
-              className="btn-primary"
+              className="btn-primary sync-conflict-option-btn"
               type="button"
-              style={{ width: '100%', textAlign: 'left', padding: 15, display: 'flex', alignItems: 'flex-start', gap: 12 }}
               onClick={() => onResolve('use_cloud')}
             >
               <CloudIcon />
               <div>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>Use Cloud Data</div>
-                <div style={{ fontSize: 12, opacity: 0.8 }}>Replace local data with cloud data (your local changes will be lost)</div>
+                <div class="sync-conflict-option-label">Use Cloud Data</div>
+                <div class="sync-conflict-option-desc">Replace local data with cloud data (your local changes will be lost)</div>
               </div>
             </button>
 
             <button
-              className="btn-secondary"
+              className="btn-secondary sync-conflict-option-btn"
               type="button"
-              style={{ width: '100%', textAlign: 'left', padding: 15, display: 'flex', alignItems: 'flex-start', gap: 12 }}
               onClick={() => onResolve('use_local')}
             >
               <LocalIcon />
               <div>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>Use Local Data</div>
-                <div style={{ fontSize: 12, opacity: 0.8 }}>Upload local data to cloud (cloud data will be overwritten)</div>
+                <div class="sync-conflict-option-label">Use Local Data</div>
+                <div class="sync-conflict-option-desc">Upload local data to cloud (cloud data will be overwritten)</div>
               </div>
             </button>
 
             <button
-              className="btn-secondary"
+              className="btn-secondary sync-conflict-option-btn"
               type="button"
-              style={{ width: '100%', textAlign: 'left', padding: 15, display: 'flex', alignItems: 'flex-start', gap: 12 }}
               onClick={() => onResolve('merge')}
             >
               <MergeIcon />
               <div>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>Merge Both</div>
-                <div style={{ fontSize: 12, opacity: 0.8 }}>Combine data from both sources (recommended if no duplicates)</div>
+                <div class="sync-conflict-option-label">Merge Both</div>
+                <div class="sync-conflict-option-desc">Combine data from both sources (recommended if no duplicates)</div>
               </div>
             </button>
 
             <button
-              className="btn-secondary"
+              className="btn-secondary sync-conflict-cancel-btn"
               type="button"
-              style={{ width: '100%', marginTop: 8 }}
               onClick={() => onResolve(null)}
             >
               Cancel
