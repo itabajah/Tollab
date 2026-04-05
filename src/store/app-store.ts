@@ -16,6 +16,7 @@ import type {
   AppSettings,
   CalendarSettings,
   Course,
+  CourseRecordings,
   Homework,
   HomeworkSortOrder,
   RecordingItem,
@@ -62,7 +63,7 @@ interface AppActions {
   renameSemester: (id: string, name: string) => void;
 
   // -- Course CRUD ----------------------------------------------------------
-  addCourse: (semesterId: string, course: Omit<Course, 'id'>) => string;
+  addCourse: (semesterId: string, course: Omit<Course, 'id' | 'recordings'> & { recordings?: CourseRecordings }) => string;
   updateCourse: (
     semesterId: string,
     courseId: string,
