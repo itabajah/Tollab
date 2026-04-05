@@ -4,8 +4,8 @@
  * Replaces the legacy global `appData` object with a typed, immutable store.
  * All mutations use the immer middleware for clean deeply-nested updates.
  *
- * Side effects (localStorage, Firebase) are NOT handled here — they will be
- * wired via middleware or subscribers in a later wave.
+ * Side effects (localStorage, Firebase) are NOT handled here — they are
+ * wired via store-persistence.ts (auto-save subscriber) and useFirebaseSync.
  */
 
 import { create } from 'zustand';
