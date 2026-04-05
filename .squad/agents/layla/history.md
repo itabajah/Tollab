@@ -58,3 +58,23 @@
 - `npm run lint` — ✅ 0 errors in my files (1 pre-existing error in CourseModal.tsx from another agent, 22 pre-existing warnings)
 - `vite build` — ✅ builds successfully (57.56 kB JS, 65.32 kB CSS)
 - Pushed to `wave-6-courses-calendar`
+
+### Wave 7 — Homework Components (2026-04-06)
+**Branch:** `wave-7-recordings-homework`
+**Commit:** `8dbd678`
+
+**Created:**
+1. `src/components/homework/HomeworkEditor.tsx` — Inline editor for homework details: title, due date, notes textarea, full links management (add/edit/remove with label+URL). Save persists to store via `updateHomework()`, Cancel discards. Uses existing `hw-edit-*` CSS classes.
+2. `src/components/homework/HomeworkItem.tsx` — Dual-variant component (sidebar + modal). Completion checkbox via `toggleHomeworkCompleted()`. Due date display with urgency color coding (overdue=red, today=yellow, tomorrow). Course name badge that opens course modal. Click to expand → HomeworkEditor. Modal variant includes inline notes textarea, edit/delete actions, link chips.
+3. `src/components/homework/HomeworkSidebar.tsx` — Right column homework section using `useHomeworkByUrgency()` selector. Groups items into 5 urgency sections: overdue, today, this week, upcoming, no date. "Show Done" toggle via `ui-store.showCompletedHomework`. Inline "Add Homework" form with course selector, title input, date picker. Empty states for no semester and no homework.
+4. `src/components/homework/index.ts` — Barrel re-exports.
+
+**Updated:**
+5. `src/components/layout/MainLayout.tsx` — Replaced homework placeholder (static header + empty div) with real `<HomeworkSidebar />` component.
+6. `src/components/modals/CourseModal.tsx` — Replaced homework tab placeholder with `CourseHomeworkTab` sub-component. Uses `useSortedHomework()` selector for sorted display. Includes "Add Homework" row (title + date + button) matching legacy `hw-add-row` layout.
+
+**Verification:**
+- `npm run typecheck` — ✅ pass
+- `npm run lint` — ✅ 0 errors (22 pre-existing warnings in other files)
+- `vite build` — ✅ builds successfully (67.27 kB JS, 66.11 kB CSS)
+- Pushed to `wave-7-recordings-homework`
