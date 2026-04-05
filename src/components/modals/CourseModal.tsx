@@ -19,6 +19,7 @@ import { useAppStore } from '@/store/app-store';
 import { useCourseById, useCurrentSemester, useSortedHomework } from '@/store/selectors';
 import { useUiStore } from '@/store/ui-store';
 import type { Homework, HomeworkSortOrder, ScheduleSlot } from '@/types';
+import { getInputValue, getSelectValue, getTextAreaValue } from '@/utils/dom';
 
 import { FetchVideosModal } from './FetchVideosModal';
 import { Modal } from './Modal';
@@ -357,7 +358,7 @@ export function CourseModal() {
               placeholder="e.g., Intro to CS"
               value={name}
               onInput={(e) => {
-                setName((e.target as HTMLInputElement).value);
+                setName(getInputValue(e));
                 if (nameError) setNameError('');
               }}
             />
@@ -373,7 +374,7 @@ export function CourseModal() {
                 type="text"
                 placeholder="e.g., 234111"
                 value={number}
-                onInput={(e) => setNumber((e.target as HTMLInputElement).value)}
+                onInput={(e) => setNumber(getInputValue(e))}
               />
             </div>
             <div className="form-group">
@@ -385,7 +386,7 @@ export function CourseModal() {
                 step="0.5"
                 min="0"
                 value={points}
-                onInput={(e) => setPoints((e.target as HTMLInputElement).value)}
+                onInput={(e) => setPoints(getInputValue(e))}
               />
             </div>
           </div>
@@ -398,7 +399,7 @@ export function CourseModal() {
               type="text"
               placeholder="e.g., Prof. Smith"
               value={lecturer}
-              onInput={(e) => setLecturer((e.target as HTMLInputElement).value)}
+              onInput={(e) => setLecturer(getInputValue(e))}
             />
           </div>
 
@@ -410,7 +411,7 @@ export function CourseModal() {
               type="text"
               placeholder="e.g., Computer Science"
               value={faculty}
-              onInput={(e) => setFaculty((e.target as HTMLInputElement).value)}
+              onInput={(e) => setFaculty(getInputValue(e))}
             />
           </div>
 
@@ -422,7 +423,7 @@ export function CourseModal() {
               type="text"
               placeholder="e.g., Taub 3"
               value={location}
-              onInput={(e) => setLocation((e.target as HTMLInputElement).value)}
+              onInput={(e) => setLocation(getInputValue(e))}
             />
           </div>
 
@@ -436,7 +437,7 @@ export function CourseModal() {
               min="0"
               max="100"
               value={grade}
-              onInput={(e) => setGrade((e.target as HTMLInputElement).value)}
+              onInput={(e) => setGrade(getInputValue(e))}
             />
           </div>
 
@@ -448,7 +449,7 @@ export function CourseModal() {
               rows={3}
               placeholder="Course description..."
               value={syllabus}
-              onInput={(e) => setSyllabus((e.target as HTMLTextAreaElement).value)}
+              onInput={(e) => setSyllabus(getTextAreaValue(e))}
             />
           </div>
 
@@ -460,7 +461,7 @@ export function CourseModal() {
               rows={3}
               placeholder="Midterm dates, reminders..."
               value={notes}
-              onInput={(e) => setNotes((e.target as HTMLTextAreaElement).value)}
+              onInput={(e) => setNotes(getTextAreaValue(e))}
             />
           </div>
 
@@ -472,7 +473,7 @@ export function CourseModal() {
                 id="cm-exam-a"
                 type="date"
                 value={examA}
-                onInput={(e) => setExamA((e.target as HTMLInputElement).value)}
+                onInput={(e) => setExamA(getInputValue(e))}
               />
             </div>
             <div className="form-group">
@@ -481,7 +482,7 @@ export function CourseModal() {
                 id="cm-exam-b"
                 type="date"
                 value={examB}
-                onInput={(e) => setExamB((e.target as HTMLInputElement).value)}
+                onInput={(e) => setExamB(getInputValue(e))}
               />
             </div>
           </div>
@@ -509,7 +510,7 @@ export function CourseModal() {
             <div className="schedule-add-row">
               <select
                 value={newDay}
-                onChange={(e) => setNewDay(parseInt((e.target as HTMLSelectElement).value, 10))}
+                onChange={(e) => setNewDay(parseInt(getSelectValue(e), 10))}
                 aria-label="Day of week"
               >
                 {DAY_NAMES_FULL.map((dayName, idx) => (
@@ -521,14 +522,14 @@ export function CourseModal() {
               <input
                 type="time"
                 value={newStart}
-                onInput={(e) => setNewStart((e.target as HTMLInputElement).value)}
+                onInput={(e) => setNewStart(getInputValue(e))}
                 aria-label="Start time"
               />
               <span className="schedule-time-separator">–</span>
               <input
                 type="time"
                 value={newEnd}
-                onInput={(e) => setNewEnd((e.target as HTMLInputElement).value)}
+                onInput={(e) => setNewEnd(getInputValue(e))}
                 aria-label="End time"
               />
               <button type="button" className="btn-secondary" onClick={handleAddSlot}>
@@ -548,7 +549,7 @@ export function CourseModal() {
                 max="180"
                 value={hue}
                 className="full-spectrum"
-                onInput={(e) => setHue(parseInt((e.target as HTMLInputElement).value, 10))}
+                onInput={(e) => setHue(parseInt(getInputValue(e), 10))}
               />
               <div
                 className="color-preview-swatch"
@@ -633,7 +634,7 @@ function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomework
 
   const handleSortChange = useCallback(
     (e: Event) => {
-      const order = (e.target as HTMLSelectElement).value as HomeworkSortOrder;
+      const order = getSelectValue(e) as HomeworkSortOrder;
       setHomeworkSortOrder(courseId, order);
     },
     [courseId, setHomeworkSortOrder],
@@ -700,7 +701,7 @@ function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomework
           className={titleError ? 'input-error' : undefined}
           placeholder="Assignment title..."
           value={newTitle}
-          onInput={(e) => { setNewTitle((e.target as HTMLInputElement).value); setTitleError(''); }}
+          onInput={(e) => { setNewTitle(getInputValue(e)); setTitleError(''); }}
           onKeyDown={(e: KeyboardEvent) => {
             if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
           }}
@@ -708,7 +709,7 @@ function CourseHomeworkTab({ courseId, courseName, courseColor }: CourseHomework
         <input
           type="date"
           value={newDate}
-          onInput={(e) => setNewDate((e.target as HTMLInputElement).value)}
+          onInput={(e) => setNewDate(getInputValue(e))}
           onKeyDown={(e: KeyboardEvent) => {
             if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
           }}

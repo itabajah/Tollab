@@ -15,6 +15,7 @@ import { useCallback, useRef, useState } from 'preact/hooks';
 import { useProfileStore } from '@/store/profile-store';
 import { Button, Select } from '@/components/ui';
 import type { SelectOption } from '@/components/ui';
+import { getInputValue } from '@/utils/dom';
 
 // ---------------------------------------------------------------------------
 // SVG Icons (matching legacy index.legacy.html)
@@ -244,7 +245,7 @@ export function ProfileTab() {
               type="text"
               class="form-control"
               value={renameValue}
-              onInput={(e) => setRenameValue((e.target as HTMLInputElement).value)}
+              onInput={(e) => setRenameValue(getInputValue(e))}
               onKeyDown={handleRenameKeyDown}
               onBlur={handleSaveRename}
               autoFocus
