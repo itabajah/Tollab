@@ -35,6 +35,16 @@ export type RecordingSortOrder =
   | 'watched_first'
   | 'unwatched_first';
 
+/** All valid RecordingSortOrder values for runtime validation. */
+const RECORDING_SORT_ORDER_VALUES: readonly string[] = [
+  'default', 'manual', 'name_asc', 'name_desc', 'watched_first', 'unwatched_first',
+];
+
+/** Runtime type guard for RecordingSortOrder. */
+export function isRecordingSortOrder(value: unknown): value is RecordingSortOrder {
+  return typeof value === 'string' && RECORDING_SORT_ORDER_VALUES.includes(value);
+}
+
 /** Sort orders available for homework lists. */
 export type HomeworkSortOrder =
   | 'manual'
@@ -43,6 +53,16 @@ export type HomeworkSortOrder =
   | 'completed_first'
   | 'incomplete_first'
   | 'name_asc';
+
+/** All valid HomeworkSortOrder values for runtime validation. */
+const HOMEWORK_SORT_ORDER_VALUES: readonly string[] = [
+  'manual', 'date_asc', 'date_desc', 'completed_first', 'incomplete_first', 'name_asc',
+];
+
+/** Runtime type guard for HomeworkSortOrder. */
+export function isHomeworkSortOrder(value: unknown): value is HomeworkSortOrder {
+  return typeof value === 'string' && HOMEWORK_SORT_ORDER_VALUES.includes(value);
+}
 
 // ---------------------------------------------------------------------------
 // Application settings

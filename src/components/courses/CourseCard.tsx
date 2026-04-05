@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/app-store';
 import { useCurrentSemester } from '@/store/selectors';
 import { useUiStore } from '@/store/ui-store';
 import type { Course } from '@/types';
+import { handleKeyActivate } from '@/utils/dom';
 
 import { CourseProgress } from './CourseProgress';
 
@@ -63,12 +64,7 @@ export const CourseCard = memo(function CourseCard({ course, index, totalCourses
   }, [course.id, openCourseModal, pushModal]);
 
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handleClick();
-      }
-    },
+    handleKeyActivate(handleClick),
     [handleClick],
   );
 

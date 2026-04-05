@@ -5,6 +5,7 @@
 
 import { useCallback } from 'preact/hooks';
 import type { JSX } from 'preact';
+import { getInputChecked } from '@/utils/dom';
 
 interface CheckboxProps {
   checked: boolean;
@@ -20,7 +21,7 @@ export function Checkbox({ checked, onChange, label, disabled = false, id, class
 
   const handleChange = useCallback(
     (e: JSX.TargetedEvent<HTMLInputElement>) => {
-      onChange((e.target as HTMLInputElement).checked);
+      onChange(getInputChecked(e));
     },
     [onChange],
   );

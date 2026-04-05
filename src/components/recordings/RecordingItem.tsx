@@ -11,6 +11,7 @@ import { useCallback } from 'preact/hooks';
 import { useAppStore } from '@/store/app-store';
 import { useUiStore } from '@/store/ui-store';
 import type { RecordingItem as RecordingItemType } from '@/types';
+import { handleKeyActivate } from '@/utils/dom';
 import { getVideoEmbedInfo, supportsInlinePreview } from '@/utils/video';
 
 import { RecordingEditor } from './RecordingEditor';
@@ -151,12 +152,7 @@ export const RecordingItem = memo(function RecordingItem({
             tabIndex={canEmbed ? 0 : undefined}
             onKeyDown={
               canEmbed
-                ? (e: KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleContentClick();
-                    }
-                  }
+                ? handleKeyActivate(handleContentClick)
                 : undefined
             }
           >

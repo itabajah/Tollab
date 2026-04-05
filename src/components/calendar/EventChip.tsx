@@ -11,6 +11,7 @@
 import { memo } from 'preact/compat';
 
 import type { Course, ScheduleSlot } from '@/types';
+import { handleKeyActivate } from '@/utils/dom';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,12 +58,7 @@ export const EventChip = memo(function EventChip({ course, slot, onClick }: Even
     .filter(Boolean)
     .join('\n');
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick?.();
-    }
-  };
+  const handleKeyDown = handleKeyActivate(() => onClick?.());
 
   return (
     <div

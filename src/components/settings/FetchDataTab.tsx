@@ -14,6 +14,7 @@ import { Button } from '@/components/ui';
 import { useToast } from '@/components/toast/ToastContext';
 import { useImportExport } from '@/hooks/useImportExport';
 import { ToastType } from '@/types';
+import { getInputValue, getSelectValue } from '@/utils/dom';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -182,7 +183,7 @@ export function FetchDataTab() {
           id="ics-link-input"
           placeholder="https://files.cheesefork.cf/.../term-year.ics"
           value={icsUrl}
-          onInput={(e) => setIcsUrl((e.target as HTMLInputElement).value)}
+          onInput={(e) => setIcsUrl(getInputValue(e))}
         />
       </div>
 
@@ -203,7 +204,7 @@ export function FetchDataTab() {
               <label class="settings-batch-label">Start:</label>
               <select
                 value={batchStartSemester}
-                onChange={(e) => setBatchStartSemester((e.target as HTMLSelectElement).value)}
+                onChange={(e) => setBatchStartSemester(getSelectValue(e))}
               >
                 <option value="winter">Winter</option>
                 <option value="spring">Spring</option>
@@ -214,14 +215,14 @@ export function FetchDataTab() {
                 placeholder="Year"
                 class="settings-batch-year"
                 value={batchStartYear}
-                onInput={(e) => setBatchStartYear((e.target as HTMLInputElement).value)}
+                onInput={(e) => setBatchStartYear(getInputValue(e))}
               />
             </div>
             <div class="form-row">
               <label class="settings-batch-label">End:</label>
               <select
                 value={batchEndSemester}
-                onChange={(e) => setBatchEndSemester((e.target as HTMLSelectElement).value)}
+                onChange={(e) => setBatchEndSemester(getSelectValue(e))}
               >
                 <option value="winter">Winter</option>
                 <option value="spring">Spring</option>
@@ -232,7 +233,7 @@ export function FetchDataTab() {
                 placeholder="Year"
                 class="settings-batch-year"
                 value={batchEndYear}
-                onInput={(e) => setBatchEndYear((e.target as HTMLInputElement).value)}
+                onInput={(e) => setBatchEndYear(getInputValue(e))}
               />
             </div>
             <p class="settings-description settings-batch-hint">

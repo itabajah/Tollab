@@ -12,6 +12,7 @@ import { useCallback, useState } from 'preact/hooks';
 import { useAppStore } from '@/store/app-store';
 import { useUiStore } from '@/store/ui-store';
 import type { Homework } from '@/types';
+import { getTextAreaValue, handleKeyActivate } from '@/utils/dom';
 
 import { HomeworkEditor } from './HomeworkEditor';
 import { parseDate, startOfDay } from '@/utils/date';
@@ -34,19 +35,6 @@ interface HomeworkItemProps {
   isLast?: boolean;
   /** Current sort order — reorder buttons shown when 'manual' (modal only). */
   sortOrder?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function handleKeyActivate(handler: () => void) {
-  return (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handler();
-    }
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -368,7 +356,7 @@ export const HomeworkItem = memo(function HomeworkItem({
           value={homework.notes}
           onInput={(e) => {
             // Direct inline notes update (matches legacy behavior)
-            const val = (e.target as HTMLTextAreaElement).value;
+            const val = getTextAreaValue(e);
             useAppStore
               .getState()
               .updateHomework(courseId, homeworkIndex, { notes: val });
