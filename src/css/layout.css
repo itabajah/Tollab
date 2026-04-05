@@ -72,7 +72,7 @@ h1:hover {
 
 /* Dark mode gradient enhancement */
 body.dark-mode h1 {
-    background: linear-gradient(135deg, #fafafa 0%, #737373 100%);
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-tertiary) 100%);
     -webkit-background-clip: text;
     background-clip: text;
 }

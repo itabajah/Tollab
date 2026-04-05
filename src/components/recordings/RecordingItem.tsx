@@ -83,7 +83,7 @@ export const RecordingItem = memo(function RecordingItem({
     if (canEmbed) {
       onPreviewToggle(originalIndex);
     } else if (recording.videoLink) {
-      window.open(recording.videoLink, '_blank', 'noopener');
+      window.open(recording.videoLink, '_blank', 'noopener,noreferrer');
     }
   }, [canEmbed, recording.videoLink, originalIndex, onPreviewToggle]);
 

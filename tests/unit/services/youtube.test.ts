@@ -95,7 +95,7 @@ describe('youtube', () => {
 
     it('extracts ID from ?list= parameter', async () => {
       mockFetchViaProxy.mockResolvedValue({
-        text: makeInitialDataHtml([{ videoId: 'v1', title: 'First' }]),
+        text: makeInitialDataHtml([{ videoId: 'dQw4w9WgXcQ', title: 'First' }]),
       });
 
       await fetchYouTubePlaylist('https://www.youtube.com/playlist?list=PLtest123');
@@ -108,7 +108,7 @@ describe('youtube', () => {
 
     it('extracts ID from &list= in watch URL', async () => {
       mockFetchViaProxy.mockResolvedValue({
-        text: makeInitialDataHtml([{ videoId: 'v1', title: 'First' }]),
+        text: makeInitialDataHtml([{ videoId: 'dQw4w9WgXcQ', title: 'First' }]),
       });
 
       await fetchYouTubePlaylist(
@@ -130,9 +130,9 @@ describe('youtube', () => {
     it('parses videos from ytInitialData JSON', async () => {
       mockFetchViaProxy.mockResolvedValue({
         text: makeInitialDataHtml([
-          { videoId: 'vid1', title: 'Lecture 1' },
-          { videoId: 'vid2', title: 'Lecture 2' },
-          { videoId: 'vid3', title: 'Lecture 3' },
+          { videoId: 'dQw4w9WgXcQ', title: 'Lecture 1' },
+          { videoId: 'jNQXAC9IVRw', title: 'Lecture 2' },
+          { videoId: '9bZkp7q19f0', title: 'Lecture 3' },
         ]),
       });
 
@@ -143,18 +143,18 @@ describe('youtube', () => {
       expect(videos).toHaveLength(3);
       expect(videos[0]).toEqual({
         title: 'Lecture 1',
-        url: 'https://www.youtube.com/watch?v=vid1',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       });
       expect(videos[2]).toEqual({
         title: 'Lecture 3',
-        url: 'https://www.youtube.com/watch?v=vid3',
+        url: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
       });
     });
 
     it('uses fallback title when runs are missing', async () => {
       const html = makeInitialDataHtml([]);
       // Manually insert a renderer without title
-      const modified = html.replace('"contents":[]', '"contents":[{"playlistVideoRenderer":{"videoId":"noTitle"}}]');
+      const modified = html.replace('"contents":[]', '"contents":[{"playlistVideoRenderer":{"videoId":"kJQP7kiw5Fk"}}]');
 
       mockFetchViaProxy.mockResolvedValue({ text: modified });
 
@@ -169,7 +169,7 @@ describe('youtube', () => {
     it('skips renderers without videoId', async () => {
       const contents = [
         { playlistVideoRenderer: { title: { runs: [{ text: 'Missing' }] } } },
-        { playlistVideoRenderer: { videoId: 'good', title: { runs: [{ text: 'Good' }] } } },
+        { playlistVideoRenderer: { videoId: 'M7lc1UVf-VE', title: { runs: [{ text: 'Good' }] } } },
       ];
       const ytData = {
         contents: {
@@ -260,7 +260,7 @@ describe('youtube', () => {
 
     it('passes onProgress to fetchViaProxy', async () => {
       mockFetchViaProxy.mockResolvedValue({
-        text: makeInitialDataHtml([{ videoId: 'v1', title: 'Test' }]),
+        text: makeInitialDataHtml([{ videoId: 'dQw4w9WgXcQ', title: 'Test' }]),
       });
 
       const onProgress = vi.fn();

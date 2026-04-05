@@ -19,6 +19,13 @@ export interface YouTubeVideo {
 }
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Strict pattern for a YouTube video ID (exactly 11 URL-safe characters). */
+const YOUTUBE_VIDEO_ID_RE = /^[A-Za-z0-9_-]{11}$/;
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
@@ -81,7 +88,7 @@ function parseInitialData(html: string): YouTubeVideo[] {
     if (contents) {
       for (const item of contents) {
         const renderer = item.playlistVideoRenderer;
-        if (renderer?.videoId) {
+        if (renderer?.videoId && YOUTUBE_VIDEO_ID_RE.test(renderer.videoId)) {
           const title =
             renderer.title?.runs?.[0]?.text ??
             `Video ${String(videos.length + 1)}`;
