@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 
+import { MOBILE_BREAKPOINT } from '@/constants/ui';
 import { useAppStore } from '@/store/app-store';
 import { useCurrentSemester } from '@/store/selectors';
 import { DEFAULT_CALENDAR_SETTINGS } from '@/types';
@@ -69,19 +70,20 @@ export function WeeklySchedule() {
 
   // Initialise from viewport width on mount
   useEffect(() => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
     setSingleDay(isMobile);
   }, []);
 
   // Listen for resize — auto-clear single-day on desktop
+  const RESIZE_DEBOUNCE_MS = 250;
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
     const handler = () => {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
-        const nowMobile = window.innerWidth <= 768;
+        const nowMobile = window.innerWidth <= MOBILE_BREAKPOINT;
         if (!nowMobile) setSingleDay(false);
-      }, 250);
+      }, RESIZE_DEBOUNCE_MS);
     };
     window.addEventListener('resize', handler);
     return () => {
