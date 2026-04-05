@@ -3,20 +3,34 @@
  *
  * Features:
  * - ICS URL input with "Import" button (single mode)
- * - Batch import toggle + textarea for multiple URLs
- * - Technion course ID input with "Fetch Info" button
- * - Status/progress indicators
+ * - Batch import toggle + semester range selectors
+ * - Technion course catalog enrichment
+ * - Progress indicators and toast notifications
  */
 
 import { useCallback, useState } from 'preact/hooks';
 
 import { Button } from '@/components/ui';
+import { useToast } from '@/components/toast/ToastContext';
+import { useImportExport } from '@/hooks/useImportExport';
+import { ToastType } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export function FetchDataTab() {
+  const { showToast } = useToast();
+  const {
+    isImporting,
+    importProgress,
+    isFetchingCatalog,
+    catalogProgress,
+    importSingleICS,
+    importBatchICS,
+    fetchTechnionCatalog,
+  } = useImportExport();
+
   const [icsUrl, setIcsUrl] = useState('');
   const [batchMode, setBatchMode] = useState(false);
   const [batchStartSemester, setBatchStartSemester] = useState('winter');
@@ -24,48 +38,119 @@ export function FetchDataTab() {
   const [batchEndSemester, setBatchEndSemester] = useState('winter');
   const [batchEndYear, setBatchEndYear] = useState('');
   const [importStatus, setImportStatus] = useState('');
-  const [isFetching, setIsFetching] = useState(false);
 
   const [technionStatus, setTechnionStatus] = useState('');
-  const [isFetchingTechnion, setIsFetchingTechnion] = useState(false);
 
   const handleFetchSchedule = useCallback(async () => {
-    if (!icsUrl.trim() && !batchMode) {
+    const trimmedUrl = icsUrl.trim();
+    if (!trimmedUrl && !batchMode) {
       setImportStatus('Please enter an ICS URL.');
       return;
     }
 
-    setIsFetching(true);
-    setImportStatus('Fetching schedule...');
+    setImportStatus('');
 
     try {
-      // Wave 9+ will wire this to the actual ICS import service.
-      // For now, show a placeholder message.
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setImportStatus('ICS import will be wired in a future wave.');
+      if (batchMode) {
+        const startYearNum = parseInt(batchStartYear, 10);
+        const endYearNum = parseInt(batchEndYear, 10);
+
+        if (!startYearNum || !endYearNum) {
+          setImportStatus('Please enter valid start and end years.');
+          return;
+        }
+        if (!trimmedUrl) {
+          setImportStatus('Please enter a base ICS URL for batch import.');
+          return;
+        }
+
+        const results = await importBatchICS(
+          trimmedUrl,
+          batchStartSemester,
+          startYearNum,
+          batchEndSemester,
+          endYearNum,
+        );
+
+        const succeeded = results.filter((r) => r.success);
+        const failed = results.filter((r) => !r.success);
+
+        if (succeeded.length > 0) {
+          const totalCourses = succeeded.reduce(
+            (sum, r) => sum + (r.count ?? 0),
+            0,
+          );
+          showToast(
+            `Imported ${String(succeeded.length)} semester(s) with ${String(totalCourses)} courses`,
+            ToastType.Success,
+          );
+        }
+        if (failed.length > 0) {
+          showToast(
+            `${String(failed.length)} semester(s) failed to import`,
+            ToastType.Warning,
+            { description: failed.map((r) => r.error).join('; ') },
+          );
+        }
+
+        setImportStatus(
+          `Batch complete: ${String(succeeded.length)} succeeded, ${String(failed.length)} failed.`,
+        );
+      } else {
+        const result = await importSingleICS(trimmedUrl);
+        showToast(
+          `Imported "${result.semesterName}" with ${String(result.count)} courses`,
+          ToastType.Success,
+        );
+        setImportStatus(
+          `Imported "${result.semesterName}" — ${String(result.count)} courses.`,
+        );
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setImportStatus(`Error: ${message}`);
-    } finally {
-      setIsFetching(false);
+      showToast('Import failed', ToastType.Error, { description: message });
     }
-  }, [icsUrl, batchMode]);
+  }, [
+    icsUrl,
+    batchMode,
+    batchStartSemester,
+    batchStartYear,
+    batchEndSemester,
+    batchEndYear,
+    importSingleICS,
+    importBatchICS,
+    showToast,
+  ]);
 
   const handleFetchTechnion = useCallback(async () => {
-    setIsFetchingTechnion(true);
-    setTechnionStatus('Fetching course data...');
+    setTechnionStatus('');
 
     try {
-      // Wave 9+ will wire this to the actual Technion catalog fetch service.
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setTechnionStatus('Technion data fetch will be wired in a future wave.');
+      const { updatedCount, catalogSize } = await fetchTechnionCatalog();
+
+      if (updatedCount > 0) {
+        showToast(
+          `Enriched ${String(updatedCount)} course(s) from catalog (${String(catalogSize)} entries)`,
+          ToastType.Success,
+        );
+        setTechnionStatus(
+          `Updated ${String(updatedCount)} course(s) from ${String(catalogSize)} catalog entries.`,
+        );
+      } else {
+        showToast('No courses needed updating', ToastType.Info);
+        setTechnionStatus(
+          `Catalog fetched (${String(catalogSize)} entries) — no courses needed updating.`,
+        );
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setTechnionStatus(`Error: ${message}`);
-    } finally {
-      setIsFetchingTechnion(false);
+      showToast('Catalog fetch failed', ToastType.Error, {
+        description: message,
+      });
     }
-  }, []);
+  }, [fetchTechnionCatalog, showToast]);
 
   return (
     <div class="settings-tab-content">
@@ -158,14 +243,14 @@ export function FetchDataTab() {
       </div>
 
       <div class="form-group">
-        <Button variant="primary" onClick={handleFetchSchedule} loading={isFetching}>
+        <Button variant="primary" onClick={handleFetchSchedule} loading={isImporting}>
           Fetch Schedule
         </Button>
       </div>
 
-      {importStatus && (
+      {(importProgress || importStatus) && (
         <div class="form-group">
-          <p class="settings-status">{importStatus}</p>
+          <p class="settings-status">{importProgress || importStatus}</p>
         </div>
       )}
 
@@ -178,14 +263,14 @@ export function FetchDataTab() {
       </p>
 
       <div class="form-group">
-        <Button variant="secondary" onClick={handleFetchTechnion} loading={isFetchingTechnion}>
+        <Button variant="secondary" onClick={handleFetchTechnion} loading={isFetchingCatalog}>
           Fetch Course Data
         </Button>
       </div>
 
-      {technionStatus && (
+      {(catalogProgress || technionStatus) && (
         <div class="form-group">
-          <p class="settings-status">{technionStatus}</p>
+          <p class="settings-status">{catalogProgress || technionStatus}</p>
         </div>
       )}
     </div>
