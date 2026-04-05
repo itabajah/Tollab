@@ -11,7 +11,9 @@ import {
   MainLayout,
   SemesterControls,
 } from '@/components/layout';
+import { WeeklySchedule } from '@/components/calendar';
 import { CourseList } from '@/components/courses';
+import { HomeworkSidebar } from '@/components/homework';
 import { AddSemesterModal, SyncConflictModal } from '@/components/modals';
 import { ToastContainer, ToastProvider } from '@/components/toast';
 import { useFirebaseSync } from '@/hooks';
@@ -93,8 +95,10 @@ function AppContent() {
             <HeaderTicker />
             <SemesterControls />
             <CourseList />
+            <WeeklySchedule />
           </>
         }
+        sidebarSlot={<HomeworkSidebar />}
       />
       <Footer />
       <AddSemesterModal />
