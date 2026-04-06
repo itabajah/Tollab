@@ -8,27 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="
-        default-src 'self';
-        script-src  'self';
-        style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
-        img-src     'self' data: https://*.googleapis.com https://*.firebaseapp.com;
-        font-src    'self' https://fonts.gstatic.com;
-        connect-src 'self'
-                    https://*.googleapis.com
-                    https://*.firebaseio.com
-                    https://*.firebaseapp.com
-                    https://api.codetabs.com
-                    https://corsproxy.org
-                    https://api.allorigins.win
-                    https://raw.githubusercontent.com;
-        frame-src   https://www.youtube.com https://*.panopto.com https://*.panopto.eu;
-        object-src  'none';
-        base-uri    'self';
-      "
-    />
+    <!--
+      CSP is injected by Vite html plugin in production builds only.
+      During development, Vite needs 'unsafe-eval' and 'unsafe-inline' for HMR.
+      See vite.config.ts transformIndexHtml for the production CSP.
+    -->
   </head>
   <body>
     <div id="app"></div>
