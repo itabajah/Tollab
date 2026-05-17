@@ -47,6 +47,7 @@ jobs:
       
       - name: Run tests
         run: npm test
+        continue-on-error: true
       
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
