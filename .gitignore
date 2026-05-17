@@ -15,3 +15,11 @@ npm-debug.log*
 
 # Firebase runtime config (local dev only; deploy generates this from GitHub Secrets)
 js/firebase-config.js
+
+# Dependencies / build / test output
+node_modules/
+dist/
+coverage/
+
+# Squad workspace (local agent state)
+.squad/
