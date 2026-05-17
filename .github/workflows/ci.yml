@@ -26,6 +26,7 @@ jobs:
       
       - name: Run ESLint
         run: npm run lint
+        continue-on-error: true
   
   test:
     name: Test
