@@ -75,6 +75,22 @@
     </div>
 
     <div class="calendar-container">
+        <!-- Exam Roadmap Section -->
+        <div id="exam-roadmap-container" style="margin-bottom: 30px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 16px; text-transform: uppercase; color: var(--text-secondary);">Exam Roadmap</h3>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button id="pirate-mode-btn" class="pirate-btn" title="Pirate Mode!">🏴‍☠️</button>
+                    <button id="toggle-roadmap-btn" class="icon-btn" title="Toggle Exam Roadmap">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="exam-roadmap-content" class="exam-roadmap" style="overflow-x: auto;">
+                <!-- Populated by renderExamRoadmap() -->
+            </div>
+        </div>
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <h2 style="margin: 0; font-size: 20px; font-weight: 300;">Weekly Schedule</h2>
             <div style="display: flex; align-items: center; gap: 10px;">

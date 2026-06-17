@@ -423,6 +423,18 @@ function setupSettingsEvents() {
     // Toggle Calendar Visibility
     $('toggle-calendar-btn').addEventListener('click', toggleCalendarVisibility);
 
+    // Toggle Exam Roadmap Visibility
+    const toggleRoadmapBtn = $('toggle-roadmap-btn');
+    if (toggleRoadmapBtn) {
+        toggleRoadmapBtn.addEventListener('click', toggleExamRoadmapVisibility);
+    }
+
+    // Pirate Mode Button
+    const pirateModeBtn = $('pirate-mode-btn');
+    if (pirateModeBtn) {
+        pirateModeBtn.addEventListener('click', activatePirateMode);
+    }
+
     // ICS Link Sync
     $('sync-ics-btn').addEventListener('click', syncICSData);
 
@@ -508,6 +520,55 @@ function toggleCalendarVisibility() {
     btn.innerHTML = isHidden
         ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
         : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+}
+
+/**
+ * Toggles the visibility of the exam roadmap section.
+ */
+function toggleExamRoadmapVisibility() {
+    const roadmapContent = $('exam-roadmap-content');
+    const btn = $('toggle-roadmap-btn');
+    if (!roadmapContent || !btn) return;
+
+    const isHidden = roadmapContent.classList.toggle('hidden');
+    
+    btn.innerHTML = isHidden
+        ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+        : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+}
+
+/**
+ * Activates pirate mode with fun animation and message.
+ */
+function activatePirateMode() {
+    const btn = $('pirate-mode-btn');
+    const roadmapContent = $('exam-roadmap-content');
+    if (!btn || !roadmapContent) return;
+
+    btn.classList.add('pirate-active');
+    
+    // Toggle pirate theme on roadmap
+    roadmapContent.classList.toggle('pirate-theme');
+
+    // Fun pirate messages
+    const pirateMessages = [
+        '🏴‍☠️ Shiver me timbers! Set sail for exams! 🗺️',
+        '⚓ Avast ye! The exam map awaits, matey! 🗺️',
+        '💀 Yo ho ho! Time to navigate these exam seas! 🌊',
+        '🏴‍☠️ Plot the course, ye scallywag! The treasure awaits! 💰',
+        '⚔️ By Blackbeard\'s beard! This roadmap be treasure! 🗺️',
+        '🏴‍☠️ Arrr! Study hard or walk the exam plank! 🪵'
+    ];
+
+    const randomMessage = pirateMessages[Math.floor(Math.random() * pirateMessages.length)];
+    if (typeof ToastManager !== 'undefined') {
+        ToastManager.success(randomMessage, { duration: 3000 });
+    }
+
+    // Remove animation class after it completes
+    setTimeout(() => {
+        btn.classList.remove('pirate-active');
+    }, 600);
 }
 
 /**

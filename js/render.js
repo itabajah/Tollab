@@ -16,6 +16,7 @@ function renderAll() {
     renderSemesters();
     renderCourses();
     renderCalendar();
+    renderExamRoadmap();
     renderHomeworkSidebar();
 
     // Header ticker is implemented in js/header-ticker.js
@@ -946,6 +947,146 @@ function renderCurrentTime() {
         line.style.top = `${(min / 60) * 100}%`;
         cell.appendChild(line);
     }
+}
+
+
+// ============================================================================
+// EXAM ROADMAP
+// ============================================================================
+
+/**
+ * Renders the exam roadmap showing all upcoming exams with days between them.
+ * Displays both Moed A and Moed B exams sorted by date.
+ */
+function renderExamRoadmap() {
+    const container = $('exam-roadmap-content');
+    const roadmapSection = $('exam-roadmap-container');
+    if (!container || !roadmapSection) return;
+
+    const semester = getCurrentSemester();
+    if (!semester) {
+        roadmapSection.style.display = 'none';
+        return;
+    }
+
+    // Collect all exams
+    const exams = [];
+    semester.courses.forEach(course => {
+        if (course.exams) {
+            if (course.exams.moedA) {
+                exams.push({
+                    courseName: course.name,
+                    courseId: course.id,
+                    date: course.exams.moedA,
+                    examType: 'A',
+                    color: course.color
+                });
+            }
+            if (course.exams.moedB) {
+                exams.push({
+                    courseName: course.name,
+                    courseId: course.id,
+                    date: course.exams.moedB,
+                    examType: 'B',
+                    color: course.color
+                });
+            }
+        }
+    });
+
+    // If no exams, hide the section
+    if (exams.length === 0) {
+        roadmapSection.style.display = 'none';
+        return;
+    }
+
+    // Sort exams by date
+    exams.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Show the roadmap section
+    roadmapSection.style.display = 'block';
+
+    // Clear and build HTML
+    container.innerHTML = '';
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    exams.forEach((exam, index) => {
+        const examDate = new Date(exam.date);
+        examDate.setHours(0, 0, 0, 0);
+
+        const daysUntil = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+        const isPassed = daysUntil < 0;
+
+        // Create exam node
+        const nodeDiv = document.createElement('div');
+        nodeDiv.className = 'exam-roadmap-node';
+
+        // Calculate display text for days
+        let daysText = '';
+        let daysClass = '';
+        if (isPassed) {
+            daysText = '✓';
+            daysClass = 'passed';
+        } else if (daysUntil === 0) {
+            daysText = 'TODAY';
+            daysClass = 'today';
+        } else if (daysUntil === 1) {
+            daysText = '1 day';
+            daysClass = 'soon';
+        } else {
+            daysText = `${daysUntil} days`;
+        }
+
+        // Format date
+        const dateStr = examDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+
+        // Create the exam box
+        const boxDiv = document.createElement('div');
+        boxDiv.className = `exam-roadmap-node-box moed${exam.examType}${isPassed ? ' passed' : ''}`;
+        if (exam.color) {
+            boxDiv.style.borderColor = exam.color;
+        }
+
+        boxDiv.innerHTML = `
+            <div class="exam-roadmap-course-name" title="${exam.courseName}">${exam.courseName}</div>
+            <div class="exam-roadmap-exam-label">Moed ${exam.examType}</div>
+            <div class="exam-roadmap-date">${dateStr}</div>
+        `;
+
+        // Create days left indicator
+        const daysDiv = document.createElement('div');
+        daysDiv.className = `exam-roadmap-days-left ${daysClass}`;
+        daysDiv.textContent = daysText;
+
+        nodeDiv.appendChild(boxDiv);
+        nodeDiv.appendChild(daysDiv);
+        container.appendChild(nodeDiv);
+
+        // Add arrow between exams (but not after the last one)
+        if (index < exams.length - 1) {
+            const nextExamDate = new Date(exams[index + 1].date);
+            nextExamDate.setHours(0, 0, 0, 0);
+            const daysBetween = Math.ceil((nextExamDate - examDate) / (1000 * 60 * 60 * 24));
+
+            const arrowDiv = document.createElement('div');
+            arrowDiv.className = 'exam-roadmap-arrow';
+            arrowDiv.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="5 12 19 12"></polyline>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                    <div class="exam-roadmap-arrow-label">${daysBetween} days</div>
+                </div>
+            `;
+            container.appendChild(arrowDiv);
+        }
+    });
 }
 
 // ============================================================================

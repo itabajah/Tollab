@@ -104,3 +104,8 @@ window.openHomeworkFromSidebar = openHomeworkFromSidebar;
 // Course functions
 window.moveCourse = moveCourse;
 window.removeScheduleItem = removeScheduleItem;
+
+// Calendar/Roadmap functions
+window.toggleCalendarVisibility = toggleCalendarVisibility;
+window.toggleExamRoadmapVisibility = toggleExamRoadmapVisibility;
+window.activatePirateMode = activatePirateMode;
