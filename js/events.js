@@ -20,6 +20,11 @@ function setupEventListeners() {
     setupProfileEvents();
     setupColorThemeEvents();
     setupMobileDayToggle();
+
+    // Exam Mode (manual toggle, roadmap actions, custom-exam modal)
+    if (typeof setupExamModeEvents === 'function') {
+        setupExamModeEvents();
+    }
 }
 
 // ============================================================================
