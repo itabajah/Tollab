@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/modals.css">
     <link rel="stylesheet" href="css/toast.css">
     <link rel="stylesheet" href="css/utils.css">
+    <link rel="stylesheet" href="css/exam-mode.css">
 </head>
 <body>
     <div class="app-layout">
@@ -75,6 +76,16 @@
     </div>
 
     <div class="calendar-container">
+        <!-- Persistent right-column view toggle (Schedule | Exams, with Auto reset) -->
+        <div id="right-view-toggle" class="right-view-toggle hidden" role="group" aria-label="Switch right column view">
+            <div class="rv-pills">
+                <button type="button" class="rv-pill" data-view="semester" aria-pressed="false">Schedule</button>
+                <button type="button" class="rv-pill" data-view="exam" aria-pressed="false">Exams</button>
+            </div>
+            <button type="button" class="rv-auto hidden" data-view="auto" title="Revert to automatic">Auto</button>
+        </div>
+
+        <div id="semester-view">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <h2 style="margin: 0; font-size: 20px; font-weight: 300;">Weekly Schedule</h2>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -103,6 +114,10 @@
         <div id="homework-sidebar-list" class="upcoming-list">
             <!-- Homework populated by JS -->
         </div>
+        </div><!-- /#semester-view -->
+
+        <!-- Exam Mode roadmap (populated by js/exam-mode.js) -->
+        <div id="exam-view" class="hidden" role="region" aria-label="Exam roadmap"></div>
     </div>
     
     <!-- Mobile Scroll to Homework Button -->
@@ -641,6 +656,42 @@
         </div>
     </div>
 
+    <!-- Custom Exam Modal (Exam Mode) -->
+    <div id="custom-exam-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="custom-exam-modal-title">Add Custom Exam</h2>
+                <button class="close-btn" onclick="closeModal('custom-exam-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="custom-exam-id">
+                <div class="form-group">
+                    <label for="custom-exam-name">Name</label>
+                    <input type="text" id="custom-exam-name" maxlength="100" placeholder="e.g., Statistics Final">
+                </div>
+                <div class="form-group">
+                    <label for="custom-exam-label">Label (optional)</label>
+                    <input type="text" id="custom-exam-label" maxlength="30" placeholder="e.g., Moed A, Quiz, Project">
+                </div>
+                <div class="form-group">
+                    <label for="custom-exam-date">Date</label>
+                    <input type="date" id="custom-exam-date" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-secondary); border-radius: 2px; background: var(--bg-secondary); color: var(--text-primary);">
+                </div>
+                <div class="form-group">
+                    <label for="custom-exam-hue">Color</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="range" id="custom-exam-hue" min="1" max="360" value="200" style="flex: 1; cursor: pointer;">
+                        <div id="custom-exam-color-preview" style="width: 40px; height: 40px; border: 1px solid var(--border-secondary); border-radius: 4px;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="custom-exam-save-btn" class="btn-primary" style="flex: 1;">Save</button>
+                    <button id="custom-exam-delete-btn" class="btn-danger" style="display: none;">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Core modules (load order matters) -->
     <script src="js/constants.js"></script>
     <script src="js/validation.js"></script>
@@ -665,6 +716,7 @@
     <script src="js/item-logic.js"></script>
     <script src="js/import-export.js"></script>
     <script src="js/events.js"></script>
+    <script src="js/exam-mode.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
