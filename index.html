@@ -17,8 +17,8 @@
     <link rel="stylesheet" href="css/utils.css">
 </head>
 <body>
-    <div class="app-layout">
-        <div class="container">
+    <div class="app-layout split-parent">
+        <div id="split-0" class="container">
             <header>
                 <div class="brand">
                     <h1>Tollab</h1>
@@ -74,7 +74,7 @@
         </button>
     </div>
 
-    <div class="calendar-container">
+    <div id="split-1" class="calendar-container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <h2 style="margin: 0; font-size: 20px; font-weight: 300;">Weekly Schedule</h2>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -666,5 +666,52 @@
     <script src="js/import-export.js"></script>
     <script src="js/events.js"></script>
     <script src="js/main.js"></script>
+    <!-- Split.js: resizable left/right panes (desktop only) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
+    <script>
+        // Initialize resizable split panes on desktop, after all scripts load.
+        (function initSplitPanes() {
+            // Enable only on desktop, where both panes can meet their min widths.
+            var DESKTOP_MIN_WIDTH = 1024;
+            if (window.innerWidth <= DESKTOP_MIN_WIDTH) {
+                return;
+            }
+
+            if (typeof Split === 'undefined') {
+                console.warn('[Split] Split.js failed to load; using default layout.');
+                return;
+            }
+
+            var STORAGE_KEY = 'tollab_split_sizes';
+            var DEFAULT_SIZES = [65, 35];
+
+            var sizes = DEFAULT_SIZES;
+            try {
+                var stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    var parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length === 2) {
+                        sizes = parsed;
+                    }
+                }
+            } catch (e) {
+                console.warn('[Split] Could not read saved sizes:', e);
+            }
+
+            Split(['#split-0', '#split-1'], {
+                sizes: sizes,
+                minSize: [580, 400], // Left pane >= 580px, right pane >= 400px
+                gutterSize: 4,
+                cursor: 'col-resize',
+                onDragEnd: function (newSizes) {
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(newSizes));
+                    } catch (e) {
+                        console.warn('[Split] Could not save sizes:', e);
+                    }
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
