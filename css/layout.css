@@ -12,9 +12,52 @@
     height: 100%;
 }
 
+/* Split.js parent container (desktop resizable panes) */
+.split-parent {
+    display: flex;
+    flex-direction: row;
+    gap: 0; /* Spacing is provided by the Split.js gutter instead */
+}
+
+/* Split.js gutter (draggable handle) */
+.gutter {
+    background-color: var(--border-secondary, #e1e1e1);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    cursor: col-resize !important;
+    transition: background-color 0.15s;
+    flex-shrink: 0;
+    z-index: 99;
+}
+
+.gutter:hover {
+    background-color: var(--border-primary, #cdcdcd);
+}
+
+.gutter.gutter-horizontal {
+    width: 4px;
+    margin: 0 2px;
+}
+
+/* Split panes - Split.js controls their widths via inline styles */
+.split-parent > #split-0,
+.split-parent > #split-1 {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+}
+
+/* Dark mode gutter styling */
+body.dark-mode .gutter {
+    background-color: var(--border-secondary, #3a3a3a);
+}
+
+body.dark-mode .gutter:hover {
+    background-color: var(--border-primary, #525252);
+}
+
 .container {
-    flex: 3;
-    /* Existing styles override */
+    /* Width is controlled by Split.js on desktop (no flex value) */
     max-width: none;
     width: auto;
     margin: 0;
@@ -143,6 +186,23 @@ body.dark-mode .theme-icon-moon { display: block !important; }
 /* Mobile day view toggle button */
 #mobile-day-toggle {
     display: none;
+}
+
+/* Fallback proportions for the 901-1024px range, where the two-column row
+   layout is shown but Split.js is intentionally disabled (the panes cannot
+   meet their minimum widths to be resized). Restores a balanced 60/40 split
+   instead of letting the calendar pane's width: 100% squash the left panel.
+   Body has overflow: hidden, so window.innerWidth matches the viewport width
+   used here and this never overlaps the desktop Split.js range (>1024px). */
+@media (min-width: 901px) and (max-width: 1024px) {
+    .split-parent > #split-0 {
+        flex: 3 1 0;
+    }
+
+    .split-parent > #split-1 {
+        flex: 2 1 0;
+        width: auto;
+    }
 }
 
 /* ========================================
