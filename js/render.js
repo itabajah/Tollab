@@ -22,6 +22,11 @@ function renderAll() {
     if (typeof renderHeaderTicker === 'function') {
         renderHeaderTicker();
     }
+
+    // Exam Mode is implemented in js/exam-mode.js (swaps the right column)
+    if (typeof renderExamMode === 'function') {
+        renderExamMode();
+    }
 }
 
 /**

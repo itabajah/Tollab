@@ -119,6 +119,12 @@ function compactSemester(semester) {
         if (Object.keys(calCompact).length > 0) compact.cal = calCompact;
     }
     
+    // Exam-mode fields (view override, hidden ids, custom exams) - only if non-default
+    if (typeof compactExamMode === 'function') {
+        const exam = compactExamMode(semester);
+        if (exam) Object.assign(compact, exam);
+    }
+    
     return compact;
 }
 
@@ -260,6 +266,15 @@ function hydrateSemester(s) {
         if (s.cal.vd) semester.calendarSettings.visibleDays = s.cal.vd;
     }
     
+    // Exam-mode fields (defaults applied when absent)
+    if (typeof hydrateExamMode === 'function') {
+        Object.assign(semester, hydrateExamMode(s));
+    } else {
+        semester.examViewMode = 'auto';
+        semester.hiddenExamIds = [];
+        semester.customExams = [];
+    }
+    
     return semester;
 }
 
@@ -366,6 +381,10 @@ function migrateData(data) {
         if (!semester.calendarSettings) {
             semester.calendarSettings = { ...DEFAULT_CALENDAR_SETTINGS };
         }
+        // Exam-mode fields (preserve existing, default when absent)
+        if (!semester.examViewMode) semester.examViewMode = 'auto';
+        if (!Array.isArray(semester.hiddenExamIds)) semester.hiddenExamIds = [];
+        if (!Array.isArray(semester.customExams)) semester.customExams = [];
         semester.courses.forEach(migrateCourse);
     });
     
