@@ -4,6 +4,8 @@ import { AppShell } from '@/features/layout/AppShell'
 import { Header } from '@/features/layout/Header'
 import { SemesterControls, AddSemesterDialog } from '@/features/semesters/SemesterControls'
 import { CourseList } from '@/features/courses/CourseList'
+import { WeekCalendar } from '@/features/calendar/WeekCalendar'
+import { useNow } from '@/hooks/useNow'
 import { Button } from '@/components/ui/Button'
 
 function NoSemesterYet() {
@@ -32,13 +34,9 @@ function LeftPane() {
 
 function RightPane() {
   const hasSemester = useAppState((s) => s.currentSemesterId !== null)
+  const now = useNow()
   if (!hasSemester) return null
-  return (
-    <section>
-      <h2 className="text-2xl font-light text-ink">Weekly Schedule</h2>
-      <p className="mt-4 text-sm text-ink-faint">Your class schedule will appear here.</p>
-    </section>
-  )
+  return <WeekCalendar now={now} />
 }
 
 export default function App() {
