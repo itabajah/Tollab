@@ -85,6 +85,33 @@ describe('semester actions', () => {
   })
 })
 
+describe('applyColorTheme', () => {
+  it('updates the scheme and recolors every course by index', () => {
+    const data = appDataSchema.parse({
+      semesters: [
+        {
+          id: 's1',
+          name: 'Spring 2026',
+          courses: [
+            { id: 'c1', name: 'A', color: 'hsl(0, 45%, 50%)' },
+            { id: 'c2', name: 'B', color: 'hsl(137, 45%, 50%)' },
+          ],
+        },
+      ],
+      settings: {},
+      lastModified: T0,
+    })
+    const store = createAppStore(data, { now: () => T1 })
+    store.getState().applyColorTheme('mono', 200)
+    const state = store.getState()
+    expect(state.data.settings.colorTheme).toBe('mono')
+    expect(state.data.semesters[0]!.courses.map((c) => c.color)).toEqual([
+      'hsl(0, 0%, 50%)',
+      'hsl(0, 0%, 50%)',
+    ])
+  })
+})
+
 describe('settings actions', () => {
   it('updateSettings patches settings and stamps lastModified', () => {
     const store = makeStore()

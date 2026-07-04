@@ -1,11 +1,18 @@
 import { createSession, type Session } from './session'
-import { createMemoryStorage, loadProfileData, type StorageLike } from '@/services/storage/localStore'
+import {
+  createMemoryStorage,
+  loadProfileData,
+  type StorageLike,
+} from '@/services/storage/localStore'
 import { STORAGE_KEYS, LEGACY_KEYS, legacyProfileKey } from '@/services/storage/keys'
 import v2Full from '@/services/storage/__fixtures__/v2-compact-full.json'
 
 const T1 = new Date('2026-07-04T12:00:00.000Z')
 
-function makeSession(storage: StorageLike = createMemoryStorage(), extra: Partial<Parameters<typeof createSession>[0]> = {}): Session {
+function makeSession(
+  storage: StorageLike = createMemoryStorage(),
+  extra: Partial<Parameters<typeof createSession>[0]> = {},
+): Session {
   return createSession({ storage, now: () => T1, saveDebounceMs: 250, ...extra })
 }
 

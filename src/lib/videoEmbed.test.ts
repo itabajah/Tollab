@@ -4,9 +4,9 @@ describe('detectVideoPlatform', () => {
   it('detects youtube, panopto, and unknown', () => {
     expect(detectVideoPlatform('https://www.youtube.com/watch?v=abc123')).toBe('youtube')
     expect(detectVideoPlatform('https://youtu.be/abc123')).toBe('youtube')
-    expect(detectVideoPlatform('https://panopto.technion.ac.il/Panopto/Pages/Viewer.aspx?id=x')).toBe(
-      'panopto',
-    )
+    expect(
+      detectVideoPlatform('https://panopto.technion.ac.il/Panopto/Pages/Viewer.aspx?id=x'),
+    ).toBe('panopto')
     expect(detectVideoPlatform('https://vimeo.com/123')).toBe('unknown')
     expect(detectVideoPlatform('')).toBe('unknown')
   })

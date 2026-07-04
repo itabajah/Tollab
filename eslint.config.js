@@ -43,6 +43,17 @@ export default tseslint.config(
     },
   },
   {
+    // Context providers deliberately co-export their hooks (useToast, useConfirm,
+    // useSession, ...) — a full-module HMR reload there is fine.
+    files: [
+      'src/hooks/**/*.tsx',
+      'src/components/ui/Toast.tsx',
+      'src/components/ui/ConfirmProvider.tsx',
+      'src/features/app/Providers.tsx',
+    ],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
     files: ['src/domain/**/*.ts'],
     rules: boundary([
       { group: ['react', 'react-dom', 'react/*'], message: 'domain must stay React-free' },

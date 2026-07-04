@@ -1,0 +1,66 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//CheeseFork//cheesefork.cf//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:מערכת שעות - סמסטר אביב 2026
+X-WR-TIMEZONE:Asia/Jerusalem
+BEGIN:VEVENT
+UID:cheesefork-234247-lec-1@cheesefork.cf
+DTSTAMP:20260301T120000Z
+DTSTART;TZID=Asia/Jerusalem:20260315T103000
+DTEND;TZID=Asia/Jerusalem:20260315T123000
+SUMMARY:הרצאה - אלגוריתמים 1
+LOCATION:אולמן 305
+DESCRIPTION:מרצה: פרופ' יובל רבני. הרצאה שבועית על מבני נתו
+ נים מתקדמים\, חמדנות ותכנות דינמי.
+END:VEVENT
+BEGIN:VEVENT
+UID:cheesefork-234247-lec-2@cheesefork.cf
+DTSTAMP:20260301T120000Z
+DTSTART;TZID=Asia/Jerusalem:20260322T103000
+DTEND;TZID=Asia/Jerusalem:20260322T123000
+SUMMARY:הרצאה - אלגוריתמים 1
+LOCATION:אולמן 305
+DESCRIPTION:מרצה: פרופ' יובל רבני. הרצאה שבועית על מבני נתו
+ נים מתקדמים\, חמדנות ותכנות דינמי.
+END:VEVENT
+BEGIN:VEVENT
+UID:cheesefork-234247-tut-1@cheesefork.cf
+DTSTAMP:20260301T120000Z
+DTSTART;TZID=Asia/Jerusalem:20260318T143000
+DTEND;TZID=Asia/Jerusalem:20260318T153000
+SUMMARY:תרגול - אלגוריתמים 1
+LOCATION:טאוב 9
+DESCRIPTION:מתרגל: דניאל כהן
+END:VEVENT
+BEGIN:VEVENT
+UID:cheesefork-234123-lec-1@cheesefork.cf
+DTSTAMP:20260301T120000Z
+DTSTART;TZID=Asia/Jerusalem:20260316T093000
+DTEND;TZID=Asia/Jerusalem:20260316T113000
+SUMMARY:הרצאה - מבוא למערכות הפ
+ עלה
+LOCATION:בניין אמאדו 233
+DESCRIPTION:מרצה: ד"ר נועה לוי
+END:VEVENT
+BEGIN:VEVENT
+UID:cheesefork-exam-234247-a@cheesefork.cf
+DTSTAMP:20260301T120000Z
+DTSTART;VALUE=DATE:20260701
+SUMMARY:מבחן מועד א׳ - אלגוריתמים 1
+DESCRIPTION:לוח מבחנים לסמסטר אביב 2026
+END:VEVENT
+BEGIN:VEVENT
+UID:cheesefork-exam-234247-b@cheesefork.cf
+DTSTAMP:20260301T120000Z
+DTSTART;VALUE=DATE:20260801
+SUMMARY:מבחן מועד ב' - אלגוריתמים 1
+END:VEVENT
+BEGIN:VEVENT
+UID:cheesefork-exam-234123-a@cheesefork.cf
+DTSTAMP:20260301T120000Z
+DTSTART;VALUE=DATE:20260703
+SUMMARY:מבחן מועד א - מבוא למערכות
+END:VEVENT
+END:VCALENDAR

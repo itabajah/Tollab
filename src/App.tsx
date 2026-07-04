@@ -1,65 +1,45 @@
-import { useTheme } from '@/hooks/useTheme'
+import { useState } from 'react'
+import { useAppState } from '@/hooks/session'
+import { AppShell } from '@/features/layout/AppShell'
+import { Header } from '@/features/layout/Header'
+import { SemesterControls, AddSemesterDialog } from '@/features/semesters/SemesterControls'
+import { Button } from '@/components/ui/Button'
 
-function SunIcon() {
+function NoSemesterYet() {
+  const [addOpen, setAddOpen] = useState(false)
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="5" />
-      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-    </svg>
+    <div className="mt-10 rounded-xs border border-dashed border-line-strong px-6 py-12 text-center">
+      <p className="text-sm text-ink-muted">No semester yet — create one to get started.</p>
+      <Button className="mt-4" variant="primary" onClick={() => setAddOpen(true)}>
+        Create your first semester
+      </Button>
+      <AddSemesterDialog open={addOpen} onOpenChange={setAddOpen} />
+    </div>
   )
 }
 
-function MoonIcon() {
+function LeftPane() {
+  const hasSemester = useAppState((s) => s.currentSemesterId !== null)
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
+    <>
+      <Header />
+      <SemesterControls />
+      {hasSemester ? <div className="mt-6" data-testid="course-list-slot" /> : <NoSemesterYet />}
+    </>
+  )
+}
+
+function RightPane() {
+  const hasSemester = useAppState((s) => s.currentSemesterId !== null)
+  if (!hasSemester) return null
+  return (
+    <section>
+      <h2 className="text-2xl font-light text-ink">Weekly Schedule</h2>
+      <p className="mt-4 text-sm text-ink-faint">Your class schedule will appear here.</p>
+    </section>
   )
 }
 
 export default function App() {
-  const [theme, toggleTheme] = useTheme()
-
-  return (
-    <div className="min-h-screen px-5 py-10 md:px-10">
-      <header className="flex items-start justify-between">
-        <div>
-          <h1 className="font-logo bg-gradient-to-br from-accent to-ink-muted bg-clip-text text-[44px] tracking-[4px] text-transparent transition-transform hover:scale-[1.02]">
-            Tollab
-          </h1>
-          <p className="text-sm text-ink-faint">For Technionez</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
-            className="rounded-xs border border-line bg-panel p-2 text-ink-muted transition-colors hover:bg-inset hover:text-ink"
-          >
-            {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-          </button>
-        </div>
-      </header>
-    </div>
-  )
+  return <AppShell left={<LeftPane />} right={<RightPane />} />
 }

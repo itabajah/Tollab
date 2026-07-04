@@ -2,6 +2,7 @@ import { createStore } from 'zustand/vanilla'
 import { immer } from 'zustand/middleware/immer'
 import type { AppData, CalendarSettings, Settings } from '@/domain/model'
 import { createSemester, sortSemesters } from '@/domain/semester'
+import { generateCourseColor } from '@/domain/colors'
 import { newId } from '@/domain/ids'
 
 /**
@@ -21,6 +22,8 @@ export interface AppStoreState {
   deleteSemester: (id: string) => void
   updateSettings: (patch: Partial<Settings>) => void
   updateCalendarSettings: (semesterId: string, patch: Partial<CalendarSettings>) => void
+  /** Sets the color scheme and regenerates every course color (legacy resetAllColors). */
+  applyColorTheme: (colorTheme: Settings['colorTheme'], baseColorHue: number) => void
 }
 
 export interface AppStoreOptions {
@@ -92,6 +95,21 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
             const semester = s.data.semesters.find((sem) => sem.id === semesterId)
             if (!semester) return
             Object.assign(semester.calendarSettings, patch)
+            stamp(s)
+          }),
+
+        applyColorTheme: (colorTheme, baseColorHue) =>
+          set((s) => {
+            s.data.settings.colorTheme = colorTheme
+            s.data.settings.baseColorHue = baseColorHue
+            for (const semester of s.data.semesters) {
+              semester.courses.forEach((course, index) => {
+                course.color = generateCourseColor(index, semester.courses.length, {
+                  colorTheme,
+                  baseColorHue,
+                })
+              })
+            }
             stamp(s)
           }),
       }

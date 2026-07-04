@@ -1,4 +1,9 @@
-import { createEmptyAppData, VALIDATION_LIMITS, type AppData, type ProfileMeta } from '@/domain/model'
+import {
+  createEmptyAppData,
+  VALIDATION_LIMITS,
+  type AppData,
+  type ProfileMeta,
+} from '@/domain/model'
 import { newId } from '@/domain/ids'
 import {
   loadActiveProfileId,
@@ -11,7 +16,11 @@ import {
   type StorageLike,
 } from '@/services/storage/localStore'
 import { migrateLegacyStorage } from '@/services/storage/migrate'
-import { buildExportFile, type ExportFileV3, type ParsedImport } from '@/services/storage/exportImport'
+import {
+  buildExportFile,
+  type ExportFileV3,
+  type ParsedImport,
+} from '@/services/storage/exportImport'
 import { createAppStore, type AppStore } from './appStore'
 import { createProfilesStore, type ProfilesStore } from './profilesStore'
 
@@ -220,8 +229,7 @@ export function createSession(options: SessionOptions): Session {
       persist(() => saveProfiles(storage, remaining))
       if (profilesStore.getState().activeProfileId === id) {
         const next = remaining[0]!
-        const data =
-          loadProfileData(storage, next.id) ?? createEmptyAppData(now().toISOString())
+        const data = loadProfileData(storage, next.id) ?? createEmptyAppData(now().toISOString())
         activateProfile(next.id, data)
       }
     },
