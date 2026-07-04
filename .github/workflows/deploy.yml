@@ -1,8 +1,12 @@
+# Deploys the built app (dist/ only) to GitHub Pages at tollab.co.il.
+#
+# Manual-dispatch only while the rebuild branch is in progress, so the live
+# site is never replaced accidentally. At cutover, add:
+#   push:
+#     branches: [main]
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -10,57 +14,60 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  build-and-deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Create Firebase Config
+      - uses: actions/checkout@v4
+
+      - name: Verify Firebase secrets are configured
         run: |
-          # Secrets-only deployment: generate runtime config during deploy.
-          # If secrets are missing, fail so we don't ship a broken site.
           if [ -z "${{ secrets.FIREBASE_API_KEY }}" ]; then
-            echo "Missing GitHub Secret: FIREBASE_API_KEY"
-            echo "Add Firebase secrets in: Repo Settings → Secrets and variables → Actions"
+            echo "::error::FIREBASE_API_KEY secret is not set — refusing to deploy a build without cloud sync."
             exit 1
           fi
 
-          mkdir -p js
-          cat > js/firebase-config.js << 'EOF'
-          /**
-           * Firebase runtime config (generated during deploy)
-           * This repo loads Firebase via <script> tags, so we expose FIREBASE_CONFIG globally.
-           */
-          'use strict';
-          
-          // eslint-disable-next-line no-unused-vars
-          const FIREBASE_CONFIG = {
-            apiKey: "${{ secrets.FIREBASE_API_KEY }}",
-            authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
-            databaseURL: "${{ secrets.FIREBASE_DATABASE_URL }}",
-            projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
-            storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
-            messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
-            appId: "${{ secrets.FIREBASE_APP_ID }}",
-            measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
-          };
-          EOF
-          test -f js/firebase-config.js
-          echo "✓ Created js/firebase-config.js"
-      
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-      
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: pnpm/action-setup@v4
         with:
-          path: '.'
-      
-      - name: Deploy to GitHub Pages
-        id: deployment
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+
+      - name: Verify deployable artifact
+        run: |
+          test -f dist/index.html || { echo "::error::dist/index.html missing"; exit 1; }
+          test -f dist/CNAME || { echo "::error::dist/CNAME missing — custom domain would break"; exit 1; }
+
+      - uses: actions/configure-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
         uses: actions/deploy-pages@v4
