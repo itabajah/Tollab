@@ -313,7 +313,7 @@ describe('buildTickerItems — homework buckets', () => {
   })
 
   it('nudges about homework without a due date', () => {
-    const item = find(buildTickerItems(ctxOf(semWith(hw('h1', ''))), MON(11)) as never, 'hw_nodate')
+    const item = find(buildTickerItems(ctxOf(semWith(hw('h1', '')), MON(11))), 'hw_nodate')
     expect(item?.badge).toBe('HW')
     expect(item?.priority).toBe(3)
     expect(item?.target).toEqual({ type: 'homework', courseId: 'c1', homeworkId: 'h1' })

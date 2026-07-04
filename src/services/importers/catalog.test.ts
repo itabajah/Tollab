@@ -60,6 +60,10 @@ describe('parseCatalog', () => {
     expect(parseCatalog('[]').size).toBe(0)
   })
 
+  it('skips primitive and array items', () => {
+    expect(parseCatalog([42, 'מקצוע', null, [1, 2]]).size).toBe(0)
+  })
+
   it('accepts flat items carrying the Hebrew keys directly', () => {
     const flat = parseCatalog([{ 'מספר מקצוע': '00970003', 'שם מקצוע': 'פיזיקה 1' }])
     expect(flat.get('00970003')?.name).toBe('פיזיקה 1')

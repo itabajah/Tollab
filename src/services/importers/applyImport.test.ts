@@ -35,7 +35,12 @@ const algoCourse = (overrides: Record<string, unknown> = {}): unknown => ({
 
 describe('applyImportedCourses — semesters', () => {
   it('creates a semester with a translated Hebrew name when none matches', () => {
-    const result = applyImportedCourses(makeData(), 'אביב 2026', [makeImported({ name: 'קורס' })], NOW)
+    const result = applyImportedCourses(
+      makeData(),
+      'אביב 2026',
+      [makeImported({ name: 'קורס' })],
+      NOW,
+    )
 
     expect(result.report.createdSemester).toBe(true)
     const semester = result.data.semesters[0]
@@ -115,7 +120,10 @@ describe('applyImportedCourses — creating courses', () => {
     const result = applyImportedCourses(
       makeData(),
       'Spring 2026',
-      [makeImported({ name: '234247 - אלגוריתמים 1' }), makeImported({ name: '23624700 – מערכות' })],
+      [
+        makeImported({ name: '234247 - אלגוריתמים 1' }),
+        makeImported({ name: '23624700 – מערכות' }),
+      ],
       NOW,
     )
 
@@ -230,9 +238,7 @@ describe('applyImportedCourses — merging into existing courses', () => {
   })
 
   it('never overwrites an existing exam date', () => {
-    const data = makeData([
-      springWith([algoCourse({ exams: { moedA: '2026-01-01', moedB: '' } })]),
-    ])
+    const data = makeData([springWith([algoCourse({ exams: { moedA: '2026-01-01', moedB: '' } })])])
     const imported = makeImported({
       name: 'אלגוריתמים 1',
       exams: { moedA: '2026-02-02', moedB: '2026-03-03' },

@@ -149,6 +149,27 @@ describe('parseIcs — event filtering', () => {
     expect(parseIcs(text).courses.map((c) => c.name)).toEqual(['סדנת רובוטיקה'])
   })
 
+  it('keeps a summary with a dangling separator as the whole name', () => {
+    // Property values are trimmed, so "הרצאה - " arrives as "הרצאה -" and the
+    // " - " separator is not found.
+    const text = ics([
+      ...vevent('SUMMARY:הרצאה - ', 'DTSTART:20260315T103000', 'DTEND:20260315T113000'),
+    ])
+    expect(parseIcs(text).courses.map((c) => c.name)).toEqual(['הרצאה -'])
+  })
+
+  it('unescapes backslash sequences in text values', () => {
+    const text = ics([
+      ...vevent(
+        'SUMMARY:הרצאה - קורס',
+        'DTSTART:20260315T103000',
+        'DTEND:20260315T123000',
+        'DESCRIPTION:A\\;B\\NC\\\\D',
+      ),
+    ])
+    expect(courseByName(parseIcs(text).courses, 'קורס').lecturers).toEqual(['A;B\nC\\D'])
+  })
+
   it('still records lecturer and location when the event dates are unparseable', () => {
     const text = ics([
       ...vevent(
@@ -235,9 +256,7 @@ describe('parseIcs — exam events', () => {
   })
 
   it('treats a moed summary with an unparseable DTSTART as a regular event', () => {
-    const text = ics([
-      ...vevent('SUMMARY:מועד א - חשבון', 'DTSTART:TBD', 'DTEND:20260315T123000'),
-    ])
+    const text = ics([...vevent('SUMMARY:מועד א - חשבון', 'DTSTART:TBD', 'DTEND:20260315T123000')])
     const course = courseByName(parseIcs(text).courses, 'חשבון')
     expect(course.exams).toEqual({ moedA: '', moedB: '' })
     expect(course.schedule).toEqual([])

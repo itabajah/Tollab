@@ -139,9 +139,10 @@ function isDuplicateSlot(schedule: readonly ImportedSchedule[], slot: ImportedSc
 
 function processScheduleEvent(courseMap: Map<string, CourseAccumulator>, event: IcsEvent): void {
   // "הרצאה - אלגוריתמים 1" → everything after the first " - " is the name.
+  // The summary is already trimmed and non-empty, so the name never ends up
+  // empty: a trimmed string cannot end with " - ".
   const separatorIdx = event.summary.indexOf(' - ')
   const name = (separatorIdx !== -1 ? event.summary.slice(separatorIdx + 3) : event.summary).trim()
-  if (!name) return
 
   let course = courseMap.get(name)
   if (!course) {
