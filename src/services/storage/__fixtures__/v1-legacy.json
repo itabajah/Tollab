@@ -1,0 +1,20 @@
+{
+  "semesters": [
+    {
+      "id": "sem_old",
+      "name": "Spring 2024",
+      "courses": [
+        {
+          "id": "c_infi",
+          "name": "Infi 1m",
+          "lectures": [
+            { "name": "Intro", "videoLink": "https://www.youtube.com/watch?v=xyz", "watched": true },
+            { "name": "Limits", "videoLink": "" }
+          ],
+          "homework": [{ "title": "HW 1", "dueDate": "2024-04-01" }]
+        }
+      ]
+    }
+  ],
+  "settings": { "theme": "dark" }
+}

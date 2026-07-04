@@ -1,0 +1,61 @@
+{
+  "v": 2,
+  "t": "2026-01-10T12:00:00.000Z",
+  "s": { "th": "dark", "ct": "single", "bh": 260, "sc": false, "sw": false },
+  "d": [
+    {
+      "i": "sem_w25",
+      "n": "Winter 2025-2026",
+      "cal": { "sh": 9, "eh": 18, "vd": [0, 1, 2, 3, 4] },
+      "vm": "exam",
+      "hx": ["c_algo:B"],
+      "cx": [
+        { "i": "cx1", "n": "Physics Quiz", "d": "2026-02-10", "l": "Quiz", "c": "hsl(30, 45%, 50%)" }
+      ],
+      "c": [
+        {
+          "i": "c_algo",
+          "n": "Algorithms 1",
+          "cl": "hsl(137, 45%, 50%)",
+          "num": "234247",
+          "pts": "3",
+          "lec": "Prof. Cohen",
+          "fac": "Computer Science",
+          "loc": "Taub 2",
+          "gr": "92",
+          "syl": "https://example.com/syllabus",
+          "nt": "hard course",
+          "ex": { "a": "2026-02-01", "b": "2026-03-01" },
+          "sch": [
+            [0, "10:30", "12:30"],
+            [2, "14:30", "15:30"]
+          ],
+          "hw": [
+            { "t": "Wet 1", "d": "2026-01-20", "c": 1, "n": "graphs", "l": [["Link 1", "https://example.com/hw1"]] },
+            { "t": "Wet 2" }
+          ],
+          "rec": [
+            {
+              "i": "lectures",
+              "n": "Lectures",
+              "it": [
+                { "n": "Lecture 1", "v": "https://www.youtube.com/watch?v=abc", "w": 1, "s": "https://example.com/slides1" },
+                { "n": "Lecture 2", "v": "https://www.youtube.com/watch?v=def" }
+              ]
+            },
+            {
+              "i": "custom_x1",
+              "n": "Workshops",
+              "it": [{ "n": "Workshop 1", "v": "https://panopto.technion.ac.il/Panopto/Pages/Viewer.aspx?id=123" }]
+            }
+          ]
+        },
+        {
+          "i": "c_calc",
+          "n": "Calculus 2m",
+          "cl": "hsl(274, 45%, 50%)"
+        }
+      ]
+    }
+  ]
+}
