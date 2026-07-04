@@ -91,6 +91,24 @@ describe('SettingsDialog — Appearance tab', () => {
   })
 })
 
+describe('SettingsDialog — Fetch Data tab', () => {
+  it('shows the ICS import and Technion catalog controls', async () => {
+    const user = userEvent.setup()
+    setup((s) => s.appStore.getState().addSemester('Spring 2026'))
+    await user.click(screen.getByRole('tab', { name: 'Fetch Data' }))
+    expect(screen.getByLabelText(/cheesefork.*link/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /fetch schedule/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /fetch course data/i })).toBeInTheDocument()
+  })
+
+  it('prompts to create a semester first when none exists', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('tab', { name: 'Fetch Data' }))
+    expect(screen.getByText(/create a semester/i)).toBeInTheDocument()
+  })
+})
+
 describe('SettingsDialog — Calendar tab', () => {
   it('edits the current semester calendar settings', async () => {
     const user = userEvent.setup()

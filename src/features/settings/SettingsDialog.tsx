@@ -38,6 +38,9 @@ export function SettingsDialog({
           <Tabs.Trigger value="calendar" className={tabTrigger}>
             Calendar
           </Tabs.Trigger>
+          <Tabs.Trigger value="fetch" className={tabTrigger}>
+            Fetch Data
+          </Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="profile">
           <ProfileTab />
@@ -47,6 +50,9 @@ export function SettingsDialog({
         </Tabs.Content>
         <Tabs.Content value="calendar">
           <CalendarTab />
+        </Tabs.Content>
+        <Tabs.Content value="fetch">
+          <FetchDataTab />
         </Tabs.Content>
       </Tabs.Root>
     </Dialog>
@@ -259,6 +265,102 @@ function AppearanceTab() {
           Changing the scheme recolors all courses in every semester.
         </p>
       )}
+    </div>
+  )
+}
+
+function FetchDataTab() {
+  const session = useSession()
+  const semester = useAppState((s) => s.data.semesters.find((x) => x.id === s.currentSemesterId))
+  const toast = useToast()
+  const [icsUrl, setIcsUrl] = useState('')
+  const [status, setStatus] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  if (!semester) {
+    return <p className="text-sm text-ink-muted">Create a semester first to fetch data into it.</p>
+  }
+
+  const applyResult = (data: Parameters<typeof session.applyExternalData>[0]) => {
+    session.appStore.getState().setData(data)
+    session.appStore.getState().touch()
+  }
+
+  const fetchSchedule = async () => {
+    if (!icsUrl.trim()) {
+      setStatus('Paste a Cheesefork ICS link first.')
+      return
+    }
+    setBusy(true)
+    setStatus('Fetching schedule…')
+    try {
+      const { runIcsImport } = await import('@/services/importers/runImport')
+      const result = await runIcsImport(session.appStore.getState().data, icsUrl.trim(), {
+        semesterName: semester.name,
+        nowIso: new Date().toISOString(),
+      })
+      applyResult(result.data)
+      const { createdCourses, updatedCourses } = result.report
+      setStatus(`Imported ${createdCourses.length} new, updated ${updatedCourses.length} courses.`)
+      toast.success('Schedule imported')
+    } catch {
+      setStatus('Could not fetch the schedule. Check the link and try again.')
+      toast.error('Schedule import failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const fetchCatalog = async () => {
+    setBusy(true)
+    setStatus('Fetching course data from the Technion catalog…')
+    try {
+      const { runCatalogEnrichment } = await import('@/services/importers/runImport')
+      const result = await runCatalogEnrichment(session.appStore.getState().data, semester.id, {
+        nowIso: new Date().toISOString(),
+      })
+      applyResult(result.data)
+      setStatus(`Updated ${result.updatedCount} courses from the catalog.`)
+      toast.success('Course data updated')
+    } catch {
+      setStatus('Could not fetch course data.')
+      toast.error('Course data fetch failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <SectionTitle>Import Schedule (Cheesefork)</SectionTitle>
+        <Field label="Cheesefork ICS link" hint="Paste the calendar export URL from cheesefork.cf">
+          {(id) => (
+            <Input
+              id={id}
+              value={icsUrl}
+              placeholder="https://cheesefork.cf/…/calendar.ics"
+              onChange={(e) => setIcsUrl(e.target.value)}
+            />
+          )}
+        </Field>
+        <Button className="mt-2" variant="primary" disabled={busy} onClick={() => void fetchSchedule()}>
+          Fetch Schedule
+        </Button>
+      </div>
+
+      <div>
+        <SectionTitle>Enrich Course Data (Technion)</SectionTitle>
+        <p className="mb-2 text-xs text-ink-faint">
+          Fills missing points, lecturer, faculty, and exam dates from the public Technion catalog.
+          Existing values are never overwritten.
+        </p>
+        <Button variant="secondary" disabled={busy} onClick={() => void fetchCatalog()}>
+          Fetch Course Data
+        </Button>
+      </div>
+
+      {status ? <p className="text-xs text-ink-muted">{status}</p> : null}
     </div>
   )
 }
