@@ -75,6 +75,8 @@ describe('CourseList', () => {
       s.appStore.getState().addCourse(createCourse(input, 'colorful'))
     })
     await user.click(screen.getByRole('button', { name: /edit algorithms 1/i }))
+    // Existing courses open on Recordings (legacy parity); switch to Details to edit.
+    await user.click(screen.getByRole('tab', { name: 'Details' }))
     const nameInput = screen.getByLabelText('Course name')
     await user.clear(nameInput)
     await user.type(nameInput, 'Algorithms 1m')
@@ -88,6 +90,7 @@ describe('CourseList', () => {
       s.appStore.getState().addCourse(createCourse(input, 'colorful'))
     })
     await user.click(screen.getByRole('button', { name: /edit algorithms 1/i }))
+    await user.click(screen.getByRole('tab', { name: 'Details' }))
     await user.click(screen.getByRole('button', { name: 'Delete Course' }))
     await user.click(screen.getByRole('button', { name: 'Delete' }))
     expect(session.appStore.getState().data.semesters[0]!.courses).toHaveLength(0)
