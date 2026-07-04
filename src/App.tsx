@@ -3,6 +3,7 @@ import { useAppState } from '@/hooks/session'
 import { AppShell } from '@/features/layout/AppShell'
 import { Header } from '@/features/layout/Header'
 import { SemesterControls, AddSemesterDialog } from '@/features/semesters/SemesterControls'
+import { CourseList } from '@/features/courses/CourseList'
 import { Button } from '@/components/ui/Button'
 
 function NoSemesterYet() {
@@ -24,7 +25,7 @@ function LeftPane() {
     <>
       <Header />
       <SemesterControls />
-      {hasSemester ? <div className="mt-6" data-testid="course-list-slot" /> : <NoSemesterYet />}
+      {hasSemester ? <CourseList /> : <NoSemesterYet />}
     </>
   )
 }

@@ -1,9 +1,14 @@
 import { createStore } from 'zustand/vanilla'
 import { immer } from 'zustand/middleware/immer'
-import type { AppData, CalendarSettings, Settings } from '@/domain/model'
+import type { AppData, CalendarSettings, Course, Settings } from '@/domain/model'
 import { createSemester, sortSemesters } from '@/domain/semester'
 import { generateCourseColor } from '@/domain/colors'
+import { courseDetailFields, moveCourseInList, type CourseInput } from '@/domain/course'
 import { newId } from '@/domain/ids'
+
+/** Detail fields patched by the course form (everything except id/recordings/homework). */
+export type CourseDetailPatch = ReturnType<typeof courseDetailFields>
+export type { CourseInput }
 
 /**
  * The per-profile application store: the active profile's AppData plus the
@@ -24,6 +29,14 @@ export interface AppStoreState {
   updateCalendarSettings: (semesterId: string, patch: Partial<CalendarSettings>) => void
   /** Sets the color scheme and regenerates every course color (legacy resetAllColors). */
   applyColorTheme: (colorTheme: Settings['colorTheme'], baseColorHue: number) => void
+
+  // Courses (operate on the current semester)
+  addCourse: (course: Course) => void
+  removeCourse: (courseId: string) => void
+  moveCourse: (courseId: string, delta: -1 | 1) => void
+  updateCourseDetails: (courseId: string, patch: CourseDetailPatch) => void
+  /** Escape hatch for homework/recording mutations: mutate the course draft in place. */
+  updateCourse: (courseId: string, recipe: (course: Course) => void) => void
 }
 
 export interface AppStoreOptions {
@@ -110,6 +123,48 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
                 })
               })
             }
+            stamp(s)
+          }),
+
+        addCourse: (course) =>
+          set((s) => {
+            const semester = s.data.semesters.find((sem) => sem.id === s.currentSemesterId)
+            if (!semester) return
+            semester.courses.push(course)
+            stamp(s)
+          }),
+
+        removeCourse: (courseId) =>
+          set((s) => {
+            const semester = s.data.semesters.find((sem) => sem.id === s.currentSemesterId)
+            if (!semester) return
+            semester.courses = semester.courses.filter((c) => c.id !== courseId)
+            stamp(s)
+          }),
+
+        moveCourse: (courseId, delta) =>
+          set((s) => {
+            const semester = s.data.semesters.find((sem) => sem.id === s.currentSemesterId)
+            if (!semester) return
+            semester.courses = moveCourseInList(semester.courses, courseId, delta)
+            stamp(s)
+          }),
+
+        updateCourseDetails: (courseId, patch) =>
+          set((s) => {
+            const semester = s.data.semesters.find((sem) => sem.id === s.currentSemesterId)
+            const course = semester?.courses.find((c) => c.id === courseId)
+            if (!course) return
+            Object.assign(course, patch)
+            stamp(s)
+          }),
+
+        updateCourse: (courseId, recipe) =>
+          set((s) => {
+            const semester = s.data.semesters.find((sem) => sem.id === s.currentSemesterId)
+            const course = semester?.courses.find((c) => c.id === courseId)
+            if (!course) return
+            recipe(course)
             stamp(s)
           }),
       }
