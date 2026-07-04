@@ -2,9 +2,14 @@ import { createSession, type Session } from './session'
 import {
   createMemoryStorage,
   loadProfileData,
+  saveProfiles,
+  saveProfileData,
+  saveActiveProfileId,
   type StorageLike,
 } from '@/services/storage/localStore'
 import { STORAGE_KEYS, LEGACY_KEYS, legacyProfileKey } from '@/services/storage/keys'
+import { createEmptyAppData } from '@/domain/model'
+import { createSemester } from '@/domain/semester'
 import v2Full from '@/services/storage/__fixtures__/v2-compact-full.json'
 
 const T1 = new Date('2026-07-04T12:00:00.000Z')
@@ -206,6 +211,42 @@ describe('profile lifecycle', () => {
     expect(profiles[0]!.name).toBe('Default Profile')
     expect(profiles[0]!.id).not.toBe(onlyId)
     expect(activeProfileId).toBe(profiles[0]!.id)
+  })
+})
+
+describe('refreshFromStorage', () => {
+  it('reloads profiles, active id and active data written externally (e.g. by sync)', () => {
+    const storage = createMemoryStorage()
+    const session = makeSession(storage)
+    const firstId = session.profilesStore.getState().activeProfileId
+
+    // Simulate the sync engine writing a new profile + switching active externally.
+    const extraId = 'remote-profile'
+    const remoteData = createEmptyAppData(T1.toISOString())
+    remoteData.semesters.push(createSemester('Winter 2026-2027', 'remote-sem'))
+    saveProfiles(storage, [
+      { id: firstId, name: 'Default Profile' },
+      { id: extraId, name: 'From Another Device' },
+    ])
+    saveProfileData(storage, extraId, remoteData, remoteData.lastModified)
+    saveActiveProfileId(storage, extraId)
+
+    session.refreshFromStorage()
+
+    expect(session.profilesStore.getState().profiles.map((p) => p.name)).toContain(
+      'From Another Device',
+    )
+    expect(session.profilesStore.getState().activeProfileId).toBe(extraId)
+    expect(session.appStore.getState().data.semesters[0]!.name).toBe('Winter 2026-2027')
+  })
+
+  it('does not trigger a dirty save when refreshing', () => {
+    vi.useFakeTimers()
+    const storage = createMemoryStorage()
+    const onDirty = vi.fn()
+    const session = makeSession(storage, { onDirty })
+    session.refreshFromStorage()
+    expect(onDirty).not.toHaveBeenCalled()
   })
 })
 

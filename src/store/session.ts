@@ -51,6 +51,8 @@ export interface Session {
   buildExport: () => ExportFileV3
   /** Replaces the active profile's data without marking it dirty for sync. */
   applyExternalData: (data: AppData) => void
+  /** Silently re-reads profiles, active id and active data from storage (post-sync). */
+  refreshFromStorage: () => void
   flush: () => void
   dispose: () => void
 }
@@ -258,6 +260,21 @@ export function createSession(options: SessionOptions): Session {
       setDataSilently(data)
       const id = profilesStore.getState().activeProfileId
       persist(() => saveProfileData(storage, id, data, data.lastModified))
+    },
+
+    refreshFromStorage() {
+      const nextProfiles = loadProfiles(storage)
+      if (nextProfiles.length > 0) profilesStore.getState().setProfiles(nextProfiles)
+
+      const storedActive = loadActiveProfileId(storage)
+      const nextActive =
+        storedActive !== null && nextProfiles.some((p) => p.id === storedActive)
+          ? storedActive
+          : profilesStore.getState().activeProfileId
+      profilesStore.getState().setActiveProfileId(nextActive)
+
+      const data = loadProfileData(storage, nextActive)
+      if (data !== null) setDataSilently(data)
     },
 
     flush: writePending,
