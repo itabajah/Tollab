@@ -66,17 +66,15 @@ export function Header() {
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
-    <header className="flex items-start justify-between">
-      <div>
-        <h1 className="font-logo bg-gradient-to-br from-accent to-ink-muted bg-clip-text text-[clamp(28px,5vw,44px)] tracking-[4px] text-transparent transition-transform hover:scale-[1.02]">
+    <header className="flex items-center justify-between gap-3">
+      <div className="select-none">
+        <h1 className="font-logo bg-gradient-to-br from-accent to-ink-muted bg-clip-text text-[clamp(28px,5vw,44px)] tracking-[4px] text-transparent">
           Tollab
         </h1>
         <p className="text-sm text-ink-faint max-md:hidden">For Technionez</p>
       </div>
       <div className="flex items-center gap-2">
-        <span className="max-md:hidden">
-          <CloudHeaderStatus />
-        </span>
+        <CloudHeaderStatus />
         <IconButton
           aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
           onClick={() => updateSettings({ theme: theme === 'light' ? 'dark' : 'light' })}

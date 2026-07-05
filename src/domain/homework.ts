@@ -73,6 +73,33 @@ export function moveHomework(items: readonly Homework[], id: string, delta: -1 |
 }
 
 /**
+ * Moves the homework with `id` past its adjacent *visible* neighbor (skipping
+ * hidden items) so a manual reorder produces a real visible change even when
+ * completed items are hidden. Returns a NEW array; a same-order copy when the id
+ * is unknown or the move would cross the visible boundary. When everything is
+ * visible this is identical to {@link moveHomework}.
+ */
+export function moveHomeworkAmongVisible(
+  items: readonly Homework[],
+  id: string,
+  delta: -1 | 1,
+  isVisible: (hw: Homework) => boolean,
+): Homework[] {
+  const next = [...items]
+  const from = next.findIndex((item) => item.id === id)
+  if (from === -1) return next
+  let to = from + delta
+  while (to >= 0 && to < next.length && !isVisible(next[to]!)) to += delta
+  if (to < 0 || to >= next.length) return next
+  const a = next[from]
+  const b = next[to]
+  if (a === undefined || b === undefined) return next
+  next[from] = b
+  next[to] = a
+  return next
+}
+
+/**
  * Auto-label for a new homework link: "Link N" where N is one more than the
  * highest existing label matching `Link <number>` exactly (1 when none match).
  */

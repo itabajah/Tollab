@@ -4,6 +4,7 @@ import { createFakeBackend, type FakeBackend } from '@/services/sync/fakeBackend
 import { buildCloudRecord } from '@/services/sync/protocol'
 import type { AuthService, AuthUser } from '@/services/firebase/auth'
 import { createMemoryStorage } from '@/services/storage/localStore'
+import { appDataSchema } from '@/domain/model'
 import type { CloudPayload } from '@/domain/merge'
 
 const NOW = new Date('2026-07-04T12:00:00Z')
@@ -131,5 +132,57 @@ describe('createSyncController', () => {
     await controller.signOut()
     expect(controller.store.getState().userEmail).toBeNull()
     expect(controller.store.getState().status).toBe('idle')
+  })
+
+  it('does not re-push after applying a genuine remote update (no echo loop)', async () => {
+    vi.useFakeTimers()
+    const { controller, session, getBackend } = setup()
+    await controller.signIn()
+    const activeId = session.profilesStore.getState().activeProfileId
+    const backend = getBackend()!
+    backend.saved.length = 0
+
+    const remotePayload: CloudPayload = {
+      activeProfileId: activeId,
+      profiles: [
+        {
+          id: activeId,
+          name: 'Cloud',
+          lastModified: NOW.toISOString(),
+          data: appDataSchema.parse({
+            semesters: [{ id: 'rs', name: 'Cloud Semester' }],
+            settings: {},
+            lastModified: NOW.toISOString(),
+          }),
+        },
+      ],
+    }
+    backend.emitRemote(buildCloudRecord(remotePayload, 'other-client', 'w-remote', NOW))
+
+    // Applying the remote refreshes the session; that must NOT loop back into a push.
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(backend.saved).toHaveLength(0)
+    expect(session.appStore.getState().data.semesters[0]!.name).toBe('Cloud Semester')
+  })
+
+  it('surfaces a failed engine start as error status without throwing', async () => {
+    const storage = createMemoryStorage()
+    const session = createSession({ storage, now: () => NOW })
+    const auth = makeFakeAuth()
+    const controller = createSyncController({
+      session,
+      storage,
+      clientId: 'c',
+      auth,
+      now: () => NOW,
+      createBackend: () => {
+        const b = createFakeBackend()
+        b.load = () => Promise.reject(new Error('load failed'))
+        return b
+      },
+    })
+
+    await expect(controller.signIn()).resolves.toBeUndefined()
+    expect(controller.store.getState().status).toBe('error')
   })
 })

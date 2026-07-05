@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CustomExamDialog } from './CustomExamDialog'
 import { Providers } from '@/features/app/Providers'
@@ -54,28 +54,46 @@ describe('CustomExamDialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
-  it('edits and deletes an existing custom exam', async () => {
-    const user = userEvent.setup()
-    const existing: CustomExam = {
-      id: 'x1',
-      name: 'Old',
-      label: '',
-      date: '2026-05-01',
-      color: 'hsl(200, 45%, 50%)',
-    }
-    const { session } = setup(existing, (s, semId) => {
-      // Seed the exam into the semester so update/delete target a real entry.
+  const existingExam: CustomExam = {
+    id: 'x1',
+    name: 'Old',
+    label: '',
+    date: '2026-05-01',
+    color: 'hsl(200, 45%, 50%)',
+  }
+
+  function seedExam(hiddenExamIds: string[] = []) {
+    return (s: Session, semId: string) => {
       const data = s.appStore.getState().data
       const semesters = data.semesters.map((sem) =>
-        sem.id === semId ? { ...sem, customExams: [existing] } : sem,
+        sem.id === semId ? { ...sem, customExams: [existingExam], hiddenExamIds } : sem,
       )
       s.appStore.getState().setData({ ...data, semesters })
-    })
+    }
+  }
+
+  it('edits an existing custom exam', async () => {
+    const user = userEvent.setup()
+    const { session } = setup(existingExam, seedExam())
 
     expect(screen.getByLabelText('Name')).toHaveValue('Old')
     await user.clear(screen.getByLabelText('Name'))
     await user.type(screen.getByLabelText('Name'), 'New Name')
     await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(examsOf(session)[0]!.name).toBe('New Name')
+  })
+
+  it('deletes an existing custom exam after confirmation and clears its hidden id', async () => {
+    const user = userEvent.setup()
+    const { session, onOpenChange } = setup(existingExam, seedExam(['x1']))
+
+    await user.click(screen.getByRole('button', { name: 'Delete' })) // the dialog's Delete
+    const confirmDialog = screen.getByRole('dialog', { name: 'Delete Exam' })
+    await user.click(within(confirmDialog).getByRole('button', { name: 'Delete' }))
+
+    expect(examsOf(session)).toHaveLength(0)
+    // removeCustomExam also restores any hidden id that referenced it.
+    expect(session.appStore.getState().data.semesters[0]!.hiddenExamIds).not.toContain('x1')
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })

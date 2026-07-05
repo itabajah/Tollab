@@ -10,12 +10,13 @@ import {
 } from '@/domain/ticker'
 import { useAppState } from '@/hooks/session'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { useNow } from '@/hooks/useNow'
 import { cn } from '@/lib/cn'
 
 export interface HeaderTickerProps {
   /** Current time; the sole source of the ticker's time/randomness. */
   now?: Date
-  /** Deep-link callback for the active item (wired later); defaults to a no-op. */
+  /** Deep-link callback for the active item; App wires this to the course dialog. */
   onSelect?: (target: TickerTarget) => void
 }
 
@@ -34,32 +35,38 @@ export function HeaderTicker({ now, onSelect = noop }: HeaderTickerProps) {
   )
   const hasAnySemester = useAppState((s) => s.data.semesters.length > 0)
 
-  // Stable fallback so an omitted `now` prop does not churn the memo each render.
-  const [fallbackNow] = useState(() => new Date())
-  const resolvedNow = now ?? fallbackNow
+  // The shared ticking clock (or the explicit `now` override in tests).
+  const resolvedNow = useNow(now)
+  const seedBase = tickerSeed(resolvedNow)
 
-  // Memoized so a stable context keeps a stable `items` identity — otherwise the
-  // effects below would re-seed (and the rotation reset) on every render.
+  // Recompute the item set only when a content-defining input changes — including
+  // the coarse `seedBase` bucket, NOT the raw per-minute `now`. Depending on
+  // `resolvedNow` directly gave `items` a fresh identity every minute, which reset
+  // the rotation and anti-repeat window (defeating both). Within a bucket `items`
+  // stays stable; at a bucket boundary it recomputes and re-seeds intentionally.
   const items = useMemo(
     () => buildTickerItems({ semester, now: resolvedNow, hasAnySemester }),
-    [semester, resolvedNow, hasAnySemester],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on seedBase, not raw now
+    [semester, hasAnySemester, seedBase],
   )
-  const seedBase = tickerSeed(resolvedNow)
 
   const [current, setCurrent] = useState<TickerItem | null>(null)
   const recentRef = useRef<string[]>([])
   const rotationRef = useRef(0)
 
-  // Pause conditions: hidden tab or a reduced-motion preference.
+  // Pause conditions: hidden tab, reduced-motion preference, or the user
+  // actively hovering/focusing the strip (so an item can't rotate out from under
+  // the pointer mid-click).
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [hidden, setHidden] = useState(false)
+  const [interacting, setInteracting] = useState(false)
   useEffect(() => {
     const sync = () => setHidden(document.hidden)
     sync()
     document.addEventListener('visibilitychange', sync)
     return () => document.removeEventListener('visibilitychange', sync)
   }, [])
-  const paused = hidden || reducedMotion
+  const paused = hidden || reducedMotion || interacting
 
   // (Re)seed the displayed item whenever the item set or time bucket changes.
   useEffect(() => {
@@ -92,23 +99,37 @@ export function HeaderTicker({ now, onSelect = noop }: HeaderTickerProps) {
       type="button"
       data-testid="header-ticker"
       onClick={() => onSelect(current.target)}
+      onMouseEnter={() => setInteracting(true)}
+      onMouseLeave={() => setInteracting(false)}
+      onFocus={() => setInteracting(true)}
+      onBlur={() => setInteracting(false)}
       aria-live="polite"
       title={current.text}
       className={cn(
-        'flex w-full items-center gap-2.5 rounded-xs border border-line bg-inset px-3 py-2.5',
+        'flex w-full items-center gap-2.5 rounded-control border border-line bg-inset px-3 py-2.5',
         'text-left text-[13px] text-ink-muted transition-colors hover:bg-panel hover:text-ink',
+        'focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none',
       )}
     >
       <span
         data-testid="header-ticker-badge"
         className={cn(
-          'inline-flex h-[18px] shrink-0 items-center justify-center rounded-full bg-panel px-1.5',
+          'inline-flex h-[18px] min-w-[2.75rem] shrink-0 items-center justify-center rounded-full bg-panel px-1.5',
           'text-[10px] font-semibold tracking-wide text-ink-faint',
         )}
       >
         {current.badge}
       </span>
-      <span data-testid="header-ticker-text" className="min-w-0 flex-1 truncate">
+      {/* Keyed on the item id so each rotation cross-fades (disabled under
+          reduced motion, where the global block also zeroes the duration). */}
+      <span
+        key={current.id}
+        data-testid="header-ticker-text"
+        className={cn(
+          'min-w-0 flex-1 truncate',
+          !reducedMotion && 'animate-[fade-in_var(--duration-base)_var(--ease-standard)]',
+        )}
+      >
         {current.text}
       </span>
     </button>

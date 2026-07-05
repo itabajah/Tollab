@@ -1,5 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import { immer } from 'zustand/middleware/immer'
+import { current, produce } from 'immer'
 import type {
   AppData,
   CalendarSettings,
@@ -12,7 +13,7 @@ import type {
 import { createSemester, sortSemesters } from '@/domain/semester'
 import { generateCourseColor } from '@/domain/colors'
 import { courseDetailFields, moveCourseInList, type CourseInput } from '@/domain/course'
-import { moveHomework as moveHomeworkList, nextLinkLabel } from '@/domain/homework'
+import { moveHomeworkAmongVisible, nextLinkLabel } from '@/domain/homework'
 import {
   moveRecording as moveRecordingList,
   generateRecordingName,
@@ -20,7 +21,7 @@ import {
   canRenameTab,
   newCustomTabId,
 } from '@/domain/recordings'
-import { newId } from '@/domain/ids'
+import { examNodeId, newId } from '@/domain/ids'
 
 /** Detail fields patched by the course form (everything except id/recordings/homework). */
 export type CourseDetailPatch = ReturnType<typeof courseDetailFields>
@@ -77,6 +78,11 @@ export interface AppStoreState {
 
   // Recordings
   addRecording: (courseId: string, tabId: string, videoLink: string) => void
+  addRecordings: (
+    courseId: string,
+    tabId: string,
+    items: ReadonlyArray<{ name?: string; videoLink: string; slideLink?: string }>,
+  ) => void
   updateRecording: (
     courseId: string,
     tabId: string,
@@ -112,13 +118,21 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
         draft.data.lastModified = now().toISOString()
       }
 
-      /** Finds a course in the currently-selected semester and mutates it in place. */
+      /** Finds a course in the currently-selected semester and mutates it. */
       const mutateCourse = (courseId: string, recipe: (course: Course) => void) =>
         set((s) => {
           const semester = s.data.semesters.find((sem) => sem.id === s.currentSemesterId)
-          const course = semester?.courses.find((c) => c.id === courseId)
-          if (!course) return
-          recipe(course)
+          const index = semester?.courses.findIndex((c) => c.id === courseId) ?? -1
+          if (!semester || index === -1) return
+          // Run the recipe through immer's `produce`, which returns the SAME
+          // reference when nothing changed — a cheap, structural no-op check
+          // (no deep JSON.stringify). A no-op must not bump lastModified and then
+          // win an LWW merge against a real edit from another device; this also
+          // makes the protected-tab guards below true no-ops.
+          const prev = current(semester.courses[index]!)
+          const next = produce(prev, recipe)
+          if (next === prev) return
+          semester.courses[index] = next
           stamp(s)
         })
 
@@ -203,6 +217,10 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
             const semester = s.data.semesters.find((sem) => sem.id === s.currentSemesterId)
             if (!semester) return
             semester.courses = semester.courses.filter((c) => c.id !== courseId)
+            // Drop any hidden-exam ids that referenced this course's roadmap nodes,
+            // so deleting a course doesn't leave orphaned ids that sync forever.
+            const orphaned = new Set([examNodeId(courseId, 'A'), examNodeId(courseId, 'B')])
+            semester.hiddenExamIds = semester.hiddenExamIds.filter((id) => !orphaned.has(id))
             stamp(s)
           }),
 
@@ -215,12 +233,8 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
           }),
 
         updateCourseDetails: (courseId, patch) =>
-          set((s) => {
-            const semester = s.data.semesters.find((sem) => sem.id === s.currentSemesterId)
-            const course = semester?.courses.find((c) => c.id === courseId)
-            if (!course) return
+          mutateCourse(courseId, (course) => {
             Object.assign(course, patch)
-            stamp(s)
           }),
 
         updateCourse: (courseId, recipe) => mutateCourse(courseId, recipe),
@@ -262,7 +276,15 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
 
         moveHomework: (courseId, homeworkId, delta) =>
           mutateCourse(courseId, (course) => {
-            course.homework = moveHomeworkList(course.homework, homeworkId, delta)
+            // Reorder against the *visible* list so a move isn't silently swallowed
+            // by an adjacent hidden (completed) item.
+            const isVisible = (hw: Homework) => course.showCompletedHomework || !hw.completed
+            course.homework = moveHomeworkAmongVisible(
+              course.homework,
+              homeworkId,
+              delta,
+              isVisible,
+            )
           }),
 
         setHomeworkSort: (courseId, sort) =>
@@ -305,6 +327,26 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
               slideLink: '',
               watched: false,
             })
+          }),
+
+        // Bulk add (playlist/folder import) — one mutation, one lastModified
+        // stamp. A blank name falls back to the generated "Video N"/"Recording N".
+        addRecordings: (courseId, tabId, items) =>
+          mutateCourse(courseId, (course) => {
+            const tab = course.recordings.tabs.find((t) => t.id === tabId)
+            if (!tab || items.length === 0) return
+            for (const item of items) {
+              const name =
+                item.name?.trim() ||
+                generateRecordingName(tab.name, item.videoLink, tab.items.length)
+              tab.items.push({
+                id: newId(),
+                name,
+                videoLink: item.videoLink,
+                slideLink: item.slideLink ?? '',
+                watched: false,
+              })
+            }
           }),
 
         updateRecording: (courseId, tabId, itemId, patch) =>

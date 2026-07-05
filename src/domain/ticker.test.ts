@@ -161,6 +161,13 @@ describe('buildTickerItems — class detection', () => {
     expect(find(buildTickerItems(ctxOf(withSlot(), MON(12, 29))), 'class_now')).toBeDefined()
   })
 
+  it('flags an overnight class still in session after midnight (Sun 23:00–01:00 at Mon 00:30)', () => {
+    const overnight = sem([course({ schedule: [{ day: 0, start: '23:00', end: '01:00' }] })])
+    const item = find(buildTickerItems(ctxOf(overnight, MON(0, 30))), 'class_now')
+    expect(item?.badge).toBe('NOW')
+    expect(item?.target).toEqual({ type: 'course', courseId: 'c1' })
+  })
+
   it('renders class_now text from the catalog with placeholders filled', () => {
     const item = find(buildTickerItems(ctxOf(withSlot(), MON(11, 0))), 'class_now')
     const vars = {
@@ -349,7 +356,15 @@ describe('buildTickerItems — exams', () => {
     const item = find(buildTickerItems(ctxOf(semWithExams('2026-03-02'), MON(11))), 'exam_today')
     expect(item?.badge).toBe('EXAM!!')
     expect(item?.priority).toBe(9)
-    expect(item?.target).toEqual({ type: 'exam', courseId: 'c1' })
+    expect(item?.target).toEqual({ type: 'exam', courseId: 'c1', moed: 'A' })
+  })
+
+  it('carries the moed on the exam target for deep-linking (Moed B)', () => {
+    const item = find(
+      buildTickerItems(ctxOf(semWithExams('', '2026-03-02'), MON(11))),
+      'exam_today',
+    )
+    expect(item?.target).toEqual({ type: 'exam', courseId: 'c1', moed: 'B' })
   })
 
   it('flags an exam tomorrow with EXAM!', () => {

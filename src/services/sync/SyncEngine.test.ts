@@ -98,7 +98,7 @@ describe('createSyncEngine', () => {
     expect(applied).toHaveLength(before)
   })
 
-  it('applies a genuine remote write without pushing back', async () => {
+  it('merges a genuine remote write with local state and propagates the recovered union', async () => {
     const backend = createFakeBackend()
     const { host, applied } = makeHost(payloadWith('a', 'Alpha'))
     const engine = createSyncEngine({ backend, host, clientId: 'me', now: () => NOW })
@@ -110,9 +110,54 @@ describe('createSyncEngine', () => {
       buildCloudRecord(payloadWith('b', 'Remote'), 'someone-else', 'w-remote', NOW),
     )
 
+    // Local-only 'a' is preserved alongside remote 'b' (not blindly overwritten).
     expect(applied).toHaveLength(before + 1)
-    expect(applied[applied.length - 1]!.profiles[0]!.id).toBe('b')
-    expect(backend.saved).toHaveLength(0) // apply must not trigger a push
+    expect(applied[applied.length - 1]!.profiles.map((p) => p.id).sort()).toEqual(['a', 'b'])
+    // The remote lacked 'a', so the union is pushed back so 'a' reaches the cloud.
+    expect(backend.saved).toHaveLength(1)
+    expect(backend.saved[0]!.payload.profiles.map((p) => p.id).sort()).toEqual(['a', 'b'])
+  })
+
+  it('applies a strictly-newer remote update without pushing back (no ping-pong)', async () => {
+    const T1 = new Date('2026-07-04T12:00:00Z')
+    const T2 = new Date('2026-07-04T13:00:00Z')
+    const local: CloudPayload = {
+      activeProfileId: 'a',
+      profiles: [{ id: 'a', name: 'Local', lastModified: T1.toISOString(), data: data('S1') }],
+    }
+    const remote: CloudPayload = {
+      activeProfileId: 'a',
+      profiles: [{ id: 'a', name: 'Remote', lastModified: T2.toISOString(), data: data('S2') }],
+    }
+    const backend = createFakeBackend()
+    const { host, applied } = makeHost(local)
+    const engine = createSyncEngine({ backend, host, clientId: 'me', now: () => T2 })
+    await engine.start()
+    backend.saved.length = 0
+    const before = applied.length
+
+    backend.emitRemote(buildCloudRecord(remote, 'other', 'w-remote', T2))
+
+    expect(applied).toHaveLength(before + 1)
+    expect(applied[applied.length - 1]!.profiles[0]!.name).toBe('Remote') // newer wins
+    expect(backend.saved).toHaveLength(0) // nothing local-only to recover → no push-back
+  })
+
+  it('goes to error status (not stuck on connecting) when the initial load fails', async () => {
+    const backend = createFakeBackend()
+    backend.load = () => Promise.reject(new Error('network down'))
+    const { host } = makeHost(payloadWith('a', 'Alpha'))
+    const statuses: string[] = []
+    const engine = createSyncEngine({
+      backend,
+      host,
+      clientId: 'me',
+      now: () => NOW,
+      onStatus: (s) => statuses.push(s),
+    })
+
+    await expect(engine.start()).resolves.toBeUndefined() // no unhandled rejection
+    expect(statuses[statuses.length - 1]).toBe('error')
   })
 
   it('flush() pushes immediately, cancelling any pending debounce', async () => {

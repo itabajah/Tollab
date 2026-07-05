@@ -165,11 +165,27 @@ describe('RecordingsTab', () => {
     const { session, user } = setup((session, courseId) => {
       session.appStore.getState().addRecording(courseId, 'lectures', 'https://youtu.be/x')
     })
-    const checkbox = screen.getByRole('checkbox')
+    // Keep watched rows visible so we can toggle them off again.
+    await user.click(screen.getByRole('checkbox', { name: 'Show watched' }))
+    const checkbox = screen.getByRole('checkbox', { name: 'Video 1 watched' })
     await user.click(checkbox)
     expect(tabItems(session, 'lectures')[0]!.watched).toBe(true)
     await user.click(checkbox)
     expect(tabItems(session, 'lectures')[0]!.watched).toBe(false)
+  })
+
+  it('hides watched recordings until "Show watched" is enabled', async () => {
+    const { user } = setup((session, courseId) => {
+      session.appStore.getState().addRecording(courseId, 'lectures', 'https://youtu.be/a')
+      const id =
+        session.appStore.getState().data.semesters[0]!.courses[0]!.recordings.tabs[0]!.items[0]!.id
+      session.appStore.getState().toggleRecording(courseId, 'lectures', id) // mark watched
+    })
+    // Watched by default is hidden — the row is gone, an explanatory empty state shows.
+    expect(screen.queryByText('Video 1')).not.toBeInTheDocument()
+    expect(screen.getByText(/all recordings watched/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('checkbox', { name: 'Show watched' }))
+    expect(screen.getByText('Video 1')).toBeInTheDocument()
   })
 
   it('changes the sort order', async () => {
@@ -203,11 +219,11 @@ describe('RecordingsTab', () => {
     const { user } = setup((session, courseId) => {
       session.appStore
         .getState()
-        .addRecording(courseId, 'lectures', 'https://www.youtube.com/watch?v=xyz')
+        .addRecording(courseId, 'lectures', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
     })
     await user.click(screen.getByRole('button', { name: 'Preview' }))
     const iframe = screen.getByTitle('Video preview')
-    expect(iframe.getAttribute('src')).toContain('youtube.com/embed/xyz')
+    expect(iframe.getAttribute('src')).toContain('youtube.com/embed/dQw4w9WgXcQ')
 
     await user.click(screen.getByRole('button', { name: 'Hide' }))
     expect(screen.queryByTitle('Video preview')).not.toBeInTheDocument()

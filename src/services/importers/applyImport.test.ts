@@ -1,6 +1,6 @@
 import icsFixture from './__fixtures__/cheesefork.ics?raw'
 import { appDataSchema, type AppData } from '@/domain/model'
-import { applyImportedCourses } from './applyImport'
+import { applyImportedCourses, reconcileImport } from './applyImport'
 import { parseIcs, type ImportedCourse } from './ics'
 
 const NOW = '2026-07-05T10:00:00.000Z'
@@ -383,5 +383,70 @@ describe('applyImportedCourses — end-to-end with the ICS fixture', () => {
       updatedCourses: [],
     })
     expect(second.data.semesters).toEqual(first.data.semesters)
+  })
+})
+
+describe('reconcileImport', () => {
+  it('overlays the imported semester while preserving a concurrent edit to another semester', () => {
+    const snapshot = makeData([
+      { id: 'sem1', name: 'Spring 2026', courses: [] },
+      { id: 'sem2', name: 'Winter 2025-2026', courses: [] },
+    ])
+    const imported = applyImportedCourses(
+      snapshot,
+      'Spring 2026',
+      [makeImported({ name: 'Imported Course', number: '111111' })],
+      NOW,
+    ).data
+
+    // While the fetch was in flight, sem2 gained a course from a remote sync.
+    const fresh = makeData([
+      { id: 'sem1', name: 'Spring 2026', courses: [] },
+      { id: 'sem2', name: 'Winter 2025-2026', courses: [algoCourse({ id: 'cR', name: 'Remote' })] },
+    ])
+
+    const merged = reconcileImport(fresh, snapshot, imported)
+
+    // sem1 carries the import…
+    expect(merged.semesters.find((s) => s.id === 'sem1')?.courses.map((c) => c.name)).toEqual([
+      'Imported Course',
+    ])
+    // …and sem2's concurrent remote edit is NOT clobbered.
+    expect(merged.semesters.find((s) => s.id === 'sem2')?.courses.map((c) => c.name)).toEqual([
+      'Remote',
+    ])
+  })
+
+  it('appends a newly-created semester and keeps the latest settings', () => {
+    const snapshot = makeData([{ id: 'sem1', name: 'Spring 2026', courses: [] }], {
+      theme: 'light',
+    })
+    const imported = applyImportedCourses(
+      snapshot,
+      'Winter 2025',
+      [makeImported({ name: 'X' })],
+      NOW,
+    ).data
+
+    // Fresh state: sem1 got a remote course AND the theme was toggled to dark.
+    const fresh = makeData(
+      [{ id: 'sem1', name: 'Spring 2026', courses: [algoCourse({ id: 'cR', name: 'Remote' })] }],
+      { theme: 'dark' },
+    )
+
+    const merged = reconcileImport(fresh, snapshot, imported)
+
+    expect(merged.semesters.map((s) => s.name)).toContain('Winter 2025')
+    expect(merged.semesters.find((s) => s.id === 'sem1')?.courses.map((c) => c.name)).toEqual([
+      'Remote',
+    ])
+    expect(merged.settings.theme).toBe('dark')
+  })
+
+  it('returns the fresh data untouched when the import changed nothing', () => {
+    const snapshot = makeData([{ id: 'sem1', name: 'Spring 2026', courses: [] }])
+    const fresh = makeData([{ id: 'sem1', name: 'Spring 2026', courses: [] }])
+    // imported === snapshot ⇒ no semester differs by reference.
+    expect(reconcileImport(fresh, snapshot, snapshot)).toBe(fresh)
   })
 })

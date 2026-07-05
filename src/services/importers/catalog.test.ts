@@ -222,6 +222,19 @@ describe('enrichCourse', () => {
     expect(enriched.schedule).toBe(course.schedule)
     expect(enriched.recordings).toBe(course.recordings)
   })
+
+  it('returns the same course reference when no field actually changes', () => {
+    const course = makeCourse({
+      number: '02340247',
+      points: '3.0',
+      lecturer: "פרופ' יובל רבני",
+      faculty: 'מדעי המחשב',
+      syllabus: 'עקרונות בתכנון וניתוח של אלגוריתמים: חמדנות, תכנות דינמי, זרימה ברשתות.',
+      exams: { moedA: '2026-07-13', moedB: '2026-08-10' },
+    })
+
+    expect(enrichCourse(course, entryOf('02340247'))).toBe(course)
+  })
 })
 
 describe('catalogUrls', () => {

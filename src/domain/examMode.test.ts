@@ -131,10 +131,12 @@ describe('collectExams', () => {
     expect(nodes[1]).toMatchObject({ id: 'c1:B', label: 'Moed B', moed: 'B', date: '2026-03-01' })
   })
 
-  it('skips empty and invalid (rollover) exam dates', () => {
+  it('skips empty and coerced-away (impossible) course exam dates', () => {
+    // An impossible course moed date (2026-02-31) is coerced to '' by the schema,
+    // so collectExams produces no node for it. Impossible *custom*-exam dates are
+    // rejected at parse time instead (see model.test.ts / customExamSchema).
     const semester = makeSemester({
       courses: [makeCourse('c1', 'Calculus', '', '2026-02-31')],
-      customExams: [{ id: 'x1', name: 'Workshop', label: '', date: '2026-02-30', color: '' }],
     })
     expect(collectExams(semester)).toEqual([])
   })

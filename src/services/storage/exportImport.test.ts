@@ -1,6 +1,5 @@
 import { buildExportFile, parseImportFile, exportFileName, ImportError } from './exportImport'
 import { createEmptyAppData, appDataSchema } from '@/domain/model'
-import v2Full from './__fixtures__/v2-compact-full.json'
 
 const NOW = '2026-07-04T10:00:00.000Z'
 
@@ -22,43 +21,19 @@ describe('buildExportFile / parseImportFile round-trip', () => {
   })
 })
 
-describe('parseImportFile — legacy formats', () => {
-  it('accepts the old v1 export wrapper {meta, data}', () => {
-    const legacyExport = {
-      meta: { version: 1, profileName: 'Old Profile', exportDate: '2025-01-01T00:00:00.000Z' },
-      data: {
-        semesters: [
-          {
-            id: 's_old',
-            name: 'Winter 2024-2025',
-            courses: [{ id: 'c1', name: 'Physics 1m', homework: [{ title: 'HW1' }] }],
-          },
-        ],
-        settings: { theme: 'dark' },
-        lastModified: '2025-01-01T00:00:00.000Z',
-      },
-    }
-    const parsed = parseImportFile(legacyExport)
-    expect(parsed.profileName).toBe('Old Profile')
-    expect(parsed.data.semesters[0]!.courses[0]!.name).toBe('Physics 1m')
-    expect(parsed.data.settings.theme).toBe('dark')
-  })
-
-  it('accepts a raw legacy appData shape {semesters, ...}', () => {
-    const parsed = parseImportFile({ semesters: [{ id: 's', name: 'Spring 2025' }] })
-    expect(parsed.profileName).toBeNull()
-    expect(parsed.data.semesters[0]!.name).toBe('Spring 2025')
-  })
-
-  it('accepts a compact v2 blob (defensive)', () => {
-    const parsed = parseImportFile(v2Full)
-    expect(parsed.data.semesters[0]!.courses[0]!.name).toBe('Algorithms 1')
-  })
-
-  it('throws ImportError for unrecognizable input', () => {
+describe('parseImportFile — rejects non-v3 input', () => {
+  it('throws ImportError for unrecognizable and legacy input', () => {
     expect(() => parseImportFile('nonsense')).toThrow(ImportError)
     expect(() => parseImportFile({ foo: 'bar' })).toThrow(ImportError)
     expect(() => parseImportFile(null)).toThrow(ImportError)
+    // Legacy shapes are no longer accepted.
+    expect(() => parseImportFile({ meta: { version: 1 }, data: { semesters: [] } })).toThrow(
+      ImportError,
+    )
+    expect(() => parseImportFile({ semesters: [{ id: 's', name: 'Spring 2025' }] })).toThrow(
+      ImportError,
+    )
+    expect(() => parseImportFile({ v: 2, d: [] })).toThrow(ImportError)
   })
 })
 

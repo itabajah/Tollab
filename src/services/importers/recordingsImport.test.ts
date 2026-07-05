@@ -1,0 +1,146 @@
+import {
+  runYoutubeImport,
+  runPanoptoImport,
+  runRecordingImport,
+  RecordingImportError,
+} from './recordingsImport'
+
+const noDelay = async () => {}
+
+const YT_INITIAL_DATA = {
+  contents: {
+    twoColumnBrowseResultsRenderer: {
+      tabs: [
+        {
+          tabRenderer: {
+            content: {
+              sectionListRenderer: {
+                contents: [
+                  {
+                    itemSectionRenderer: {
+                      contents: [
+                        {
+                          playlistVideoListRenderer: {
+                            contents: [
+                              {
+                                playlistVideoRenderer: {
+                                  videoId: 'dQw4w9WgXcQ',
+                                  title: { runs: [{ text: 'Lecture 1' }] },
+                                },
+                              },
+                              {
+                                playlistVideoRenderer: {
+                                  videoId: 'abc12345678',
+                                  title: { runs: [{ text: 'Lecture 2' }] },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    },
+  },
+}
+
+const YT_HTML = `<html><body><script>var ytInitialData = ${JSON.stringify(
+  YT_INITIAL_DATA,
+)};</script></body></html>`
+
+const PANOPTO_HTML =
+  'DeliveryInfo = {"SessionId":"aaaabbbb-cccc-dddd-eeee-ffff00001111","SessionName":"Rec 1"}\n' +
+  'DeliveryInfo = {"SessionId":"11112222-3333-4444-5555-666677778888","SessionName":"Rec 2"}'
+
+const okFetch = (body: string) => vi.fn(async () => new Response(body, { status: 200 }))
+
+describe('runYoutubeImport', () => {
+  it('fetches and parses a playlist into recordings with their titles', async () => {
+    const result = await runYoutubeImport('https://www.youtube.com/playlist?list=PL123', {
+      fetchImpl: okFetch(YT_HTML),
+      delayFn: noDelay,
+    })
+    expect(result).toEqual([
+      { name: 'Lecture 1', videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+      { name: 'Lecture 2', videoLink: 'https://www.youtube.com/watch?v=abc12345678' },
+    ])
+  })
+
+  it('rejects a URL without a playlist id', async () => {
+    await expect(runYoutubeImport('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).rejects.toThrow(
+      RecordingImportError,
+    )
+  })
+
+  it('rejects a playlist with no videos', async () => {
+    await expect(
+      runYoutubeImport('https://www.youtube.com/playlist?list=PL123', {
+        fetchImpl: okFetch('<html><body>empty</body></html>'),
+        delayFn: noDelay,
+      }),
+    ).rejects.toThrow(/No videos/)
+  })
+
+  it('rejects when every proxy fails', async () => {
+    await expect(
+      runYoutubeImport('https://www.youtube.com/playlist?list=PL123', {
+        fetchImpl: vi.fn(async () => new Response('', { status: 500 })),
+        delayFn: noDelay,
+      }),
+    ).rejects.toThrow()
+  })
+})
+
+describe('runPanoptoImport', () => {
+  it('fetches and parses a folder into recordings', async () => {
+    const result = await runPanoptoImport(
+      'https://panopto.technion.ac.il/Panopto/Pages/Sessions/List.aspx?folderID=x',
+      { fetchImpl: okFetch(PANOPTO_HTML), delayFn: noDelay },
+    )
+    expect(result).toEqual([
+      {
+        name: 'Rec 1',
+        videoLink:
+          'https://panopto.technion.ac.il/Panopto/Pages/Viewer.aspx?id=aaaabbbb-cccc-dddd-eeee-ffff00001111',
+      },
+      {
+        name: 'Rec 2',
+        videoLink:
+          'https://panopto.technion.ac.il/Panopto/Pages/Viewer.aspx?id=11112222-3333-4444-5555-666677778888',
+      },
+    ])
+  })
+
+  it('rejects a non-https / non-Panopto link', async () => {
+    await expect(runPanoptoImport('not-a-url')).rejects.toThrow(RecordingImportError)
+  })
+
+  it('rejects an empty folder', async () => {
+    await expect(
+      runPanoptoImport('https://panopto.technion.ac.il/Panopto/Pages/Sessions/List.aspx', {
+        fetchImpl: okFetch('<html>no sessions</html>'),
+        delayFn: noDelay,
+      }),
+    ).rejects.toThrow(/No recordings/)
+  })
+})
+
+describe('runRecordingImport', () => {
+  it('dispatches to the YouTube importer', async () => {
+    const result = await runRecordingImport(
+      'youtube',
+      'https://www.youtube.com/playlist?list=PL1',
+      {
+        fetchImpl: okFetch(YT_HTML),
+        delayFn: noDelay,
+      },
+    )
+    expect(result).toHaveLength(2)
+  })
+})

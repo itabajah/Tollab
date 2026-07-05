@@ -163,6 +163,16 @@ describe('positionSlot', () => {
     })
   })
 
+  it('renders the pre-midnight portion of an overnight slot instead of dropping it', () => {
+    // An ICS event 22:00–01:00 crosses midnight; render 22:00 → end of grid.
+    const overnight: GridConfig = { startHour: 8, endHour: 24, visibleDays: [0, 1, 2, 3, 4, 5, 6] }
+    expect(positionSlot({ day: 3, start: '22:00', end: '01:00' }, overnight)).toEqual({
+      column: 3,
+      rowStart: 169,
+      rowSpan: 24,
+    })
+  })
+
   it('maps the column through the visibleDays order', () => {
     const reordered: GridConfig = { ...cfg, visibleDays: [3, 0] }
     expect(positionSlot({ day: 0, start: '09:00', end: '10:00' }, reordered)).toMatchObject({

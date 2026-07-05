@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { Course, CustomExam, Semester } from '@/domain/model'
+import type { CustomExam } from '@/domain/model'
 import {
   annotateExamStates,
   collectExams,
@@ -10,11 +10,12 @@ import {
   type MoedFilter,
 } from '@/domain/examMode'
 import { useAppState } from '@/hooks/session'
+import { useNow } from '@/hooks/useNow'
 import { useElementWidth } from '@/hooks/useElementWidth'
 import { useToast } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
-import { cn } from '@/lib/cn'
-import { CourseFormDialog } from '@/features/courses/CourseFormDialog'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
 import { ExamNode } from './ExamNode'
 import { GapChip, TurnConnector } from './Connector'
 import { HiddenTray } from './HiddenTray'
@@ -27,15 +28,16 @@ const MOED_FILTERS: ReadonlyArray<{ value: MoedFilter; label: string }> = [
   { value: 'B', label: 'Moed B' },
 ]
 
-export function ExamRoadmap({ now = new Date() }: { now?: Date }) {
+export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
+  const now = useNow(nowProp)
   const semester = useAppState((s) =>
     s.data.semesters.find((sem) => sem.id === s.currentSemesterId),
-  ) as Semester | undefined
+  )
   const { hideExam, restoreExam, restoreAll } = useExamActions()
+  const { openCourse } = useCourseDialog()
   const toast = useToast()
 
   const [moedFilter, setMoedFilter] = useState<MoedFilter>('all')
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [customDialogOpen, setCustomDialogOpen] = useState(false)
   const [editingExam, setEditingExam] = useState<CustomExam | null>(null)
 
@@ -50,22 +52,38 @@ export function ExamRoadmap({ now = new Date() }: { now?: Date }) {
   const progress = examProgress(nodes)
   const nextNode = nodes.find((node) => node.isNext) ?? null
 
-  const allNodes = collectExams(semester, { includeHidden: true })
-  const hiddenNodes = allNodes.filter((node) => semester.hiddenExamIds.includes(node.id))
+  // Hidden nodes matching the ACTIVE filter (so the tray + empty states are
+  // filter-aware), plus a global check so we can tell "no exams at all" apart
+  // from "none match this filter" and never render a blank board.
+  const hiddenNodes = collectExams(semester, { moedFilter, includeHidden: true }).filter((node) =>
+    semester.hiddenExamIds.includes(node.id),
+  )
+  const hasAnyExam = collectExams(semester, { includeHidden: true }).length > 0
+  const filteredEmpty = hasAnyExam && nodes.length === 0
 
   const openCustomExam = (exam?: CustomExam) => {
     setEditingExam(exam ?? null)
     setCustomDialogOpen(true)
   }
 
-  const onOpenNode = (nodeId: string, kind: 'course' | 'custom', courseId: string | null) => {
+  const onOpenNode = (
+    nodeId: string,
+    kind: 'course' | 'custom',
+    courseId: string | null,
+    moed: 'A' | 'B' | null,
+  ) => {
     if (kind === 'custom') {
       const exam = semester.customExams.find((e) => e.id === nodeId)
       if (exam) openCustomExam(exam)
       return
     }
-    const course = semester.courses.find((c) => c.id === courseId)
-    if (course) setEditingCourse(course)
+    if (!courseId) return
+    // Open the course on Details and highlight the exam field this node maps to.
+    openCourse({
+      courseId,
+      tab: 'details',
+      ...(moed ? { highlight: { kind: 'exam' as const, moed } } : {}),
+    })
   }
 
   const onRemoveNode = (nodeId: string, name: string) => {
@@ -75,16 +93,19 @@ export function ExamRoadmap({ now = new Date() }: { now?: Date }) {
     })
   }
 
-  const isEmpty = nodes.length === 0 && hiddenNodes.length === 0
+  const isEmpty = !hasAnyExam
 
   return (
     <section aria-label="Exam roadmap">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-light text-ink">Exams</h2>
+          <h2 className="text-2xl font-medium tracking-tight text-ink">Exams</h2>
           {nextNode ? (
-            <p className="text-xs text-ink-muted">
-              Next: {nextNode.name} · {formatCountdown(nextNode.daysUntil)}
+            <p className="text-sm text-ink-muted">
+              Next:{' '}
+              <span className="font-medium text-ink">
+                {nextNode.name} · {formatCountdown(nextNode.daysUntil)}
+              </span>
             </p>
           ) : null}
         </div>
@@ -93,51 +114,47 @@ export function ExamRoadmap({ now = new Date() }: { now?: Date }) {
         </Button>
       </div>
 
-      {nodes.length > 0 ? (
+      {hasAnyExam ? (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-ink-muted" aria-label="Exam progress">
-              {progress.done}/{progress.total} passed
-            </span>
-            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-progress-bg">
-              <div
-                className="h-full bg-progress-fill"
-                style={{ width: `${progress.pct}%` }}
-                data-testid="exam-progress-fill"
-              />
+          {nodes.length > 0 ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-ink-muted" aria-label="Exam progress">
+                {progress.done}/{progress.total} passed
+              </span>
+              <div className="h-1.5 w-24 overflow-hidden rounded-full bg-progress-bg">
+                <div
+                  className="h-full rounded-full bg-progress-fill transition-[width] duration-500 ease-out"
+                  style={{ width: `${progress.pct}%` }}
+                  data-testid="exam-progress-fill"
+                />
+              </div>
             </div>
-          </div>
-          <div
-            className="inline-flex rounded-xs border border-line bg-inset p-0.5"
-            role="group"
+          ) : (
+            <span />
+          )}
+          <SegmentedControl
             aria-label="Moed filter"
-          >
-            {MOED_FILTERS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={moedFilter === option.value}
-                onClick={() => setMoedFilter(option.value)}
-                className={cn(
-                  'rounded-xs px-2.5 py-1 text-xs font-medium transition-colors',
-                  moedFilter === option.value
-                    ? 'bg-panel text-ink shadow-sm'
-                    : 'text-ink-muted hover:text-ink',
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+            options={MOED_FILTERS}
+            value={moedFilter}
+            onChange={setMoedFilter}
+          />
         </div>
       ) : null}
 
       {isEmpty ? (
-        <div className="mt-6 rounded-xs border border-dashed border-line-strong px-6 py-12 text-center">
+        <div className="mt-6 rounded-card border border-dashed border-line-strong px-6 py-12 text-center">
           <p className="text-sm text-ink-muted">No exams yet.</p>
           <Button className="mt-3" variant="primary" onClick={() => openCustomExam()}>
             + Add custom exam
           </Button>
+        </div>
+      ) : filteredEmpty ? (
+        <div className="mt-6 rounded-card border border-dashed border-line-strong px-6 py-10 text-center">
+          <p className="text-sm text-ink-muted">
+            {moedFilter === 'all'
+              ? 'All exams are hidden — restore one below.'
+              : `No ${moedFilter === 'A' ? 'Moed A' : 'Moed B'} exams in this semester.`}
+          </p>
         </div>
       ) : (
         <div
@@ -146,19 +163,23 @@ export function ExamRoadmap({ now = new Date() }: { now?: Date }) {
           style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
         >
           {matrix.flat().map((cell, index) => {
-            if (cell.kind === 'spacer') return <div key={index} />
+            if (cell.kind === 'spacer') return <div key={`spacer-${index}`} />
             if (cell.kind === 'turn') {
-              return <TurnConnector key={index} gapDays={cell.gapAfter} side={cell.side} />
+              return (
+                <TurnConnector key={`turn-${index}`} gapDays={cell.gapAfter} side={cell.side} />
+              )
             }
             return (
               <div key={cell.node.id} className="flex flex-col">
                 <ExamNode
                   node={cell.node}
-                  onOpen={() => onOpenNode(cell.node.id, cell.node.kind, cell.node.courseId)}
+                  onOpen={() =>
+                    onOpenNode(cell.node.id, cell.node.kind, cell.node.courseId, cell.node.moed)
+                  }
                   onRemove={() => onRemoveNode(cell.node.id, cell.node.name)}
                   onEdit={
                     cell.node.kind === 'custom'
-                      ? () => onOpenNode(cell.node.id, 'custom', null)
+                      ? () => onOpenNode(cell.node.id, 'custom', null, null)
                       : undefined
                   }
                 />
@@ -179,13 +200,6 @@ export function ExamRoadmap({ now = new Date() }: { now?: Date }) {
         onRestoreAll={() => restoreAll(semester.id)}
       />
 
-      <CourseFormDialog
-        open={editingCourse !== null}
-        course={editingCourse}
-        onOpenChange={(open) => {
-          if (!open) setEditingCourse(null)
-        }}
-      />
       <CustomExamDialog
         open={customDialogOpen}
         semesterId={semester.id}

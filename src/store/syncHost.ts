@@ -20,6 +20,10 @@ import type { Session } from './session'
 export function createStorageSyncHost(storage: StorageLike, session: Session): SyncHost {
   return {
     getLocalPayload(): CloudPayload {
+      // Persist any pending debounced edit first so the payload reflects the
+      // latest local state, rather than relying on the session's separate
+      // debounce having already fired (an undocumented ordering coupling).
+      session.flush()
       const metas = loadProfiles(storage)
       return {
         activeProfileId: loadActiveProfileId(storage),

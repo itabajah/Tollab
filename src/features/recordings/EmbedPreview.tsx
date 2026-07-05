@@ -1,12 +1,15 @@
+import { useState } from 'react'
 import { getVideoEmbedInfo } from '@/lib/videoEmbed'
 
 /**
  * Inline video preview. Renders a responsive 16:9 iframe for embeddable links
- * (YouTube / Panopto); for anything else it degrades to an external link so the
- * user can still open the source in a new tab.
+ * (YouTube / Panopto) with a loading spinner and an escape-hatch link (in case
+ * the provider refuses to be framed); for anything else it degrades to an
+ * external link so the user can still open the source in a new tab.
  */
 export function EmbedPreview({ url }: { url: string }) {
   const { embedUrl } = getVideoEmbedInfo(url)
+  const [loaded, setLoaded] = useState(false)
 
   if (embedUrl === null) {
     return (
@@ -22,14 +25,45 @@ export function EmbedPreview({ url }: { url: string }) {
   }
 
   return (
-    <div className="aspect-video w-full overflow-hidden rounded-xs border border-line bg-black">
-      <iframe
-        src={embedUrl}
-        title="Video preview"
-        className="h-full w-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-      />
+    <div className="flex flex-col gap-1.5">
+      <div className="relative aspect-video w-full overflow-hidden rounded-control border border-line bg-black">
+        {!loaded ? (
+          <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            <svg className="size-6 animate-spin text-white/70" viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                strokeWidth="3"
+                className="opacity-30"
+              />
+              <path
+                d="M21 12a9 9 0 0 0-9-9"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+        ) : null}
+        <iframe
+          src={embedUrl}
+          title="Video preview"
+          onLoad={() => setLoaded(true)}
+          className="relative h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="self-start text-xs text-ink-faint underline hover:text-ink"
+      >
+        Trouble loading? Open in a new tab
+      </a>
     </div>
   )
 }

@@ -38,4 +38,18 @@ describe('storage codec v3', () => {
       decodeStoredProfile(JSON.stringify({ v: 3, savedAt: NOW, data: { bad: true } })),
     ).toBeNull()
   })
+
+  it('degrades an unrecognized enum value to its default instead of discarding the profile', () => {
+    const data = createEmptyAppData(NOW)
+    // Simulate a newer build that wrote enum values this build doesn't know.
+    const raw = JSON.stringify({
+      v: 3,
+      savedAt: NOW,
+      data: { ...data, settings: { ...data.settings, colorTheme: 'neon', theme: 'sepia' } },
+    })
+    const decoded = decodeStoredProfile(raw)
+    expect(decoded).not.toBeNull()
+    expect(decoded!.settings.colorTheme).toBe('colorful')
+    expect(decoded!.settings.theme).toBe('light')
+  })
 })

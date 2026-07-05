@@ -13,9 +13,9 @@ import {
   saveProfileData,
   saveProfiles,
   deleteProfileData,
+  hasStoredProfile,
   type StorageLike,
 } from '@/services/storage/localStore'
-import { migrateLegacyStorage } from '@/services/storage/migrate'
 import {
   buildExportFile,
   type ExportFileV3,
@@ -62,8 +62,6 @@ export function createSession(options: SessionOptions): Session {
   const now = options.now ?? (() => new Date())
   const saveDebounceMs = options.saveDebounceMs ?? 250
 
-  migrateLegacyStorage(storage)
-
   const persist = <T>(write: () => T): T | undefined => {
     try {
       return write()
@@ -94,9 +92,19 @@ export function createSession(options: SessionOptions): Session {
 
   let initialData = loadProfileData(storage, activeId)
   if (initialData === null) {
+    // Distinguish "no data yet" from "data present but unreadable". Only the
+    // former may be filled with empty; overwriting an undecodable blob would
+    // destroy recoverable bytes, so we preserve them and surface the problem.
+    const corrupt = hasStoredProfile(storage, activeId)
     initialData = createEmptyAppData(now().toISOString())
-    const data = initialData
-    persist(() => saveProfileData(storage, activeId!, data, data.lastModified))
+    if (corrupt) {
+      onSaveError?.(
+        new Error('Stored data for the active profile is unreadable; leaving it untouched.'),
+      )
+    } else {
+      const data = initialData
+      persist(() => saveProfileData(storage, activeId!, data, data.lastModified))
+    }
   }
 
   const appStore = createAppStore(initialData, { now })
@@ -113,10 +121,15 @@ export function createSession(options: SessionOptions): Session {
       pendingTimer = null
     }
     if (!dirty) return
-    dirty = false
     const { data } = appStore.getState()
     const id = profilesStore.getState().activeProfileId
-    persist(() => saveProfileData(storage, id, data, data.lastModified))
+    const ok = persist(() => {
+      saveProfileData(storage, id, data, data.lastModified)
+      return true
+    })
+    // Clear the dirty flag only on a successful write — a failed save (e.g. quota)
+    // must stay dirty so the next flush/debounce retries it rather than dropping it.
+    dirty = ok !== true
   }
 
   const unsubscribe = appStore.subscribe((state, prev) => {
@@ -173,6 +186,7 @@ export function createSession(options: SessionOptions): Session {
       saveProfileData(storage, meta.id, data, data.lastModified)
     })
     activateProfile(meta.id, data)
+    onDirty?.() // profile registry changed — let the sync engine push it
     return meta
   }
 
@@ -207,6 +221,7 @@ export function createSession(options: SessionOptions): Session {
           persist(() => saveProfileData(storage, id, data, data.lastModified))
         }
       }
+      onDirty?.() // rename must propagate to the cloud
       return { ok: true }
     },
 
@@ -224,6 +239,7 @@ export function createSession(options: SessionOptions): Session {
           saveProfileData(storage, meta.id, empty, empty.lastModified)
         })
         activateProfile(meta.id, empty)
+        onDirty?.() // deletion must propagate (else another device re-broadcasts it)
         return
       }
 
@@ -234,6 +250,7 @@ export function createSession(options: SessionOptions): Session {
         const data = loadProfileData(storage, next.id) ?? createEmptyAppData(now().toISOString())
         activateProfile(next.id, data)
       }
+      onDirty?.() // deletion must propagate (else another device re-broadcasts it)
     },
 
     switchProfile(id) {
@@ -242,10 +259,18 @@ export function createSession(options: SessionOptions): Session {
       writePending()
       const data = loadProfileData(storage, id) ?? createEmptyAppData(now().toISOString())
       activateProfile(id, data)
+      onDirty?.() // active-profile change is part of the synced payload
     },
 
     importProfile(parsed) {
-      const name = uniqueProfileName(parsed.profileName?.trim() || 'Imported')
+      // Clamp to the schema limit — an over-long name (common in legacy/hand-edited
+      // export files) would otherwise be rejected on the next load and orphan the
+      // whole profile registry.
+      const base = (parsed.profileName?.trim() || 'Imported').slice(
+        0,
+        VALIDATION_LIMITS.PROFILE_NAME_MAX,
+      )
+      const name = uniqueProfileName(base)
       const meta = addProfile(name, parsed.data)
       return { profileId: meta.id, name: meta.name }
     },

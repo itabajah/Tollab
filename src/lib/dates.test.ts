@@ -54,6 +54,11 @@ describe('convertDdMmYyyy', () => {
     expect(convertDdMmYyyy('2026-02-01')).toBeNull()
     expect(convertDdMmYyyy('')).toBeNull()
   })
+
+  it('returns null for shape-valid but impossible dates', () => {
+    expect(convertDdMmYyyy('31-02-2026')).toBeNull() // no Feb 31
+    expect(convertDdMmYyyy('99-99-2026')).toBeNull()
+  })
 })
 
 describe('parseIcsDate', () => {

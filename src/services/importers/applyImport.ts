@@ -77,7 +77,7 @@ function mergeImportedCourse(course: Course, imported: ImportedCourse): Course |
 
 function createImportedCourse(
   imported: ImportedCourse,
-  existingCount: number,
+  existingColors: string[],
   settings: Settings,
 ): Course {
   let number = imported.number
@@ -94,7 +94,7 @@ function createImportedCourse(
   return courseSchema.parse({
     id: newId(),
     name,
-    color: nextCourseColor(existingCount, settings),
+    color: nextCourseColor(existingColors, settings),
     number,
     lecturer: imported.lecturers.join(', '),
     location: imported.locations.join(', '),
@@ -134,7 +134,11 @@ export function applyImportedCourses(
         updatedCourses.push(merged.name)
       }
     } else {
-      const course = createImportedCourse(importedCourse, courses.length, data.settings)
+      const course = createImportedCourse(
+        importedCourse,
+        courses.map((c) => c.color),
+        data.settings,
+      )
       courses.push(course)
       createdCourses.push(course.name)
     }
@@ -149,4 +153,30 @@ export function applyImportedCourses(
     data: { ...data, semesters, lastModified: nowIso },
     report: { createdSemester: !existing, createdCourses, updatedCourses },
   }
+}
+
+/**
+ * Re-applies the result of an import onto the latest store data.
+ *
+ * A fetch (ICS / catalog / batch) can take seconds, during which a cloud-sync
+ * update may land locally. Replacing the store wholesale with a result derived
+ * from a pre-fetch snapshot would silently clobber that concurrent change. Since
+ * an import only ever produces new `semesters` (it never touches settings, and
+ * untouched semesters keep their reference), we overlay exactly the semesters the
+ * import created or changed onto `fresh` by id — preserving every other semester,
+ * plus settings and selection, that may have changed while the fetch was in
+ * flight. (A concurrent edit to the *same* semester being imported is still
+ * resolved last-write-wins in the import's favor — an inherent conflict.)
+ */
+export function reconcileImport(fresh: AppData, snapshot: AppData, imported: AppData): AppData {
+  const snapshotById = new Map(snapshot.semesters.map((s) => [s.id, s]))
+  const changed = imported.semesters.filter((s) => snapshotById.get(s.id) !== s)
+  if (changed.length === 0) return fresh
+
+  const changedById = new Map(changed.map((s) => [s.id, s]))
+  const freshIds = new Set(fresh.semesters.map((s) => s.id))
+  const semesters = fresh.semesters.map((s) => changedById.get(s.id) ?? s)
+  for (const s of changed) if (!freshIds.has(s.id)) semesters.push(s)
+
+  return { ...fresh, semesters }
 }

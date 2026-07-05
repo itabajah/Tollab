@@ -35,9 +35,34 @@ export function generateCourseColor(
   }
 }
 
-/** The color a newly added course gets, given how many courses already exist. */
-export function nextCourseColor(existingCount: number, settings: ColorSettings): string {
-  return generateCourseColor(existingCount, existingCount + 1, settings)
+/**
+ * The color a newly added course should get, given the colors already in use.
+ * Uses the existing colors (not just a count) so that:
+ *  - colorful: it picks the first golden-angle hue not already taken — no
+ *    collision even after a middle course was removed;
+ *  - single: it golden-walks the ±30° band by count, so each added course gets a
+ *    distinct hue (a plain even spread would put every appended course at +30°).
+ */
+export function nextCourseColor(existingColors: string[], settings: ColorSettings): string {
+  if (settings.colorTheme === 'mono') return 'hsl(0, 0%, 50%)'
+  if (settings.colorTheme === 'single') {
+    // Golden-walk the ±30° band by count: index 0 sits exactly on the base hue,
+    // later courses fan out to distinct offsets (a plain even spread collapsed
+    // every appended course onto +30°).
+    const r = (existingColors.length * GOLDEN_ANGLE) % 60
+    const offset = r <= 30 ? r : r - 60
+    const hue = (((settings.baseColorHue + offset) % 360) + 360) % 360
+    return courseColorFromHue(hue)
+  }
+  const used = new Set(existingColors.map(hueFromColor))
+  // The golden-angle walk visits all 360 integer hues before repeating (gcd 1),
+  // so bound the search: once every hue is taken (360+ colorful courses) accept a
+  // repeat rather than spin forever and freeze the tab.
+  for (let i = 0; i < 360; i++) {
+    const hue = (i * GOLDEN_ANGLE) % 360
+    if (!used.has(hue)) return courseColorFromHue(hue)
+  }
+  return courseColorFromHue((existingColors.length * GOLDEN_ANGLE) % 360)
 }
 
 /** Extracts the hue from an `hsl(...)` string; 0 when unparseable. */

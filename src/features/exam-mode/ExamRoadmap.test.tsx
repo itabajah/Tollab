@@ -91,6 +91,15 @@ describe('ExamRoadmap', () => {
     expect(node.getAttribute('data-exam-id')).toMatch(/:B$/)
   })
 
+  it('shows a filter-specific message (not the generic empty state) when a filter matches nothing', async () => {
+    const user = userEvent.setup()
+    setup((s) => addCourse(s, 'OnlyA', { moedA: '2026-02-10', moedB: '' }))
+    await user.click(screen.getByRole('button', { name: 'Moed B' }))
+    expect(screen.getByText(/no moed b exams/i)).toBeInTheDocument()
+    // Not the generic "no exams yet" card — those exams exist, just filtered out.
+    expect(screen.queryByRole('button', { name: /add custom exam/i })).not.toBeInTheDocument()
+  })
+
   it('hides a node with an undo toast and restores it from the tray', async () => {
     const user = userEvent.setup()
     const session = setup((s) => {

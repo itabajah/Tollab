@@ -2,6 +2,7 @@ import type { Homework, HomeworkLink } from '@/domain/model'
 import {
   sortHomework,
   moveHomework,
+  moveHomeworkAmongVisible,
   nextLinkLabel,
   dueBucket,
   isOverdue,
@@ -185,6 +186,35 @@ describe('moveHomework', () => {
 
   it('handles an empty list', () => {
     expect(moveHomework([], 'a', 1)).toEqual([])
+  })
+})
+
+describe('moveHomeworkAmongVisible', () => {
+  const visibleUnlessDone = (h: Homework) => !h.completed
+
+  it('swaps with the adjacent VISIBLE item, skipping hidden ones', () => {
+    // Stored order B, A(done→hidden), C. Moving B down should land it past C.
+    const items = [hw({ id: 'b' }), hw({ id: 'a', completed: true }), hw({ id: 'c' })]
+    expect(ids(moveHomeworkAmongVisible(items, 'b', 1, visibleUnlessDone))).toEqual(['c', 'a', 'b'])
+  })
+
+  it('moves up past a hidden item to the previous visible one', () => {
+    const items = [hw({ id: 'a' }), hw({ id: 'x', completed: true }), hw({ id: 'c' })]
+    expect(ids(moveHomeworkAmongVisible(items, 'c', -1, visibleUnlessDone))).toEqual([
+      'c',
+      'x',
+      'a',
+    ])
+  })
+
+  it('is a no-op when there is no further visible neighbor', () => {
+    const items = [hw({ id: 'a' }), hw({ id: 'x', completed: true })]
+    expect(ids(moveHomeworkAmongVisible(items, 'a', 1, visibleUnlessDone))).toEqual(['a', 'x'])
+  })
+
+  it('matches plain moveHomework when everything is visible', () => {
+    const items = [hw({ id: 'a' }), hw({ id: 'b' }), hw({ id: 'c' })]
+    expect(ids(moveHomeworkAmongVisible(items, 'a', 1, () => true))).toEqual(['b', 'a', 'c'])
   })
 })
 

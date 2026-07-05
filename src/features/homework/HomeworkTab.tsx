@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { sortHomework } from '@/domain/homework'
 import { useAppActions, useAppState } from '@/hooks/session'
+import { useNow } from '@/hooks/useNow'
 import { Button } from '@/components/ui/Button'
+import { Checkbox } from '@/components/ui/Checkbox'
 import { Input } from '@/components/ui/Field'
 import { SortMenu } from './SortMenu'
 import { HomeworkItem } from './HomeworkItem'
@@ -10,7 +12,19 @@ import { HomeworkItem } from './HomeworkItem'
  * The Homework tab of the course dialog: an add row, sort + show-done controls,
  * and the sorted (optionally completed-filtered) list of assignments.
  */
-export function HomeworkTab({ courseId, today = new Date() }: { courseId: string; today?: Date }) {
+export function HomeworkTab({
+  courseId,
+  today: todayProp,
+  highlightId,
+}: {
+  courseId: string
+  today?: Date
+  /** A homework id to scroll to and briefly highlight (deep-link). */
+  highlightId?: string | undefined
+}) {
+  // Share the app's ticking clock so due/overdue labels refresh at day
+  // boundaries (and match the sidebar); tests can still pin `today`.
+  const today = useNow(todayProp)
   const course = useAppState((s) =>
     s.data.semesters
       .find((sem) => sem.id === s.currentSemesterId)
@@ -63,12 +77,10 @@ export function HomeworkTab({ courseId, today = new Date() }: { courseId: string
 
       <div className="flex items-center justify-between gap-2">
         <label className="flex cursor-pointer items-center gap-1.5 text-sm text-ink-muted">
-          <input
-            type="checkbox"
+          <Checkbox
             aria-label="Show done"
             checked={course.showCompletedHomework}
-            onChange={(e) => setShowCompletedHomework(courseId, e.target.checked)}
-            className="size-4 accent-accent"
+            onCheckedChange={(c) => setShowCompletedHomework(courseId, c)}
           />
           Show done
         </label>
@@ -79,7 +91,7 @@ export function HomeworkTab({ courseId, today = new Date() }: { courseId: string
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-xs border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
+        <p className="rounded-card border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
           No assignments yet. Add one above.
         </p>
       ) : (
@@ -93,6 +105,7 @@ export function HomeworkTab({ courseId, today = new Date() }: { courseId: string
                 showReorder={isManual}
                 isFirst={index === 0}
                 isLast={index === visible.length - 1}
+                highlight={hw.id === highlightId}
               />
             </li>
           ))}

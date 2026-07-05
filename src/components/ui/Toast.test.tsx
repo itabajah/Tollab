@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ToastProvider, useToast } from './Toast'
 
@@ -58,8 +58,12 @@ describe('ToastProvider', () => {
     await user.click(screen.getByRole('button', { name: 'success' }))
     expect(screen.getByText('Saved!')).toBeInTheDocument()
 
+    // Auto-dismiss fires, then the exit-animation grace period elapses.
     act(() => {
       vi.advanceTimersByTime(4100)
+    })
+    act(() => {
+      vi.advanceTimersByTime(300)
     })
     expect(screen.queryByText('Saved!')).not.toBeInTheDocument()
   })
@@ -76,6 +80,10 @@ describe('ToastProvider', () => {
     act(() => {
       vi.advanceTimersByTime(2000)
     })
+    // Auto-dismiss has fired; let the exit grace period elapse before unmount.
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
     expect(screen.queryByText('Broke')).not.toBeInTheDocument()
   })
 
@@ -86,7 +94,7 @@ describe('ToastProvider', () => {
     await user.click(screen.getByRole('button', { name: 'with-action' }))
     await user.click(screen.getByRole('button', { name: 'Undo' }))
     expect(onAction).toHaveBeenCalledTimes(1)
-    expect(screen.queryByText('Hidden')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Hidden')).not.toBeInTheDocument())
   })
 
   it('dismisses via the close button', async () => {
@@ -94,6 +102,26 @@ describe('ToastProvider', () => {
     setup()
     await user.click(screen.getByRole('button', { name: 'success' }))
     await user.click(screen.getByRole('button', { name: 'Dismiss notification' }))
+    await waitFor(() => expect(screen.queryByText('Saved!')).not.toBeInTheDocument())
+  })
+
+  it('pauses the auto-dismiss timer while hovered and resumes on leave', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: 'success' }))
+    const toast = screen.getByRole('status')
+
+    await user.hover(toast)
+    act(() => {
+      vi.advanceTimersByTime(6000) // well past the 4s default — but paused
+    })
+    expect(screen.getByText('Saved!')).toBeInTheDocument()
+
+    await user.unhover(toast)
+    act(() => {
+      vi.advanceTimersByTime(4300) // re-armed timer + exit grace period
+    })
     expect(screen.queryByText('Saved!')).not.toBeInTheDocument()
   })
 

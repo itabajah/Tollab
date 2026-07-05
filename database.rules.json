@@ -1,0 +1,24 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "tollab": {
+      "users": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+
+          "data": {
+            ".validate": "newData.hasChildren(['v', 'updatedAt', 'clientId', 'writeId', 'payload'])",
+            "v": { ".validate": "newData.isNumber()" },
+            "updatedAt": { ".validate": "newData.isString()" },
+            "clientId": { ".validate": "newData.isString()" },
+            "writeId": { ".validate": "newData.isString()" },
+            "payload": { ".validate": "newData.hasChildren(['profiles'])" }
+          }
+        }
+      }
+    }
+  }
+}

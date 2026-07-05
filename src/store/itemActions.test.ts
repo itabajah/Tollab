@@ -98,6 +98,32 @@ describe('recording actions', () => {
     expect(items[0]!.videoLink).toBe('https://www.youtube.com/watch?v=abc')
   })
 
+  it('bulk-adds recordings, honoring provided names and generating blank ones', () => {
+    const { store, courseId } = makeStore()
+    store.getState().addRecordings(courseId, 'lectures', [
+      { name: 'Lecture A', videoLink: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+      { videoLink: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' }, // no name -> generated
+    ])
+    const items = currentCourse(store).recordings.tabs[0]!.items
+    expect(items).toHaveLength(2)
+    expect(items[0]!.name).toBe('Lecture A')
+    expect(items[1]!.name).toBe('Video 2') // generated with running index
+  })
+
+  it('bulk-add is a no-op for an empty list but produces new state for a real add', () => {
+    const { store, courseId } = makeStore()
+    const before = store.getState().data
+    store.getState().addRecordings(courseId, 'lectures', [])
+    expect(store.getState().data).toBe(before) // untouched — no stamp, no churn
+    store
+      .getState()
+      .addRecordings(courseId, 'lectures', [
+        { videoLink: 'https://www.youtube.com/watch?v=ccccccccccc' },
+      ])
+    expect(store.getState().data).not.toBe(before)
+    expect(currentCourse(store).recordings.tabs[0]!.items).toHaveLength(1)
+  })
+
   it('toggles watched, updates and removes recordings', () => {
     const { store, courseId } = makeStore()
     store.getState().addRecording(courseId, 'lectures', '')

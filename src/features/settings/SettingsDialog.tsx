@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
+import { sortSemesters } from '@/domain/semester'
 import { useAppActions, useAppState, useProfilesState, useSession } from '@/hooks/session'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
@@ -7,6 +8,8 @@ import { Field, Input, Select } from '@/components/ui/Field'
 import { useConfirm, usePrompt } from '@/components/ui/ConfirmProvider'
 import { useToast } from '@/components/ui/Toast'
 import { exportFileName, parseImportFile, ImportError } from '@/services/storage/exportImport'
+import { reconcileImport } from '@/services/importers/applyImport'
+import type { AppData } from '@/domain/model'
 import { CloudStatus } from '@/features/sync/CloudStatus'
 import { downloadJson } from './download'
 import { cn } from '@/lib/cn'
@@ -43,16 +46,16 @@ export function SettingsDialog({
             Fetch Data
           </Tabs.Trigger>
         </Tabs.List>
-        <Tabs.Content value="profile">
+        <Tabs.Content value="profile" className="min-h-[22rem] focus-visible:outline-none">
           <ProfileTab />
         </Tabs.Content>
-        <Tabs.Content value="appearance">
+        <Tabs.Content value="appearance" className="min-h-[22rem] focus-visible:outline-none">
           <AppearanceTab />
         </Tabs.Content>
-        <Tabs.Content value="calendar">
+        <Tabs.Content value="calendar" className="min-h-[22rem] focus-visible:outline-none">
           <CalendarTab />
         </Tabs.Content>
-        <Tabs.Content value="fetch">
+        <Tabs.Content value="fetch" className="min-h-[22rem] focus-visible:outline-none">
           <FetchDataTab />
         </Tabs.Content>
       </Tabs.Root>
@@ -188,7 +191,12 @@ function ProfileTab() {
             e.target.value = ''
           }}
         />
-        <Button variant="danger" onClick={() => void deleteActive()} aria-label="Delete profile">
+        <Button
+          variant="danger"
+          className="ml-auto"
+          onClick={() => void deleteActive()}
+          aria-label="Delete profile"
+        >
           Delete Profile
         </Button>
       </div>
@@ -256,7 +264,7 @@ function AppearanceTab() {
 
       {isDirty ? (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-[#e74c3c]">(unsaved changes)</span>
+          <span className="text-xs text-warning-text">(unsaved changes)</span>
           <Button variant="primary" size="sm" onClick={apply}>
             Apply
           </Button>
@@ -273,6 +281,16 @@ function AppearanceTab() {
   )
 }
 
+const BATCH_SEASONS = ['Winter', 'Spring', 'Summer'] as const
+type BatchSeason = (typeof BATCH_SEASONS)[number]
+
+function batchYearOptions(): number[] {
+  const current = new Date().getFullYear()
+  const years: number[] = []
+  for (let y = current + 1; y >= current - 5; y--) years.push(y)
+  return years
+}
+
 function FetchDataTab() {
   const session = useSession()
   const semester = useAppState((s) => s.data.semesters.find((x) => x.id === s.currentSemesterId))
@@ -280,14 +298,63 @@ function FetchDataTab() {
   const [icsUrl, setIcsUrl] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [batch, setBatch] = useState(false)
+  const years = batchYearOptions()
+  const [startSeason, setStartSeason] = useState<BatchSeason>('Winter')
+  const [startYear, setStartYear] = useState(years[years.length - 1]!)
+  const [endSeason, setEndSeason] = useState<BatchSeason>('Winter')
+  const [endYear, setEndYear] = useState(years[0]!)
 
   if (!semester) {
     return <p className="text-sm text-ink-muted">Create a semester first to fetch data into it.</p>
   }
 
-  const applyResult = (data: Parameters<typeof session.applyExternalData>[0]) => {
-    session.appStore.getState().setData(data)
+  // A fetch can take seconds; a cloud-sync update may land while it runs. Re-read
+  // the latest store data and overlay only the import-touched semesters onto it,
+  // so a concurrent remote change isn't clobbered by the pre-fetch snapshot.
+  const applyResult = (snapshot: AppData, importedData: AppData) => {
+    const fresh = session.appStore.getState().data
+    session.appStore.getState().setData(reconcileImport(fresh, snapshot, importedData))
     session.appStore.getState().touch()
+  }
+
+  const fetchRange = async () => {
+    if (!icsUrl.trim()) {
+      setStatus('Paste one Cheesefork ICS link (any semester) first.')
+      return
+    }
+    setBusy(true)
+    setStatus('Fetching semesters…')
+    const { runBatchIcsImport, BatchIcsError } = await import('@/services/importers/runImport')
+    const snapshot = session.appStore.getState().data
+    try {
+      const result = await runBatchIcsImport(
+        snapshot,
+        icsUrl.trim(),
+        { season: startSeason, year: startYear },
+        { season: endSeason, year: endYear },
+        { semesterName: '', nowIso: new Date().toISOString() },
+      )
+      applyResult(snapshot, result.data)
+      // Switch to the newest semester now in the store (sort is newest-first).
+      const newest = sortSemesters(session.appStore.getState().data.semesters)[0]
+      if (newest) session.appStore.getState().selectSemester(newest.id)
+      if (result.imported.length === 0) {
+        setStatus('No semesters found in that range.')
+        toast.error('Batch import found nothing')
+      } else {
+        const skipped = result.skipped.length ? ` Skipped: ${result.skipped.join(', ')}.` : ''
+        setStatus(`Imported ${result.imported.map((i) => i.name).join(', ')}.${skipped}`)
+        toast.success(`Imported ${result.imported.length} semesters`)
+      }
+    } catch (e) {
+      setStatus(
+        e instanceof BatchIcsError ? e.message : 'Could not fetch that range. Check the link.',
+      )
+      toast.error('Batch import failed')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const fetchSchedule = async () => {
@@ -299,11 +366,12 @@ function FetchDataTab() {
     setStatus('Fetching schedule…')
     try {
       const { runIcsImport } = await import('@/services/importers/runImport')
-      const result = await runIcsImport(session.appStore.getState().data, icsUrl.trim(), {
+      const snapshot = session.appStore.getState().data
+      const result = await runIcsImport(snapshot, icsUrl.trim(), {
         semesterName: semester.name,
         nowIso: new Date().toISOString(),
       })
-      applyResult(result.data)
+      applyResult(snapshot, result.data)
       const { createdCourses, updatedCourses } = result.report
       setStatus(`Imported ${createdCourses.length} new, updated ${updatedCourses.length} courses.`)
       toast.success('Schedule imported')
@@ -320,10 +388,11 @@ function FetchDataTab() {
     setStatus('Fetching course data from the Technion catalog…')
     try {
       const { runCatalogEnrichment } = await import('@/services/importers/runImport')
-      const result = await runCatalogEnrichment(session.appStore.getState().data, semester.id, {
+      const snapshot = session.appStore.getState().data
+      const result = await runCatalogEnrichment(snapshot, semester.id, {
         nowIso: new Date().toISOString(),
       })
-      applyResult(result.data)
+      applyResult(snapshot, result.data)
       setStatus(`Updated ${result.updatedCount} courses from the catalog.`)
       toast.success('Course data updated')
     } catch {
@@ -351,11 +420,96 @@ function FetchDataTab() {
         <Button
           className="mt-2"
           variant="primary"
-          disabled={busy}
+          loading={busy}
+          disabled={batch}
           onClick={() => void fetchSchedule()}
         >
           Fetch Schedule
         </Button>
+
+        <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-sm text-ink-muted">
+          <input
+            type="checkbox"
+            checked={batch}
+            disabled={busy}
+            onChange={(e) => setBatch(e.target.checked)}
+            className="size-4 accent-accent"
+          />
+          Fetch multiple semesters (batch)
+        </label>
+
+        {batch ? (
+          <div className="mt-2 flex flex-col gap-3 rounded-xs border border-line bg-inset p-3">
+            <p className="text-xs text-ink-faint">
+              Uses the link above as a sample; each semester’s file is fetched from the same folder.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="From">
+                {(id) => (
+                  <div className="flex gap-2">
+                    <Select
+                      id={id}
+                      aria-label="Start season"
+                      value={startSeason}
+                      onChange={(e) => setStartSeason(e.target.value as BatchSeason)}
+                    >
+                      {BATCH_SEASONS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </Select>
+                    <Select
+                      aria-label="Start year"
+                      value={String(startYear)}
+                      onChange={(e) => setStartYear(Number(e.target.value))}
+                    >
+                      {years.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              </Field>
+              <Field label="To">
+                {(id) => (
+                  <div className="flex gap-2">
+                    <Select
+                      id={id}
+                      aria-label="End season"
+                      value={endSeason}
+                      onChange={(e) => setEndSeason(e.target.value as BatchSeason)}
+                    >
+                      {BATCH_SEASONS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </Select>
+                    <Select
+                      aria-label="End year"
+                      value={String(endYear)}
+                      onChange={(e) => setEndYear(Number(e.target.value))}
+                    >
+                      {years.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+              </Field>
+            </div>
+            <div>
+              <Button variant="primary" loading={busy} onClick={() => void fetchRange()}>
+                Fetch range
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div>
@@ -364,12 +518,16 @@ function FetchDataTab() {
           Fills missing points, lecturer, faculty, and exam dates from the public Technion catalog.
           Existing values are never overwritten.
         </p>
-        <Button variant="secondary" disabled={busy} onClick={() => void fetchCatalog()}>
+        <Button variant="secondary" loading={busy} onClick={() => void fetchCatalog()}>
           Fetch Course Data
         </Button>
       </div>
 
-      {status ? <p className="text-xs text-ink-muted">{status}</p> : null}
+      {status ? (
+        <p role="status" aria-live="polite" className="text-xs text-ink-muted">
+          {status}
+        </p>
+      ) : null}
     </div>
   )
 }

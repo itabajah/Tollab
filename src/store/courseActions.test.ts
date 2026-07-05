@@ -96,4 +96,23 @@ describe('removeCourse / moveCourse', () => {
     store.getState().moveCourse(a.id, 1)
     expect(store.getState().data.semesters[0]!.courses.map((c) => c.name)).toEqual(['B', 'A'])
   })
+
+  it('prunes orphaned hidden-exam ids when a course is removed', () => {
+    const data: AppData = appDataSchema.parse({
+      semesters: [
+        {
+          id: 's1',
+          name: 'Spring 2026',
+          courses: [{ id: 'c1', name: 'Algo', color: 'hsl(0, 45%, 50%)' }],
+          hiddenExamIds: ['c1:A', 'c1:B', 'other:A'],
+        },
+      ],
+      settings: {},
+      lastModified: '2026-07-01T00:00:00.000Z',
+    })
+    const store = createAppStore(data, { now: () => T1 })
+    store.getState().selectSemester('s1')
+    store.getState().removeCourse('c1')
+    expect(store.getState().data.semesters[0]!.hiddenExamIds).toEqual(['other:A'])
+  })
 })

@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { appDataSchema, type AppData } from '@/domain/model'
-import { decodeLegacyProfile } from './migrate'
 
 export class ImportError extends Error {
   constructor(message: string) {
@@ -38,48 +37,18 @@ export interface ParsedImport {
   data: AppData
 }
 
-/**
- * Accepts, in order of preference:
- *  - v3 export files ({format:'tollab', version:3, ...})
- *  - compact v2 storage blobs ({v:2, ...}) — defensive
- *  - the old app's export wrapper ({meta:{profileName}, data:{semesters,...}})
- *  - a raw legacy appData shape ({semesters: [...]})
- */
+/** Accepts only v3 export files (`{format:'tollab', version:3, ...}`). */
 export function parseImportFile(raw: unknown): ParsedImport {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new ImportError('Not a Tollab export file')
   }
   const obj = raw as Record<string, unknown>
 
-  if (obj.format === 'tollab') {
-    const result = exportFileSchemaV3.safeParse(obj)
-    if (!result.success) throw new ImportError('Corrupt Tollab v3 export file')
-    return { profileName: result.data.profile?.name ?? null, data: result.data.data }
-  }
+  if (obj.format !== 'tollab') throw new ImportError('Not a Tollab export file')
 
-  if (typeof obj.v === 'number' && obj.v >= 2) {
-    const data = decodeLegacyProfile(obj)
-    if (data === null) throw new ImportError('Unrecognized compact data format')
-    return { profileName: null, data }
-  }
-
-  if (typeof obj.meta === 'object' && obj.meta !== null && typeof obj.data === 'object') {
-    const data = decodeLegacyProfile(obj.data)
-    if (data === null) throw new ImportError('Corrupt legacy export file')
-    const meta = obj.meta as Record<string, unknown>
-    return {
-      profileName: typeof meta.profileName === 'string' ? meta.profileName : null,
-      data,
-    }
-  }
-
-  if (Array.isArray(obj.semesters)) {
-    const data = decodeLegacyProfile(obj)
-    if (data === null) throw new ImportError('Corrupt legacy data')
-    return { profileName: null, data }
-  }
-
-  throw new ImportError('Not a Tollab export file')
+  const result = exportFileSchemaV3.safeParse(obj)
+  if (!result.success) throw new ImportError('Corrupt Tollab v3 export file')
+  return { profileName: result.data.profile?.name ?? null, data: result.data.data }
 }
 
 /** `tollab-<safe name>-<YYYY-MM-DD>.json`, matching the legacy convention. */

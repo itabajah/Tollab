@@ -44,14 +44,15 @@ describe('homeworkSchema', () => {
     })
   })
 
-  it('accepts an empty dueDate but rejects a malformed one', () => {
-    expect(homeworkSchema.safeParse({ id: 'h', title: 't', dueDate: '' }).success).toBe(true)
-    expect(homeworkSchema.safeParse({ id: 'h', title: 't', dueDate: '2025-06-30' }).success).toBe(
-      true,
+  it('keeps a valid dueDate and coerces an invalid one to empty', () => {
+    expect(homeworkSchema.parse({ id: 'h', title: 't', dueDate: '' }).dueDate).toBe('')
+    expect(homeworkSchema.parse({ id: 'h', title: 't', dueDate: '2025-06-30' }).dueDate).toBe(
+      '2025-06-30',
     )
-    expect(homeworkSchema.safeParse({ id: 'h', title: 't', dueDate: '30-06-2025' }).success).toBe(
-      false,
-    )
+    // Malformed and shape-valid-but-impossible dates coerce to '' (not a hard
+    // reject) so one bad date can't sink the whole profile on read.
+    expect(homeworkSchema.parse({ id: 'h', title: 't', dueDate: '30-06-2025' }).dueDate).toBe('')
+    expect(homeworkSchema.parse({ id: 'h', title: 't', dueDate: '2026-02-31' }).dueDate).toBe('')
   })
 })
 
@@ -96,11 +97,15 @@ describe('recordingTabSchema', () => {
 })
 
 describe('customExamSchema', () => {
-  it('requires name and valid date', () => {
+  it('requires name and a real calendar date', () => {
     expect(customExamSchema.safeParse({ id: 'x', name: '', date: '2025-01-01' }).success).toBe(
       false,
     )
     expect(customExamSchema.safeParse({ id: 'x', name: 'Quiz', date: 'nope' }).success).toBe(false)
+    // Shape-valid but impossible dates are rejected too (required field, can't coerce).
+    expect(customExamSchema.safeParse({ id: 'x', name: 'Quiz', date: '2026-02-31' }).success).toBe(
+      false,
+    )
     const exam = customExamSchema.parse({ id: 'x', name: 'Quiz 1', date: '2025-01-20' })
     expect(exam.label).toBe('')
   })
@@ -144,7 +149,7 @@ describe('settingsSchema', () => {
       theme: 'light',
       colorTheme: 'colorful',
       baseColorHue: 200,
-      showCompleted: true,
+      showCompleted: false,
       showWatchedRecordings: false,
     })
   })

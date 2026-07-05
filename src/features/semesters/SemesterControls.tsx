@@ -121,7 +121,7 @@ export function SemesterControls() {
   }
 
   return (
-    <div className="mt-6 flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <label htmlFor={selectId} className="sr-only">
         Semester
       </label>

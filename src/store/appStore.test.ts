@@ -112,6 +112,41 @@ describe('applyColorTheme', () => {
   })
 })
 
+describe('no-op mutations do not stamp', () => {
+  function storeWithCourse() {
+    const data = appDataSchema.parse({
+      semesters: [
+        {
+          id: 's1',
+          name: 'Spring 2026',
+          courses: [{ id: 'c1', name: 'Algo', color: 'hsl(0, 45%, 50%)' }],
+        },
+      ],
+      settings: {},
+      lastModified: T0,
+    })
+    const store = createAppStore(data, { now: () => T1 })
+    store.getState().selectSemester('s1')
+    return store
+  }
+
+  it('leaves lastModified untouched when a course mutation changes nothing', () => {
+    const store = storeWithCourse()
+    // Renaming a protected tab is blocked → genuine no-op.
+    store.getState().renameRecordingTab('c1', 'lectures', 'Hacked')
+    expect(store.getState().data.lastModified).toBe(T0)
+    // Re-selecting the current sort is also a no-op.
+    store.getState().setHomeworkSort('c1', 'date_asc') // already the default
+    expect(store.getState().data.lastModified).toBe(T0)
+  })
+
+  it('still stamps on a real change', () => {
+    const store = storeWithCourse()
+    store.getState().setHomeworkSort('c1', 'name_asc')
+    expect(store.getState().data.lastModified).toBe(T1.toISOString())
+  })
+})
+
 describe('settings actions', () => {
   it('updateSettings patches settings and stamps lastModified', () => {
     const store = makeStore()

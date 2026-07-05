@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { parseYmd } from '@/lib/dates'
 
 /**
  * Single source of truth for the Tollab domain model.
@@ -20,10 +21,21 @@ export const hhmmSchema = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'expected HH:MM (00:00-23:59)')
 
-export const ymdSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
+export const ymdSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
+  .refine((s) => parseYmd(s) !== null, 'expected a real calendar date')
 
-/** A date field that may be unset ('') or a YYYY-MM-DD string. */
-export const optionalYmdSchema = z.union([ymdSchema, z.literal('')]).default('')
+/**
+ * A date field that may be unset ('') or a valid YYYY-MM-DD calendar date. Any
+ * invalid value — malformed OR shape-valid-but-impossible like 2026-02-31 (which
+ * a bad importer can produce) — coerces to '' rather than failing, so sort and
+ * urgency agree on it and one bad date can't sink the whole profile on read.
+ */
+export const optionalYmdSchema = z
+  .string()
+  .transform((s) => (parseYmd(s) !== null ? s : ''))
+  .default('')
 
 export const scheduleSlotSchema = z.object({
   day: z.number().int().min(0).max(6),
@@ -74,14 +86,19 @@ export function createDefaultRecordingTabs(): RecordingTab[] {
   ]
 }
 
+// Enum view-preferences use `.catch` so a value written by a newer build (or a
+// corrupted one) degrades to the default on read instead of failing the whole
+// profile parse — offline-first data must survive schema drift, never vanish.
 export const homeworkSortSchema = z
   .enum(['manual', 'date_asc', 'date_desc', 'completed_first', 'incomplete_first', 'name_asc'])
   .default('date_asc')
+  .catch('date_asc')
 export type HomeworkSort = z.infer<typeof homeworkSortSchema>
 
 export const recordingSortSchema = z
   .enum(['default', 'manual', 'name_asc', 'name_desc', 'watched_first', 'unwatched_first'])
   .default('default')
+  .catch('default')
 export type RecordingSort = z.infer<typeof recordingSortSchema>
 
 export const examDatesSchema = z.object({
@@ -131,7 +148,7 @@ export const calendarSettingsSchema = z.object({
 })
 export type CalendarSettings = z.infer<typeof calendarSettingsSchema>
 
-export const examViewModeSchema = z.enum(['auto', 'semester', 'exam']).default('auto')
+export const examViewModeSchema = z.enum(['auto', 'semester', 'exam']).default('auto').catch('auto')
 export type ExamViewMode = z.infer<typeof examViewModeSchema>
 
 export const semesterSchema = z.object({
@@ -146,10 +163,12 @@ export const semesterSchema = z.object({
 export type Semester = z.infer<typeof semesterSchema>
 
 export const settingsSchema = z.object({
-  theme: z.enum(['light', 'dark']).default('light'),
-  colorTheme: z.enum(['colorful', 'single', 'mono']).default('colorful'),
+  theme: z.enum(['light', 'dark']).default('light').catch('light'),
+  colorTheme: z.enum(['colorful', 'single', 'mono']).default('colorful').catch('colorful'),
   baseColorHue: z.number().min(0).max(360).default(200),
-  showCompleted: z.boolean().default(true),
+  // Global display filters (homework sidebar / recordings): both hide the
+  // "done" items by default, matching a to-do list's natural resting state.
+  showCompleted: z.boolean().default(false),
   showWatchedRecordings: z.boolean().default(false),
 })
 export type Settings = z.infer<typeof settingsSchema>

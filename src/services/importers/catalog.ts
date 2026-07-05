@@ -135,21 +135,31 @@ export function matchCatalogEntry(
 /**
  * Returns a new course with empty fields (number, points, lecturer, faculty,
  * syllabus, exam dates) filled from the catalog entry. Non-empty course
- * fields are never overwritten; the input course is not mutated.
+ * fields are never overwritten and the input course is not mutated; when
+ * nothing actually changes the original `course` reference is returned so
+ * callers can detect a no-op by identity.
  */
 export function enrichCourse(course: Course, entry: CatalogEntry): Course {
-  return {
-    ...course,
-    number: course.number || entry.number,
-    points: course.points || entry.points,
-    lecturer: course.lecturer || entry.lecturer,
-    faculty: course.faculty || entry.faculty,
-    syllabus: course.syllabus || entry.syllabus,
-    exams: {
-      moedA: course.exams.moedA || entry.moedA,
-      moedB: course.exams.moedB || entry.moedB,
-    },
-  }
+  const number = course.number || entry.number
+  const points = course.points || entry.points
+  const lecturer = course.lecturer || entry.lecturer
+  const faculty = course.faculty || entry.faculty
+  const syllabus = course.syllabus || entry.syllabus
+  const moedA = course.exams.moedA || entry.moedA
+  const moedB = course.exams.moedB || entry.moedB
+
+  const changed =
+    number !== course.number ||
+    points !== course.points ||
+    lecturer !== course.lecturer ||
+    faculty !== course.faculty ||
+    syllabus !== course.syllabus ||
+    moedA !== course.exams.moedA ||
+    moedB !== course.exams.moedB
+
+  if (!changed) return course
+
+  return { ...course, number, points, lecturer, faculty, syllabus, exams: { moedA, moedB } }
 }
 
 export interface CatalogSemesterRef {

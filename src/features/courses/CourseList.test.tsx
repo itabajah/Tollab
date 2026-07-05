@@ -69,6 +69,17 @@ describe('CourseList', () => {
     expect(session.appStore.getState().data.semesters[0]!.courses).toHaveLength(0)
   })
 
+  it('blocks saving a non-numeric grade and shows an inline error', async () => {
+    const user = userEvent.setup()
+    const session = setup()
+    await user.click(screen.getByRole('button', { name: /add course/i }))
+    await user.type(screen.getByLabelText('Course name'), 'Physics 1')
+    await user.type(screen.getByLabelText('Final grade'), 'abc')
+    await user.click(screen.getByRole('button', { name: 'Save Course' }))
+    expect(screen.getByText(/grade from 0 to 100/i)).toBeInTheDocument()
+    expect(session.appStore.getState().data.semesters[0]!.courses).toHaveLength(0)
+  })
+
   it('edits a course via its card', async () => {
     const user = userEvent.setup()
     const session = setup((s) => {
@@ -82,6 +93,26 @@ describe('CourseList', () => {
     await user.type(nameInput, 'Algorithms 1m')
     await user.click(screen.getByRole('button', { name: 'Save Course' }))
     expect(session.appStore.getState().data.semesters[0]!.courses[0]!.name).toBe('Algorithms 1m')
+  })
+
+  it('discards edits on cancel and re-seeds from stored data when reopened', async () => {
+    const user = userEvent.setup()
+    const session = setup((s) => {
+      s.appStore.getState().addCourse(createCourse(input, 'colorful'))
+    })
+    await user.click(screen.getByRole('button', { name: /edit algorithms 1/i }))
+    await user.click(screen.getByRole('tab', { name: 'Details' }))
+    const nameInput = screen.getByLabelText('Course name')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Discarded Name')
+    await user.keyboard('{Escape}') // cancel without saving
+
+    expect(session.appStore.getState().data.semesters[0]!.courses[0]!.name).toBe('Algorithms 1')
+
+    // Reopening must show the stored name, not the cancelled edit.
+    await user.click(screen.getByRole('button', { name: /edit algorithms 1/i }))
+    await user.click(screen.getByRole('tab', { name: 'Details' }))
+    expect(screen.getByLabelText('Course name')).toHaveValue('Algorithms 1')
   })
 
   it('deletes a course after confirmation', async () => {

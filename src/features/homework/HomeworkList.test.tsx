@@ -89,6 +89,18 @@ describe('HomeworkList', () => {
     )
   })
 
+  it('reveals completed homework when "Show done" is toggled on', async () => {
+    const user = userEvent.setup()
+    setup((s) => {
+      const id = addCourse(s, 'Physics')
+      const done = s.appStore.getState().addHomework(id, 'Lab report', '2026-07-08')!
+      s.appStore.getState().toggleHomework(id, done)
+    })
+    expect(screen.queryByText('Lab report')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('checkbox', { name: 'Show done' }))
+    expect(screen.getByText('Lab report')).toBeInTheDocument()
+  })
+
   it('marks a past-due item as overdue', () => {
     setup((s) => {
       const id = addCourse(s, 'History')

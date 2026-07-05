@@ -5,9 +5,11 @@ import { useAppActions, useAppState } from '@/hooks/session'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm, usePrompt } from '@/components/ui/ConfirmProvider'
 import { Button } from '@/components/ui/Button'
+import { Checkbox } from '@/components/ui/Checkbox'
 import { Input, Select } from '@/components/ui/Field'
 import { RecordingTabs } from './RecordingTabs'
 import { RecordingRow } from './RecordingRow'
+import { BulkImportDialog } from './BulkImportDialog'
 
 const SORT_OPTIONS: ReadonlyArray<{ value: RecordingSort; label: string }> = [
   { value: 'default', label: 'Default (by #)' },
@@ -29,6 +31,7 @@ export function RecordingsTab({ courseId }: { courseId: string }) {
       .find((sem) => sem.id === s.currentSemesterId)
       ?.courses.find((c) => c.id === courseId),
   )
+  const showWatched = useAppState((s) => s.data.settings.showWatchedRecordings)
   const actions = useAppActions()
   const toast = useToast()
   const confirm = useConfirm()
@@ -36,6 +39,7 @@ export function RecordingsTab({ courseId }: { courseId: string }) {
 
   const [selectedTabId, setSelectedTabId] = useState('lectures')
   const [newLink, setNewLink] = useState('')
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   if (!course) return null
 
@@ -45,7 +49,9 @@ export function RecordingsTab({ courseId }: { courseId: string }) {
   if (!activeTab) return null
 
   const sort = course.recordingsSort[activeTab.id] ?? 'default'
-  const items = sortRecordings(activeTab.items, sort)
+  const sorted = sortRecordings(activeTab.items, sort)
+  const items = showWatched ? sorted : sorted.filter((item) => !item.watched)
+  const hiddenWatched = activeTab.items.length - items.length
 
   const onAddTab = async () => {
     const name = await prompt({
@@ -123,6 +129,9 @@ export function RecordingsTab({ courseId }: { courseId: string }) {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1">
+          <Button size="sm" variant="ghost" onClick={() => setBulkOpen(true)}>
+            Bulk import
+          </Button>
           {canRenameTab(activeTab.id) ? (
             <Button size="sm" variant="ghost" onClick={() => void onRenameTab()}>
               Rename tab
@@ -138,7 +147,15 @@ export function RecordingsTab({ courseId }: { courseId: string }) {
           ) : null}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-ink-muted">
+            <Checkbox
+              aria-label="Show watched"
+              checked={showWatched}
+              onCheckedChange={(c) => actions.updateSettings({ showWatchedRecordings: c })}
+            />
+            Show watched
+          </label>
           <span className="text-[13px] tracking-[0.5px] text-ink-muted uppercase">Sort</span>
           <div className="w-48">
             <Select
@@ -159,8 +176,10 @@ export function RecordingsTab({ courseId }: { courseId: string }) {
       </div>
 
       {items.length === 0 ? (
-        <p className="rounded-xs border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
-          No recordings in this tab. Paste a video link below to add one.
+        <p className="rounded-card border border-dashed border-line px-4 py-8 text-center text-sm text-ink-muted">
+          {hiddenWatched > 0
+            ? `All recordings watched — enable "Show watched" to see them.`
+            : 'No recordings in this tab. Paste a video link below to add one.'}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -195,6 +214,14 @@ export function RecordingsTab({ courseId }: { courseId: string }) {
           Add
         </Button>
       </form>
+
+      <BulkImportDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        courseId={courseId}
+        tabId={activeTab.id}
+        tabName={activeTab.name}
+      />
     </div>
   )
 }

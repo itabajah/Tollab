@@ -205,6 +205,28 @@ describe('parseIcs — event filtering', () => {
       { day: 0, start: '10:30', end: '12:30' },
     ])
   })
+
+  it('ignores a nested VALARM, keeping the event summary/description over the alarm', () => {
+    const text = ics([
+      ...vevent(
+        'SUMMARY:הרצאה - אלגוריתמים 1',
+        'DTSTART:20260315T103000',
+        'DTEND:20260315T123000',
+        'DESCRIPTION:מרצה: דניאל כהן',
+        'LOCATION:טאוב 2',
+        'BEGIN:VALARM',
+        'ACTION:DISPLAY',
+        'DESCRIPTION:Event reminder',
+        'SUMMARY:Alarm notification',
+        'TRIGGER:-PT30M',
+        'END:VALARM',
+      ),
+    ])
+    const course = courseByName(parseIcs(text).courses, 'אלגוריתמים 1')
+    expect(course.lecturers).toEqual(['מרצה: דניאל כהן'])
+    expect(course.locations).toEqual(['טאוב 2'])
+    expect(course.schedule).toEqual([{ day: 0, start: '10:30', end: '12:30' }])
+  })
 })
 
 describe('parseIcs — exam events', () => {

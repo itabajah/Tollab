@@ -25,7 +25,7 @@ Layered, with import boundaries enforced by ESLint:
 domain/     Pure logic — no React/zustand/firebase/DOM. Zod schemas, colors,
             semester/course/homework/recordings rules, calendar grid math,
             exam-mode roadmap, ticker, cloud-merge.
-services/   Side effects, framework-free. storage (v3 codec + legacy migration),
+services/   Side effects, framework-free. storage (v3 codec + export/import),
             sync (protocol/engine/backends), firebase adapters, importers
             (Cheesefork ICS, Technion catalog, YouTube/Panopto).
 store/      Zustand stores + session controller (persistence, profiles) + sync host/controller.
@@ -36,9 +36,7 @@ hooks/ lib/ Cross-cutting hooks and pure helpers (dates, video embeds).
 ```
 
 Data flows `Zod domain model → v3 localStorage → optional Firebase RTDB`
-(one node per user holding all profiles, last-write-wins merge). Legacy
-localStorage from the previous app is migrated losslessly on first load and
-never deleted (rollback-safe).
+(one node per user holding all profiles, last-write-wins merge).
 
 ## Development
 
@@ -61,3 +59,10 @@ GitHub Actions builds `dist/` and publishes to GitHub Pages (custom domain via
 `public/CNAME`). Firebase config is injected at build time from repository
 secrets. The deploy workflow is manual-dispatch (`workflow_dispatch`) until
 cutover to protect the live site.
+
+Realtime Database security rules live in `database.rules.json` (referenced by
+`firebase.json`): they deny everything by default and grant each user read/write
+only under `tollab/users/<uid>/data` where `auth.uid === <uid>`, with a light
+payload-shape check. Deploy them with the manual `Deploy Firebase Database Rules`
+workflow (needs `FIREBASE_TOKEN` + `FIREBASE_PROJECT_ID` secrets) or locally via
+`npx firebase-tools deploy --only database`.

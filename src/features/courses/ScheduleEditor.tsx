@@ -46,16 +46,27 @@ export function ScheduleEditor({
           slots.map((slot, index) => (
             <span
               key={`${slot.day}-${slot.start}-${index}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-inset px-2.5 py-1 text-xs text-ink"
+              className="inline-flex items-center gap-1 rounded-full border border-line bg-inset py-1 pr-1 pl-2.5 text-xs text-ink"
             >
               {formatSlot(slot)}
               <button
                 type="button"
                 aria-label={`Remove ${formatSlot(slot)}`}
-                className="text-ink-faint hover:text-error-border"
+                className="inline-flex size-4 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-error-bg hover:text-error-border focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
                 onClick={() => onChange(slots.filter((_, i) => i !== index))}
               >
-                &times;
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
               </button>
             </span>
           ))
@@ -99,7 +110,11 @@ export function ScheduleEditor({
           </svg>
         </IconButton>
       </div>
-      {error ? <p className="text-xs text-error-border">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-xs text-error-text">
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

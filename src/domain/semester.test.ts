@@ -1,9 +1,11 @@
 import {
+  buildSemesterRange,
   compareSemesters,
   createSemester,
   extractYear,
   generateSemesterOptions,
   seasonValue,
+  semesterOrdinal,
   sortSemesters,
 } from './semester'
 
@@ -48,6 +50,43 @@ describe('generateSemesterOptions', () => {
     expect(options).toContain('Spring 2027')
     expect(options).toContain('Summer 2025')
     expect(options[0]).toBe('Winter 2025-2026')
+  })
+})
+
+describe('buildSemesterRange', () => {
+  it('lists semesters chronologically across a year boundary (inclusive)', () => {
+    const range = buildSemesterRange(
+      { season: 'Winter', year: 2024 },
+      { season: 'Spring', year: 2025 },
+    )
+    expect(range).toEqual([
+      { season: 'Winter', year: 2024 },
+      { season: 'Spring', year: 2024 },
+      { season: 'Summer', year: 2024 },
+      { season: 'Winter', year: 2025 },
+      { season: 'Spring', year: 2025 },
+    ])
+  })
+
+  it('returns a single entry when start equals end', () => {
+    expect(
+      buildSemesterRange({ season: 'Summer', year: 2025 }, { season: 'Summer', year: 2025 }),
+    ).toEqual([{ season: 'Summer', year: 2025 }])
+  })
+
+  it('returns [] when start is after end', () => {
+    expect(
+      buildSemesterRange({ season: 'Summer', year: 2025 }, { season: 'Winter', year: 2025 }),
+    ).toEqual([])
+  })
+
+  it('orders seasons chronologically (Winter < Spring < Summer) within a year', () => {
+    expect(semesterOrdinal({ season: 'Winter', year: 2025 })).toBeLessThan(
+      semesterOrdinal({ season: 'Spring', year: 2025 }),
+    )
+    expect(semesterOrdinal({ season: 'Spring', year: 2025 })).toBeLessThan(
+      semesterOrdinal({ season: 'Summer', year: 2025 }),
+    )
   })
 })
 

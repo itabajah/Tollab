@@ -45,34 +45,51 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [promptState, setPromptState] = useState<PromptState | null>(null)
   const [promptValue, setPromptValue] = useState('')
   const [promptError, setPromptError] = useState<string | null>(null)
-  // Guards against double-resolution when closing animations race clicks.
-  const settled = useRef(false)
+  // Guards against double-resolution when closing animations race clicks. Kept
+  // per-flow so a confirm and a prompt open at once settle independently (a
+  // shared flag let settling one strand the other's promise forever).
+  const settledConfirm = useRef(false)
+  const settledPrompt = useRef(false)
+  // Pending resolvers, so a new request can settle a superseded one instead of
+  // leaving its promise to hang forever.
+  const pendingConfirm = useRef<((value: boolean) => void) | null>(null)
+  const pendingPrompt = useRef<((value: string | null) => void) | null>(null)
 
   const confirm = useCallback<ConfirmFn>((options) => {
-    settled.current = false
-    return new Promise<boolean>((resolve) => setConfirmState({ ...options, resolve }))
+    pendingConfirm.current?.(false) // supersede an unsettled previous confirm
+    settledConfirm.current = false
+    return new Promise<boolean>((resolve) => {
+      pendingConfirm.current = resolve
+      setConfirmState({ ...options, resolve })
+    })
   }, [])
 
   const prompt = useCallback<PromptFn>((options) => {
-    settled.current = false
+    pendingPrompt.current?.(null) // supersede an unsettled previous prompt
+    settledPrompt.current = false
     setPromptValue(options.initialValue ?? '')
     setPromptError(null)
-    return new Promise<string | null>((resolve) => setPromptState({ ...options, resolve }))
+    return new Promise<string | null>((resolve) => {
+      pendingPrompt.current = resolve
+      setPromptState({ ...options, resolve })
+    })
   }, [])
 
   const settleConfirm = (value: boolean) => {
-    if (!settled.current && confirmState) {
-      settled.current = true
+    if (!settledConfirm.current && confirmState) {
+      settledConfirm.current = true
       confirmState.resolve(value)
     }
+    pendingConfirm.current = null
     setConfirmState(null)
   }
 
   const settlePrompt = (value: string | null) => {
-    if (!settled.current && promptState) {
-      settled.current = true
+    if (!settledPrompt.current && promptState) {
+      settledPrompt.current = true
       promptState.resolve(value)
     }
+    pendingPrompt.current = null
     setPromptState(null)
   }
 
@@ -103,13 +120,17 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <p className="mt-2 text-xs text-ink-muted">{confirmState.description}</p>
           ) : null}
           <DialogActions>
-            <Button variant="ghost" onClick={() => settleConfirm(false)}>
+            <Button
+              variant="ghost"
+              onClick={() => settleConfirm(false)}
+              autoFocus={confirmState.dangerous ?? false}
+            >
               {confirmState.cancelLabel ?? 'Cancel'}
             </Button>
             <Button
-              variant={confirmState.dangerous ? 'danger' : 'primary'}
+              variant={confirmState.dangerous ? 'destructive' : 'primary'}
               onClick={() => settleConfirm(true)}
-              autoFocus
+              autoFocus={!confirmState.dangerous}
             >
               {confirmState.confirmLabel ?? 'Confirm'}
             </Button>

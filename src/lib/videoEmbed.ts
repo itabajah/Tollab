@@ -21,24 +21,46 @@ export function getVideoEmbedInfo(url: string): VideoEmbedInfo {
     if (url.includes('youtu.be/')) {
       videoId = url.split('youtu.be/')[1]?.split(/[?#]/)[0]
     } else {
-      videoId = /[?&]v=([^&#]+)/.exec(url)?.[1]
+      // Path forms (youtube.com/embed/<id>, /shorts/<id>) and the watch-form
+      // ?v=/&v= query param. Ids are exactly 11 url-safe chars; the m./music.
+      // subdomains are covered because the host still contains "youtube.com".
+      videoId =
+        /youtube\.com\/(?:embed|shorts)\/([A-Za-z0-9_-]{11})/.exec(url)?.[1] ??
+        /[?&]v=([A-Za-z0-9_-]{11})/.exec(url)?.[1]
     }
     // Keep the embed URL parameter-free (legacy note: extra params trigger Error 153).
     if (videoId) return { embedUrl: `https://www.youtube.com/embed/${videoId}`, platform }
   }
 
   if (platform === 'panopto') {
-    const id = /id=([a-f0-9-]{36})/i.exec(url)?.[1]
-    const domain = /(https?:\/\/[^/]+)/.exec(url)?.[1]
-    if (id && domain) {
+    // Require a query/fragment boundary before "id=" so "folderID=<uuid>" (a
+    // Sessions/List folder) is not mistaken for a session id.
+    const id = /[?&#]id=([a-f0-9-]{36})/i.exec(url)?.[1]
+    const origin = panoptoOrigin(url)
+    if (id && origin) {
       return {
-        embedUrl: `${domain}/Panopto/Pages/Embed.aspx?id=${id}&autoplay=false&offerviewer=true&showtitle=true&showbrand=false&captions=true&interactivity=all`,
+        embedUrl: `${origin}/Panopto/Pages/Embed.aspx?id=${id}&autoplay=false&offerviewer=true&showtitle=true&showbrand=false&captions=true&interactivity=all`,
         platform,
       }
     }
   }
 
   return { embedUrl: null, platform }
+}
+
+/**
+ * The origin to embed a Panopto session from — but only when it is an actual
+ * Panopto host. The session id is reflected into an iframe `src`, so the origin
+ * must never be an arbitrary domain taken from user input (e.g. a crafted
+ * `https://evil.example/Panopto?id=…`); we allow only hosts that name Panopto.
+ */
+function panoptoOrigin(url: string): string | null {
+  try {
+    const { hostname, origin } = new URL(url)
+    return hostname.toLowerCase().includes('panopto') ? origin : null
+  } catch {
+    return null
+  }
 }
 
 export function supportsInlinePreview(url: string): boolean {

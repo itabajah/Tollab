@@ -64,6 +64,10 @@ function collectEvents(lines: string[]): { events: IcsEvent[]; calendarName: str
   const events: IcsEvent[] = []
   let calendarName = ''
   let current: IcsEvent | null = null
+  // Depth of components nested inside the current VEVENT (a VALARM, or any
+  // other BEGIN:<x>). While > 0 the immediately-enclosing component is not the
+  // VEVENT, so its SUMMARY/DESCRIPTION/... must not overwrite the event's own.
+  let nestedDepth = 0
 
   for (const line of lines) {
     const colonIdx = line.indexOf(':')
@@ -72,18 +76,22 @@ function collectEvents(lines: string[]): { events: IcsEvent[]; calendarName: str
     const key = line.slice(0, colonIdx).split(';')[0] ?? ''
     const value = line.slice(colonIdx + 1).trim()
 
-    if (key === 'BEGIN' && value === 'VEVENT') {
+    if (key === 'BEGIN' && value === 'VEVENT' && current === null) {
       current = { summary: '', description: '', location: '', dtstart: '', dtend: '' }
-    } else if (key === 'END' && value === 'VEVENT') {
-      if (current) events.push(current)
+    } else if (key === 'BEGIN' && current !== null) {
+      nestedDepth++
+    } else if (key === 'END' && nestedDepth > 0) {
+      nestedDepth--
+    } else if (key === 'END' && value === 'VEVENT' && current !== null) {
+      events.push(current)
       current = null
-    } else if (current) {
+    } else if (current !== null && nestedDepth === 0) {
       if (key === 'SUMMARY') current.summary = unescapeIcsText(value)
       else if (key === 'DESCRIPTION') current.description = unescapeIcsText(value)
       else if (key === 'LOCATION') current.location = unescapeIcsText(value)
       else if (key === 'DTSTART') current.dtstart = value
       else if (key === 'DTEND') current.dtend = value
-    } else if (key === 'X-WR-CALNAME') {
+    } else if (key === 'X-WR-CALNAME' && current === null) {
       calendarName = unescapeIcsText(value)
     }
   }

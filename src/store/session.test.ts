@@ -7,10 +7,9 @@ import {
   saveActiveProfileId,
   type StorageLike,
 } from '@/services/storage/localStore'
-import { STORAGE_KEYS, LEGACY_KEYS, legacyProfileKey } from '@/services/storage/keys'
-import { createEmptyAppData } from '@/domain/model'
+import { STORAGE_KEYS, profileKey } from '@/services/storage/keys'
+import { createEmptyAppData, courseSchema } from '@/domain/model'
 import { createSemester } from '@/domain/semester'
-import v2Full from '@/services/storage/__fixtures__/v2-compact-full.json'
 
 const T1 = new Date('2026-07-04T12:00:00.000Z')
 
@@ -38,19 +37,6 @@ describe('bootstrap', () => {
     expect(loadProfileData(storage, activeProfileId)).not.toBeNull()
   })
 
-  it('migrates legacy storage and loads the migrated data', () => {
-    const storage = createMemoryStorage()
-    storage.setItem(LEGACY_KEYS.PROFILES, JSON.stringify([{ id: 'default', name: 'Default' }]))
-    storage.setItem(LEGACY_KEYS.ACTIVE, 'default')
-    storage.setItem(legacyProfileKey('default'), JSON.stringify(v2Full))
-
-    const session = makeSession(storage)
-    expect(session.profilesStore.getState().profiles[0]!.name).toBe('Default')
-    expect(session.appStore.getState().data.semesters[0]!.courses[0]!.name).toBe('Algorithms 1')
-    // theme comes from migrated settings
-    expect(session.appStore.getState().data.settings.theme).toBe('dark')
-  })
-
   it('recovers when the active profile id points nowhere', () => {
     const storage = createMemoryStorage()
     const first = makeSession(storage)
@@ -59,6 +45,35 @@ describe('bootstrap', () => {
     storage.setItem(STORAGE_KEYS.ACTIVE, 'ghost')
     const session = makeSession(storage)
     expect(session.profilesStore.getState().activeProfileId).toBe(goodId)
+  })
+
+  it('preserves unreadable active-profile bytes instead of overwriting them with empty', () => {
+    const storage = createMemoryStorage()
+    const id = 'p1'
+    saveProfiles(storage, [{ id, name: 'Mine' }])
+    saveActiveProfileId(storage, id)
+    const corruptBytes = '{"v":3,"savedAt":"x","data":{"semesters":"not-an-array"}}'
+    storage.setItem(profileKey(id), corruptBytes)
+
+    const onSaveError = vi.fn()
+    const session = makeSession(storage, { onSaveError })
+
+    expect(session.appStore.getState().data.semesters).toEqual([]) // shows empty in memory
+    expect(storage.getItem(profileKey(id))).toBe(corruptBytes) // but did NOT overwrite
+    expect(onSaveError).toHaveBeenCalled()
+  })
+
+  it('clamps an over-long imported profile name so the registry survives a reload', () => {
+    const storage = createMemoryStorage()
+    const session = makeSession(storage)
+    session.importProfile({
+      profileName: 'y'.repeat(80),
+      data: createEmptyAppData(T1.toISOString()),
+    })
+    session.dispose()
+
+    const reloaded = makeSession(storage)
+    expect(reloaded.profilesStore.getState().profiles.length).toBeGreaterThanOrEqual(2)
   })
 })
 
@@ -122,6 +137,70 @@ describe('debounced persistence', () => {
     session.appStore.getState().addSemester('Spring 2026')
     session.flush()
     expect(loadProfileData(storage, id)!.semesters).toHaveLength(1)
+  })
+
+  it('retries a failed save on the next flush instead of dropping the change', () => {
+    vi.useFakeTimers()
+    const storage = createMemoryStorage()
+    const onSaveError = vi.fn()
+    const session = createSession({ storage, now: () => T1, saveDebounceMs: 250, onSaveError })
+    const id = session.profilesStore.getState().activeProfileId
+
+    let failWrites = true
+    const realSet = storage.setItem.bind(storage)
+    storage.setItem = (k, v) => {
+      if (failWrites && k === profileKey(id)) {
+        throw new DOMException('quota', 'QuotaExceededError')
+      }
+      realSet(k, v)
+    }
+
+    session.appStore.getState().addSemester('Spring 2026')
+    vi.advanceTimersByTime(250)
+    expect(onSaveError).toHaveBeenCalledTimes(1)
+    expect(loadProfileData(storage, id)!.semesters).toEqual([]) // write failed
+
+    failWrites = false
+    session.flush() // still dirty → retried
+    expect(loadProfileData(storage, id)!.semesters).toHaveLength(1)
+  })
+
+  it('persists per-course sort prefs across a reload (the legacy defect this rebuild fixes)', () => {
+    const storage = createMemoryStorage()
+    const session = makeSession(storage)
+    session.appStore.getState().addSemester('Spring 2026')
+    session.appStore
+      .getState()
+      .addCourse(courseSchema.parse({ id: 'c1', name: 'Algo', color: 'hsl(0, 45%, 50%)' }))
+    session.appStore.getState().setHomeworkSort('c1', 'name_asc')
+    session.appStore.getState().setRecordingSort('c1', 'lectures', 'watched_first')
+    session.appStore.getState().setShowCompletedHomework('c1', false)
+    session.flush()
+    session.dispose()
+
+    // Reload from the same storage — the prefs must survive (lost in the legacy app).
+    const reloaded = makeSession(storage)
+    const course = reloaded.appStore.getState().data.semesters[0]!.courses[0]!
+    expect(course.homeworkSort).toBe('name_asc')
+    expect(course.recordingsSort.lectures).toBe('watched_first')
+    expect(course.showCompletedHomework).toBe(false)
+  })
+})
+
+describe('profile ops notify sync', () => {
+  it('fires onDirty for create / rename / switch / delete', () => {
+    const onDirty = vi.fn()
+    const session = makeSession(createMemoryStorage(), { onDirty })
+    const aId = session.profilesStore.getState().activeProfileId
+    onDirty.mockClear() // ignore bootstrap
+
+    session.createProfile('B')
+    const bId = session.profilesStore.getState().activeProfileId
+    session.renameProfile(bId, 'B renamed')
+    session.switchProfile(aId)
+    session.deleteProfile(bId)
+
+    expect(onDirty.mock.calls.length).toBeGreaterThanOrEqual(4)
   })
 })
 

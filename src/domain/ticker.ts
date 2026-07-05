@@ -321,6 +321,8 @@ export interface TickerTarget {
   type: 'course' | 'homework' | 'recordings' | 'exam' | 'none'
   courseId?: string
   homeworkId?: string
+  /** For `exam` targets: which moed to deep-link to (highlight the field). */
+  moed?: 'A' | 'B'
 }
 
 export interface TickerItem {
@@ -478,18 +480,26 @@ function findCurrentAndNextClass(
 ): { current: ClassHit | null; next: ClassHit | null } {
   let current: ClassHit | null = null
   let next: ClassHit | null = null
+  const yesterdayDay = (nowDay + 6) % 7
 
   for (const course of semester.courses) {
     for (const slot of course.schedule) {
-      if (slot.day !== nowDay) continue
       const startMin = toMinutes(slot.start)
-      let endMin = toMinutes(slot.end)
-      if (endMin <= startMin) endMin += 24 * 60 // overnight slot
-      if (!current && startMin <= nowMin && nowMin < endMin) {
-        current = { course, slot, startMin }
-      }
-      if (startMin > nowMin && (!next || startMin < next.startMin)) {
-        next = { course, slot, startMin }
+      const rawEnd = toMinutes(slot.end)
+
+      if (slot.day === nowDay) {
+        let endMin = rawEnd
+        if (endMin <= startMin) endMin += 24 * 60 // overnight slot
+        if (!current && startMin <= nowMin && nowMin < endMin) {
+          current = { course, slot, startMin }
+        }
+        if (startMin > nowMin && (!next || startMin < next.startMin)) {
+          next = { course, slot, startMin }
+        }
+      } else if (rawEnd < startMin && slot.day === yesterdayDay && nowMin < rawEnd) {
+        // The post-midnight tail of an overnight slot that began yesterday
+        // (e.g. a Sun 23:00–01:00 class is still live at Mon 00:30).
+        if (!current) current = { course, slot, startMin }
       }
     }
   }
@@ -678,7 +688,7 @@ function pickExamItem(candidates: readonly ExamCandidate[], salt: string): RawIt
       days: String(diff),
       date: prettyDate,
     },
-    target: { type: 'exam', courseId: course.id },
+    target: { type: 'exam', courseId: course.id, moed: chosen.moed },
   }
 }
 

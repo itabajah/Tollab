@@ -7,9 +7,10 @@ import {
   loadProfileData,
   saveProfileData,
   deleteProfileData,
+  hasStoredProfile,
   ensureClientId,
 } from './localStore'
-import { STORAGE_KEYS } from './keys'
+import { STORAGE_KEYS, profileKey } from './keys'
 import { createEmptyAppData } from '@/domain/model'
 
 const NOW = '2026-07-04T10:00:00.000Z'
@@ -29,6 +30,39 @@ describe('profiles list', () => {
     const storage = createMemoryStorage()
     storage.setItem(STORAGE_KEYS.PROFILES, '{bad')
     expect(loadProfiles(storage)).toEqual([])
+  })
+
+  it('salvages an over-long name instead of discarding the whole registry', () => {
+    const storage = createMemoryStorage()
+    storage.setItem(
+      STORAGE_KEYS.PROFILES,
+      JSON.stringify([
+        { id: 'a', name: 'Alpha' },
+        { id: 'b', name: 'x'.repeat(80) },
+      ]),
+    )
+    const profiles = loadProfiles(storage)
+    expect(profiles.map((p) => p.id)).toEqual(['a', 'b']) // neither lost
+    expect(profiles[1]!.name.length).toBeLessThanOrEqual(50)
+  })
+
+  it('drops only entries with no usable id, keeping the rest', () => {
+    const storage = createMemoryStorage()
+    storage.setItem(
+      STORAGE_KEYS.PROFILES,
+      JSON.stringify([{ id: 'a', name: 'Alpha' }, { name: 'no id' }, 42, null]),
+    )
+    expect(loadProfiles(storage).map((p) => p.id)).toEqual(['a'])
+  })
+})
+
+describe('hasStoredProfile', () => {
+  it('reports blob presence independent of decodability', () => {
+    const storage = createMemoryStorage()
+    expect(hasStoredProfile(storage, 'p1')).toBe(false)
+    storage.setItem(profileKey('p1'), '{"totally":"broken"}')
+    expect(hasStoredProfile(storage, 'p1')).toBe(true)
+    expect(loadProfileData(storage, 'p1')).toBeNull() // present but undecodable
   })
 })
 

@@ -102,6 +102,43 @@ describe('WeekCalendar', () => {
     expect(within(eventsRow).getByText(/Moed A/)).toBeInTheDocument()
   })
 
+  it('deep-links a homework chip to the Homework tab of the course dialog', async () => {
+    const user = userEvent.setup()
+    setup((s) => {
+      const course = createCourse(input, 'colorful')
+      course.homework.push({
+        id: 'h1',
+        title: 'Wet 1',
+        dueDate: '2026-07-03',
+        completed: false,
+        notes: '',
+        links: [],
+      })
+      s.appStore.getState().addCourse(course)
+    })
+    const eventsRow = screen.getByTestId('all-day-row')
+    await user.click(within(eventsRow).getByText(/Wet 1/))
+    expect(screen.getByRole('heading', { name: 'Edit Course' })).toBeInTheDocument()
+    // The Homework tab is active (its "Show done" toggle only exists there).
+    expect(screen.getByLabelText('Show done')).toBeInTheDocument()
+  })
+
+  it('deep-links an exam chip to the Details tab of the course dialog', async () => {
+    const user = userEvent.setup()
+    setup((s) => {
+      const course = createCourse(
+        { ...input, exams: { moedA: '2026-07-02', moedB: '' } },
+        'colorful',
+      )
+      s.appStore.getState().addCourse(course)
+    })
+    const eventsRow = screen.getByTestId('all-day-row')
+    await user.click(within(eventsRow).getByText(/Moed A/))
+    expect(screen.getByRole('heading', { name: 'Edit Course' })).toBeInTheDocument()
+    // The Details tab is active (the Moed A field only exists there).
+    expect(screen.getByLabelText('Exam date — Moed A')).toBeInTheDocument()
+  })
+
   it('filters to a single day in mobile day mode', async () => {
     const user = userEvent.setup()
     setup()

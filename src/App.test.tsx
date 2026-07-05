@@ -38,6 +38,35 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { name: 'Weekly Schedule' })).toBeInTheDocument()
   })
 
+  it('shows a mobile scroll-to-homework shortcut only on the stacked layout', async () => {
+    const original = window.matchMedia
+    // Report the mobile breakpoint as matching.
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('max-width: 1023px'),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia
+    try {
+      const user = userEvent.setup()
+      const session = renderApp()
+      session.appStore.getState().addSemester('Spring 2026')
+
+      const button = await screen.findByRole('button', { name: /scroll to homework/i })
+      // jsdom has no scrollIntoView — define a mock for the assertion.
+      const scrollMock = vi.fn()
+      HTMLElement.prototype.scrollIntoView = scrollMock
+      await user.click(button)
+      expect(scrollMock).toHaveBeenCalled()
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
   it('toggles the theme and persists it in profile settings', async () => {
     const user = userEvent.setup()
     const session = renderApp()

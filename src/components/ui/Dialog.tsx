@@ -1,6 +1,7 @@
 import * as RadixDialog from '@radix-ui/react-dialog'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
+import { IconButton } from './IconButton'
 
 export interface DialogProps {
   open: boolean
@@ -9,18 +10,28 @@ export interface DialogProps {
   /** Visually hidden description for screen readers; optional. */
   description?: string
   wide?: boolean
+  /** Optional sticky footer (outside the scroll area) for primary actions. */
+  footer?: ReactNode
   children: ReactNode
 }
 
-/** Modal dialog matching the legacy look: dim overlay, small radius, sticky title. */
-export function Dialog({ open, onOpenChange, title, description, wide, children }: DialogProps) {
+/** Modal dialog: dim + blurred overlay, token elevation, sticky title, in/out animation. */
+export function Dialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  wide,
+  footer,
+  children,
+}: DialogProps) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-[fade-in_0.2s]" />
+        <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] data-[state=closed]:animate-[fade-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[fade-in_var(--duration-base)_var(--ease-standard)]" />
         <RadixDialog.Content
           className={cn(
-            'fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[95vw] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xs border border-line bg-panel shadow-[0_4px_12px_rgba(0,0,0,0.15)] focus:outline-none data-[state=open]:animate-[dialog-in_0.25s_ease-out]',
+            'fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[95vw] -translate-x-1/2 -translate-y-1/2 flex-col rounded-overlay border border-line bg-panel shadow-lg focus:outline-none data-[state=closed]:animate-[dialog-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[dialog-in_var(--duration-base)_var(--ease-standard)]',
             wide ? 'max-w-[700px]' : 'max-w-[440px]',
           )}
         >
@@ -28,17 +39,33 @@ export function Dialog({ open, onOpenChange, title, description, wide, children 
             <RadixDialog.Title className="text-base font-semibold text-ink">
               {title}
             </RadixDialog.Title>
-            <RadixDialog.Close
-              aria-label="Close"
-              className="rounded-xs px-1.5 text-xl leading-none text-ink-faint transition-colors hover:text-ink"
-            >
-              &times;
+            <RadixDialog.Close asChild>
+              <IconButton aria-label="Close" variant="ghost" size="sm" className="-mr-1.5">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </IconButton>
             </RadixDialog.Close>
           </div>
           {description ? (
             <RadixDialog.Description className="sr-only">{description}</RadixDialog.Description>
           ) : null}
           <div className="overflow-y-auto px-5 py-4">{children}</div>
+          {footer ? (
+            <div className="flex items-center justify-end gap-2 border-t border-line px-5 py-3.5">
+              {footer}
+            </div>
+          ) : null}
         </RadixDialog.Content>
       </RadixDialog.Portal>
     </RadixDialog.Root>

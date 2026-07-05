@@ -4,6 +4,9 @@ import type { Session } from '@/store/session'
 import type { AppStoreState } from '@/store/appStore'
 import type { ProfilesState } from '@/store/profilesStore'
 
+/** The action functions of the app store, without the reactive state fields. */
+type AppActions = Omit<AppStoreState, 'data' | 'currentSemesterId'>
+
 const SessionContext = createContext<Session | null>(null)
 
 export function SessionProvider({ session, children }: { session: Session; children: ReactNode }) {
@@ -23,8 +26,13 @@ export function useAppState<T>(selector: (state: AppStoreState) => T): T {
   return useStore(useSession().appStore, selector)
 }
 
-/** Stable action bundle (zustand actions never change identity). */
-export function useAppActions() {
+/**
+ * Stable action bundle (zustand actions never change identity). The return type
+ * is narrowed to just the actions — the `data`/`currentSemesterId` fields on the
+ * snapshot are NON-reactive here, so reading them off this hook is a type error;
+ * use `useAppState` for reactive state.
+ */
+export function useAppActions(): AppActions {
   const store = useSession().appStore
   return store.getState()
 }

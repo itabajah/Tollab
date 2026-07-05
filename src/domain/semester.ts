@@ -48,3 +48,29 @@ export function generateSemesterOptions(now: Date): string[] {
 export function createSemester(name: string, id: string): Semester {
   return semesterSchema.parse({ id, name })
 }
+
+/** Chronological order of the seasons within one Technion academic year. */
+export const SEASON_ORDER: readonly Season[] = ['Winter', 'Spring', 'Summer']
+
+export interface SemesterRef {
+  season: Season
+  year: number
+}
+
+/** Monotonic ordinal (year-major, season chronological) for range comparison. */
+export function semesterOrdinal(ref: SemesterRef): number {
+  return ref.year * 3 + SEASON_ORDER.indexOf(ref.season)
+}
+
+/**
+ * The inclusive list of semesters from `start` to `end` in chronological order,
+ * or `[]` when `start` is after `end`. Used to drive a multi-semester import.
+ */
+export function buildSemesterRange(start: SemesterRef, end: SemesterRef): SemesterRef[] {
+  const endOrd = semesterOrdinal(end)
+  const out: SemesterRef[] = []
+  for (let ord = semesterOrdinal(start); ord <= endOrd; ord++) {
+    out.push({ season: SEASON_ORDER[ord % 3]!, year: Math.floor(ord / 3) })
+  }
+  return out
+}

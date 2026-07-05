@@ -101,6 +101,20 @@ describe('SettingsDialog — Fetch Data tab', () => {
     expect(screen.getByRole('button', { name: /fetch course data/i })).toBeInTheDocument()
   })
 
+  it('reveals the multi-semester range controls when batch is enabled', async () => {
+    const user = userEvent.setup()
+    setup((s) => s.appStore.getState().addSemester('Spring 2026'))
+    await user.click(screen.getByRole('tab', { name: 'Fetch Data' }))
+
+    // Hidden until the batch toggle is checked.
+    expect(screen.queryByLabelText('Start season')).not.toBeInTheDocument()
+    await user.click(screen.getByLabelText(/fetch multiple semesters/i))
+
+    expect(screen.getByLabelText('Start season')).toBeInTheDocument()
+    expect(screen.getByLabelText('End season')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /fetch range/i })).toBeInTheDocument()
+  })
+
   it('prompts to create a semester first when none exists', async () => {
     const user = userEvent.setup()
     setup()

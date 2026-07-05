@@ -4,7 +4,8 @@ async function createSemester(page: import('@playwright/test').Page) {
   await page.goto('/')
   await page.getByRole('button', { name: 'Create your first semester' }).click()
   await page.getByRole('button', { name: 'Create Semester' }).click()
-  await expect(page.getByText(/no courses yet/i)).toBeVisible()
+  // Exact text — the header ticker can also render a "No courses yet" nudge.
+  await expect(page.getByText('No courses yet in this semester.')).toBeVisible()
 }
 
 test.describe('courses', () => {

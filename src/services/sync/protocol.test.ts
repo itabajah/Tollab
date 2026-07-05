@@ -34,53 +34,34 @@ describe('buildCloudRecord / v3 round-trip', () => {
     expect(normalized!.writeId).toBe('write-1')
     expect(normalized!.payload.profiles[0]!.name).toBe('Main')
   })
-})
 
-describe('normalizeCloudRecord — legacy formats', () => {
-  it('reads a v2 compact record (w/c echo fields, compact profile blob)', () => {
-    const v2 = {
-      v: 2,
-      u: NOW.toISOString(),
-      w: 'legacy-write',
-      c: 'legacy-client',
+  it('still reads a record whose null fields were dropped by Firebase (absent keys)', () => {
+    // RTDB stores null by omitting the key; simulate the read-back shape.
+    const fromFirebase = {
+      v: 3,
+      updatedAt: NOW.toISOString(),
+      clientId: 'client-a',
+      writeId: 'write-1',
       payload: {
-        a: 'p1',
-        p: [
-          {
-            i: 'p1',
-            n: 'Legacy',
-            t: NOW.toISOString(),
-            d: { v: 2, t: NOW.toISOString(), d: [{ i: 's', n: 'Winter 2025-2026', c: [] }] },
-          },
-        ],
+        // activeProfileId omitted (was null)
+        profiles: [{ id: 'p1', name: 'Main' /* lastModified + data omitted */ }],
       },
     }
-    const normalized = normalizeCloudRecord(v2)
-    expect(normalized!.clientId).toBe('legacy-client')
-    expect(normalized!.writeId).toBe('legacy-write')
-    expect(normalized!.payload.profiles[0]!.data!.semesters[0]!.name).toBe('Winter 2025-2026')
+    const normalized = normalizeCloudRecord(fromFirebase)
+    expect(normalized).not.toBeNull()
+    expect(normalized!.payload.activeProfileId).toBeNull()
+    expect(normalized!.payload.profiles[0]!.lastModified).toBeNull()
+    expect(normalized!.payload.profiles[0]!.data).toBeNull()
   })
+})
 
-  it('reads a v1 record', () => {
-    const v1 = {
-      version: 1,
-      profiles: [
-        {
-          id: 'p1',
-          name: 'Old',
-          updatedAt: NOW.toISOString(),
-          export: { data: { semesters: [{ id: 's', name: 'Spring 2024' }] } },
-        },
-      ],
-    }
-    const normalized = normalizeCloudRecord(v1)
-    expect(normalized!.payload.profiles[0]!.data!.semesters[0]!.name).toBe('Spring 2024')
-    expect(normalized!.clientId).toBeNull()
-  })
-
-  it('returns null for junk', () => {
+describe('normalizeCloudRecord — rejects non-v3', () => {
+  it('returns null for junk and for legacy (v1/v2) records', () => {
     expect(normalizeCloudRecord(null)).toBeNull()
     expect(normalizeCloudRecord('nope')).toBeNull()
     expect(normalizeCloudRecord({ foo: 'bar' })).toBeNull()
+    // Legacy shapes are no longer understood — they must be ignored, not decoded.
+    expect(normalizeCloudRecord({ v: 2, payload: { a: 'p1', p: [] } })).toBeNull()
+    expect(normalizeCloudRecord({ version: 1, profiles: [] })).toBeNull()
   })
 })

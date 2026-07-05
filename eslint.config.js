@@ -50,6 +50,7 @@ export default tseslint.config(
       'src/components/ui/Toast.tsx',
       'src/components/ui/ConfirmProvider.tsx',
       'src/features/app/Providers.tsx',
+      'src/features/courses/CourseDialogProvider.tsx',
     ],
     rules: { 'react-refresh/only-export-components': 'off' },
   },

@@ -5,6 +5,7 @@ import { useAppActions } from '@/hooks/session'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
+import { Checkbox } from '@/components/ui/Checkbox'
 import { Field, Input } from '@/components/ui/Field'
 import { cn } from '@/lib/cn'
 import { EmbedPreview } from './EmbedPreview'
@@ -18,10 +19,28 @@ interface RecordingRowProps {
   isLast: boolean
 }
 
+function Chevron({ dir }: { dir: 'up' | 'down' }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={dir === 'up' ? 'M18 15l-6-6-6 6' : 'M6 9l6 6 6-6'} />
+    </svg>
+  )
+}
+
 /**
  * A single recording: watched toggle, name, video/slides links, and an inline
- * embed preview when the link is embeddable. Edit and delete live on the right;
- * manual reorder controls appear only when the tab sort is 'manual'.
+ * embed preview when the link is embeddable. Edit and delete live on the right
+ * (revealed on hover/focus); manual reorder controls appear only under 'manual'.
  */
 export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: RecordingRowProps) {
   const { toggleRecording, updateRecording, removeRecording, moveRecording } = useAppActions()
@@ -51,21 +70,20 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
 
   if (editing) {
     return (
-      <li className="rounded-xs border border-line bg-panel p-3">
+      <li className="rounded-card border border-line bg-panel p-3 shadow-sm">
         <RecordingEditForm item={item} onSave={onSaveEdit} onCancel={() => setEditing(false)} />
       </li>
     )
   }
 
   return (
-    <li className="rounded-xs border border-line bg-panel p-3">
+    <li className="group rounded-card border border-line bg-panel p-3 shadow-sm transition-shadow duration-150 hover:shadow-md">
       <div className="flex items-start gap-3">
-        <input
-          type="checkbox"
+        <Checkbox
+          className="mt-1"
           checked={item.watched}
           aria-label={`${label} watched`}
-          onChange={() => toggleRecording(courseId, tabId, item.id)}
-          className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-[var(--accent)]"
+          onCheckedChange={() => toggleRecording(courseId, tabId, item.id)}
         />
 
         <div className="min-w-0 flex-1">
@@ -74,6 +92,7 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
               'text-sm break-words text-ink',
               item.watched && 'text-ink-faint line-through',
             )}
+            title={item.name || undefined}
           >
             {item.name || <span className="text-ink-faint italic">Untitled recording</span>}
           </p>
@@ -88,7 +107,7 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
                 href={item.videoLink}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-accent underline hover:text-accent-hover"
+                className="rounded-control text-sm text-accent underline hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
               >
                 Open video
               </a>
@@ -100,7 +119,7 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
                 href={item.slideLink}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-accent underline hover:text-accent-hover"
+                className="rounded-control text-sm text-accent underline hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
               >
                 Slides
               </a>
@@ -114,24 +133,26 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
           ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100">
           {manual ? (
             <>
               <IconButton
                 aria-label={`Move ${label} up`}
                 disabled={isFirst}
+                variant="ghost"
+                size="sm"
                 onClick={() => moveRecording(courseId, tabId, item.id, -1)}
-                className="p-1"
               >
-                ▲
+                <Chevron dir="up" />
               </IconButton>
               <IconButton
                 aria-label={`Move ${label} down`}
                 disabled={isLast}
+                variant="ghost"
+                size="sm"
                 onClick={() => moveRecording(courseId, tabId, item.id, 1)}
-                className="p-1"
               >
-                ▼
+                <Chevron dir="down" />
               </IconButton>
             </>
           ) : null}
@@ -141,10 +162,23 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
           <IconButton
             aria-label={`Delete ${label}`}
             danger
+            variant="ghost"
+            size="sm"
             onClick={() => void onDelete()}
-            className="p-1"
           >
-            ×
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </IconButton>
         </div>
       </div>

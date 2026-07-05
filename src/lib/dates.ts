@@ -43,12 +43,13 @@ export function daysUntil(ymd: string, today: Date): number | null {
   return daysBetween(today, target)
 }
 
-/** Converts `dd-MM-yyyy` (also `dd.MM.yyyy`, `dd/MM/yyyy`) to ymd; null if malformed. */
+/** Converts `dd-MM-yyyy` (also `dd.MM.yyyy`, `dd/MM/yyyy`) to ymd; null if malformed or impossible. */
 export function convertDdMmYyyy(value: string): string | null {
   const match = /^(\d{2})[-./](\d{2})[-./](\d{4})$/.exec(value)
   if (!match) return null
   const [, dd, mm, yyyy] = match
-  return `${yyyy}-${mm}-${dd}`
+  const ymd = `${yyyy}-${mm}-${dd}`
+  return parseYmd(ymd) !== null ? ymd : null // reject impossible dates like 31-02-2026
 }
 
 /** Parses an ICS timestamp (`YYYYMMDDTHHMMSS` or `YYYYMMDD`) as local time. */

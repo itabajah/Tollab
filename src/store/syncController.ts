@@ -43,6 +43,9 @@ export function createSyncController(options: SyncControllerOptions): SyncContro
   let startPromise: Promise<void> = Promise.resolve()
 
   const startEngine = (uid: string) => {
+    // Tear down any existing engine first, so a direct account switch (A→B with
+    // no intervening sign-out) can't leak engine A's subscription into B's session.
+    stopEngine()
     const token = {}
     engineToken = token
     const backend = createBackend(uid)
@@ -56,7 +59,10 @@ export function createSyncController(options: SyncControllerOptions): SyncContro
         if (engineToken === token) store.getState().setStatus(status)
       },
     })
-    startPromise = engine.start()
+    // start() sets 'error' internally on failure; swallow the rejection so the
+    // auto-login path (which doesn't always await signIn) can't raise an
+    // unhandled promise rejection.
+    startPromise = engine.start().catch(() => {})
   }
 
   const stopEngine = () => {

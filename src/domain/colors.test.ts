@@ -35,15 +35,32 @@ describe('generateCourseColor', () => {
 })
 
 describe('nextCourseColor', () => {
-  it('picks the color a new course would get (colorful)', () => {
-    expect(nextCourseColor(0, colorful)).toBe('hsl(0, 45%, 50%)')
-    expect(nextCourseColor(3, colorful)).toBe('hsl(51, 45%, 50%)')
+  it('colorful: picks the first golden-angle hue not already in use', () => {
+    expect(nextCourseColor([], colorful)).toBe('hsl(0, 45%, 50%)')
+    expect(nextCourseColor([courseColorFromHue(0)], colorful)).toBe('hsl(137, 45%, 50%)')
   })
 
-  it('picks the color a new course would get (single, matches legacy math)', () => {
-    // legacy: totalCourses = count + 1; offset = (count / (total - 1)) * 60 - 30 = +30 when count > 0
-    expect(nextCourseColor(0, single)).toBe('hsl(200, 45%, 50%)')
-    expect(nextCourseColor(2, single)).toBe('hsl(230, 45%, 50%)')
+  it('colorful: avoids colliding after a middle course was removed', () => {
+    // 3 colorful courses are hues 0/137/274; remove the middle → surviving [0, 274].
+    const surviving = [courseColorFromHue(0), courseColorFromHue(274)]
+    expect(hueFromColor(nextCourseColor(surviving, colorful))).toBe(137) // not 274
+  })
+
+  it('colorful: terminates (does not hang) when every hue is already taken', () => {
+    // All 360 golden-angle hues used — the search must give up, not spin forever.
+    const allHues = Array.from({ length: 360 }, (_, h) => courseColorFromHue(h))
+    expect(nextCourseColor(allHues, colorful)).toMatch(/^hsl\(\d+, 45%, 50%\)$/)
+  })
+
+  it('single: sequentially-added courses get distinct hues (no collapse to +30°)', () => {
+    const acc: string[] = []
+    for (let i = 0; i < 4; i++) acc.push(nextCourseColor(acc, single))
+    expect(new Set(acc.map(hueFromColor)).size).toBe(4)
+  })
+
+  it('mono: always mid-grey', () => {
+    expect(nextCourseColor([], mono)).toBe('hsl(0, 0%, 50%)')
+    expect(nextCourseColor(['hsl(0, 0%, 50%)'], mono)).toBe('hsl(0, 0%, 50%)')
   })
 })
 
