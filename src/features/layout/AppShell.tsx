@@ -14,16 +14,16 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
   if (stacked) {
     return (
       <div className="flex min-h-screen flex-col gap-8 px-4 pt-6 pb-16">
-        <div className="mx-auto w-full max-w-2xl">{left}</div>
-        <div className="mx-auto w-full max-w-2xl">{right}</div>
+        <div className="mx-auto w-full max-w-3xl">{left}</div>
+        <div className="mx-auto w-full max-w-3xl">{right}</div>
       </div>
     )
   }
 
   return (
-    <PanelGroup direction="horizontal" autoSaveId="tollab-split" className="!h-screen">
-      <Panel defaultSize={65} minSize={40} className="!overflow-y-auto [scrollbar-gutter:stable]">
-        <div className="mx-auto w-full max-w-2xl px-8 pt-8 pb-16">{left}</div>
+    <PanelGroup direction="horizontal" autoSaveId="tollab-split-v2" className="!h-screen">
+      <Panel defaultSize={65} minSize={30} className="!overflow-y-auto [scrollbar-gutter:stable]">
+        <div className="mx-auto w-full max-w-4xl px-8 pt-8 pb-16">{left}</div>
       </Panel>
       <PanelResizeHandle className="group relative w-2 cursor-col-resize outline-none">
         {/* The visible hairline sits centered in a wider transparent hit area. */}
@@ -34,8 +34,8 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
           <span className="size-[3px] rounded-full bg-ink-faint" />
         </div>
       </PanelResizeHandle>
-      <Panel defaultSize={35} minSize={25} className="!overflow-y-auto [scrollbar-gutter:stable]">
-        <div className="mx-auto w-full max-w-xl px-6 pt-8 pb-16">{right}</div>
+      <Panel defaultSize={35} minSize={20} className="!overflow-y-auto [scrollbar-gutter:stable]">
+        <div className="mx-auto w-full max-w-3xl px-6 pt-8 pb-16">{right}</div>
       </Panel>
     </PanelGroup>
   )
