@@ -77,6 +77,48 @@ describe('SemesterControls', () => {
     expect(session.appStore.getState().data.semesters).toHaveLength(1)
   })
 
+  it('renames the current semester', async () => {
+    const user = userEvent.setup()
+    const { session } = setup((s) => s.appStore.getState().addSemester('Spring 2026'))
+    await user.click(screen.getByRole('button', { name: 'Rename semester' }))
+    const input = screen.getByLabelText('Semester name')
+    await user.clear(input)
+    await user.type(input, 'Spring 2026 (Makeup)')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(session.appStore.getState().data.semesters[0]!.name).toBe('Spring 2026 (Makeup)')
+  })
+
+  it('rejects renaming to a name that already exists', async () => {
+    const user = userEvent.setup()
+    const { session } = setup((s) => {
+      s.appStore.getState().addSemester('Spring 2026')
+      s.appStore.getState().addSemester('Winter 2026-2027') // current = newest
+    })
+    await user.click(screen.getByRole('button', { name: 'Rename semester' }))
+    const input = screen.getByLabelText('Semester name')
+    await user.clear(input)
+    await user.type(input, 'Spring 2026') // collides with the other semester
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.getByText(/already exists/i)).toBeInTheDocument()
+    expect(
+      session.appStore
+        .getState()
+        .data.semesters.map((s) => s.name)
+        .sort(),
+    ).toEqual(['Spring 2026', 'Winter 2026-2027'])
+  })
+
+  it('does not toast or restamp when the rename is a no-op', async () => {
+    const user = userEvent.setup()
+    const { session } = setup((s) => s.appStore.getState().addSemester('Spring 2026'))
+    const before = session.appStore.getState().data.lastModified
+    await user.click(screen.getByRole('button', { name: 'Rename semester' }))
+    // Submit unedited (the prompt is prefilled with the current name).
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.queryByText('Semester renamed')).not.toBeInTheDocument()
+    expect(session.appStore.getState().data.lastModified).toBe(before)
+  })
+
   it('deletes the current semester after confirmation', async () => {
     const user = userEvent.setup()
     const { session } = setup((s) => {

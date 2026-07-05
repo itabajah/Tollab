@@ -4,8 +4,8 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 /**
  * Two-pane resizable layout (replaces the legacy Split.js integration).
- * Desktop: draggable 65/35 split persisted via autoSaveId; each pane scrolls
- * independently and caps its content to a comfortable reading measure. Below
+ * Desktop: draggable 55/45 split persisted via autoSaveId ('tollab-split-v3');
+ * each pane scrolls independently and caps its content at max-w-4xl. Below
  * 1024px the panes stack into one scrolling column.
  */
 export function AppShell({ left, right }: { left: ReactNode; right: ReactNode }) {

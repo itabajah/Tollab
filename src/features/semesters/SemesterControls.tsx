@@ -115,10 +115,27 @@ export function SemesterControls() {
       title: 'Rename Semester',
       label: 'Semester name',
       initialValue: current.name,
-      validate: (v) => (v.trim() ? null : 'Semester name is required'),
+      validate: (v) => {
+        const trimmed = v.trim()
+        if (!trimmed) return 'Semester name is required'
+        // Mirror the add path: no two semesters may share a display name,
+        // otherwise the switcher shows two indistinguishable options.
+        if (
+          semesters.some(
+            (s) => s.id !== current.id && s.name.toLowerCase() === trimmed.toLowerCase(),
+          )
+        ) {
+          return 'A semester with that name already exists'
+        }
+        return null
+      },
     })
     if (name === null) return
-    renameSemester(current.id, name)
+    // Compare the value that would actually be stored (trimmed + clamped) so an
+    // unchanged rename is a true no-op: no store write, no misleading toast.
+    const finalName = name.trim().slice(0, VALIDATION_LIMITS.SEMESTER_NAME_MAX)
+    if (finalName === current.name) return
+    renameSemester(current.id, finalName)
     toast.success('Semester renamed')
   }
 

@@ -88,11 +88,57 @@ describe('ExamRoadmap', () => {
     expect(screen.getByText('Data Structures')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hide Algorithms' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hide Data Structures' })).toBeInTheDocument()
+    // The Moed mark is announced as "Moed A" (role=img), not a bare "A".
+    expect(screen.getAllByRole('img', { name: 'Moed A' }).length).toBeGreaterThanOrEqual(2)
     // A different day stays a standalone node.
     expect(screen.getByText('Calculus').closest('[data-exam-id]')).toHaveAttribute(
       'data-state',
       'upcoming',
     )
+  })
+
+  it('gives each shared-box exam its own state attrs, hide control, and open', async () => {
+    const user = userEvent.setup()
+    const session = setup((s) => {
+      addCourse(s, 'Algorithms', { moedA: '2026-02-10', moedB: '' })
+      addCourse(s, 'Data Structures', { moedA: '2026-02-10', moedB: '' })
+    })
+    // Per-exam lifecycle attrs live on each grouped row, not just the box.
+    const algoRow = screen.getByText('Algorithms').closest('[data-exam-id]')!
+    const dsRow = screen.getByText('Data Structures').closest('[data-exam-id]')!
+    expect(algoRow).toHaveAttribute('data-state', 'upcoming')
+    // First non-passed (alphabetically first same-day) is next; its sibling is not.
+    expect(algoRow).toHaveAttribute('data-next', 'true')
+    expect(dsRow).toHaveAttribute('data-next', 'false')
+
+    // Clicking one exam's name opens the course dialog for THAT exam.
+    await user.click(screen.getByText('Data Structures'))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    // Hiding one member hides only that exam; the sibling remains.
+    const dsCourse = session.appStore
+      .getState()
+      .data.semesters[0]!.courses.find((c) => c.name === 'Data Structures')!
+    await user.click(screen.getByRole('button', { name: 'Hide Data Structures' }))
+    const hidden = session.appStore.getState().data.semesters[0]!.hiddenExamIds
+    expect(hidden).toHaveLength(1)
+    expect(hidden[0]).toContain(dsCourse.id)
+    expect(screen.getByText('Algorithms')).toBeInTheDocument()
+  })
+
+  it('keeps a custom exam editable inside a shared box', async () => {
+    const user = userEvent.setup()
+    setup((s) => addCourse(s, 'Algorithms', { moedA: '2026-02-10', moedB: '' }))
+    // Add a custom exam on the SAME day so it shares Algorithms' box.
+    await user.click(screen.getByRole('button', { name: '+ Add' }))
+    await user.type(screen.getByLabelText('Name'), 'Pop Quiz')
+    await user.type(screen.getByLabelText('Date'), '2026-02-10')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    // The custom row exposes an Edit affordance that reopens its dialog.
+    await user.click(screen.getByRole('button', { name: 'Edit Pop Quiz' }))
+    expect(screen.getByLabelText('Date')).toHaveValue('2026-02-10')
   })
 
   it('filters by Moed', async () => {

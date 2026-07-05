@@ -15,8 +15,12 @@ const stateClasses: Record<AnnotatedExamNode['state'], string> = {
  */
 export function MoedBadge({ moed }: { moed: 'A' | 'B' | null }) {
   if (!moed) return null
+  // role="img" + aria-label so assistive tech announces "Moed A"/"Moed B"
+  // rather than a bare "A"/"B" (the visible glyph stays compact).
   return (
     <span
+      role="img"
+      aria-label={`Moed ${moed}`}
       title={`Moed ${moed}`}
       className={cn(
         'inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-[9px] font-bold',

@@ -1,5 +1,5 @@
 import { createAppStore } from './appStore'
-import { appDataSchema, createEmptyAppData } from '@/domain/model'
+import { appDataSchema, createEmptyAppData, VALIDATION_LIMITS } from '@/domain/model'
 
 const T0 = '2026-07-01T00:00:00.000Z'
 const T1 = new Date('2026-07-04T12:00:00.000Z')
@@ -98,6 +98,23 @@ describe('semester actions', () => {
     const state = store.getState()
     expect(state.data.semesters.find((s) => s.id === 'spring25')!.name).toBe('Spring 2025')
     expect(state.data.lastModified).toBe(T0)
+  })
+
+  it('renameSemester is a no-op (no stamp) when the trimmed name is unchanged', () => {
+    const store = createAppStore(dataWithSemesters(), { now: () => T1 })
+    store.getState().renameSemester('spring25', '  Spring 2025  ')
+    const state = store.getState()
+    expect(state.data.semesters.find((s) => s.id === 'spring25')!.name).toBe('Spring 2025')
+    // Identical rename must not bump lastModified (avoids a spurious sync push).
+    expect(state.data.lastModified).toBe(T0)
+  })
+
+  it('renameSemester clamps an over-long name to the schema max', () => {
+    const store = createAppStore(dataWithSemesters(), { now: () => T1 })
+    store.getState().renameSemester('spring25', 'x'.repeat(80))
+    expect(store.getState().data.semesters.find((s) => s.id === 'spring25')!.name).toHaveLength(
+      VALIDATION_LIMITS.SEMESTER_NAME_MAX,
+    )
   })
 })
 

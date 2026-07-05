@@ -27,6 +27,7 @@ export function SharedExamDay({
   const head = group[0]!
   const nextNode = group.find((n) => n.isNext)
   const urgent = nextNode !== undefined && nextNode.daysUntil <= 3
+  const veryUrgent = nextNode !== undefined && nextNode.daysUntil <= 1
   const allPassed = group.every((n) => n.state === 'passed')
 
   return (
@@ -35,6 +36,9 @@ export function SharedExamDay({
         'relative flex flex-col gap-1.5 rounded-card border border-line bg-panel p-2 text-xs shadow-xs',
         allPassed && 'opacity-50',
         head.state === 'today' && 'border-success-border',
+        // Match ExamNode's escalation: an imminent (<=1 day) next exam tints the
+        // whole box, not just the ring.
+        veryUrgent && 'bg-warning-bg',
         nextNode !== undefined && (urgent ? 'ring-2 ring-warning-border' : 'ring-2 ring-accent'),
       )}
     >
