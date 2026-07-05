@@ -85,6 +85,26 @@ describe('HomeworkTab', () => {
     expect(screen.queryByText('Physics HW')).not.toBeInTheDocument()
   })
 
+  it('keeps a deep-linked completed item visible even when "Show done" is off', () => {
+    const session = createSession({ storage: createMemoryStorage(), now: () => NOW })
+    const st = session.appStore.getState()
+    st.addSemester('Spring 2026')
+    st.addCourse(createCourse(input, 'colorful'))
+    const courseId = session.appStore.getState().data.semesters[0]!.courses[0]!.id
+    st.addHomework(courseId, 'Linked HW', '')
+    const hwId = session.appStore.getState().data.semesters[0]!.courses[0]!.homework[0]!.id
+    st.toggleHomework(courseId, hwId) // complete it
+    st.setShowCompletedHomework(courseId, false) // and hide done items
+
+    render(
+      <Providers session={session}>
+        <HomeworkTab courseId={courseId} today={NOW} highlightId={hwId} />
+      </Providers>,
+    )
+    // The deep-link target must still mount so its scroll/pulse can fire.
+    expect(screen.getByText('Linked HW')).toBeInTheDocument()
+  })
+
   it('reflects a change in sort order in the DOM', async () => {
     const user = userEvent.setup()
     setup((s, id) => {

@@ -37,7 +37,12 @@ export function HomeworkTab({
   if (!course) return null
 
   const sorted = sortHomework(course.homework, course.homeworkSort)
-  const visible = course.showCompletedHomework ? sorted : sorted.filter((h) => !h.completed)
+  // Hide completed items unless show-done is on — but always keep a deep-linked
+  // item visible, otherwise the highlight target would never mount and the
+  // scroll/pulse would silently no-op.
+  const visible = course.showCompletedHomework
+    ? sorted
+    : sorted.filter((h) => !h.completed || h.id === highlightId)
   const canAdd = title.trim().length > 0
   const isManual = course.homeworkSort === 'manual'
 

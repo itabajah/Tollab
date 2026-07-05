@@ -7,7 +7,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { PlusIcon } from '@/components/ui/icons'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogActions } from '@/components/ui/Dialog'
-import { useConfirm } from '@/components/ui/ConfirmProvider'
+import { useConfirm, usePrompt } from '@/components/ui/ConfirmProvider'
 import { useToast } from '@/components/ui/Toast'
 
 export function AddSemesterDialog({
@@ -99,14 +99,28 @@ export function AddSemesterDialog({
 export function SemesterControls() {
   const semesters = useAppState((s) => s.data.semesters)
   const currentSemesterId = useAppState((s) => s.currentSemesterId)
-  const { selectSemester, deleteSemester } = useAppActions()
+  const { selectSemester, renameSemester, deleteSemester } = useAppActions()
   const confirm = useConfirm()
+  const prompt = usePrompt()
   const toast = useToast()
   const [addOpen, setAddOpen] = useState(false)
   const selectId = useId()
 
   const sorted = sortSemesters(semesters)
   const current = semesters.find((s) => s.id === currentSemesterId)
+
+  const onRename = async () => {
+    if (!current) return
+    const name = await prompt({
+      title: 'Rename Semester',
+      label: 'Semester name',
+      initialValue: current.name,
+      validate: (v) => (v.trim() ? null : 'Semester name is required'),
+    })
+    if (name === null) return
+    renameSemester(current.id, name)
+    toast.success('Semester renamed')
+  }
 
   const onDelete = async () => {
     if (!current) return
@@ -143,6 +157,23 @@ export function SemesterControls() {
       <IconButton aria-label="Add semester" onClick={() => setAddOpen(true)}>
         <PlusIcon />
       </IconButton>
+      {current ? (
+        <IconButton aria-label="Rename semester" onClick={() => void onRename()}>
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+          </svg>
+        </IconButton>
+      ) : null}
       {current ? (
         <IconButton aria-label="Delete semester" danger onClick={() => void onDelete()}>
           <svg

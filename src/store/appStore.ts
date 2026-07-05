@@ -1,14 +1,15 @@
 import { createStore } from 'zustand/vanilla'
 import { immer } from 'zustand/middleware/immer'
 import { current, produce } from 'immer'
-import type {
-  AppData,
-  CalendarSettings,
-  Course,
-  Homework,
-  HomeworkSort,
-  RecordingSort,
-  Settings,
+import {
+  VALIDATION_LIMITS,
+  type AppData,
+  type CalendarSettings,
+  type Course,
+  type Homework,
+  type HomeworkSort,
+  type RecordingSort,
+  type Settings,
 } from '@/domain/model'
 import { createSemester, sortSemesters } from '@/domain/semester'
 import { generateCourseColor } from '@/domain/colors'
@@ -41,6 +42,7 @@ export interface AppStoreState {
   touch: () => void
   selectSemester: (id: string | null) => void
   addSemester: (name: string) => string
+  renameSemester: (id: string, name: string) => void
   deleteSemester: (id: string) => void
   updateSettings: (patch: Partial<Settings>) => void
   updateCalendarSettings: (semesterId: string, patch: Partial<CalendarSettings>) => void
@@ -165,6 +167,16 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
           })
           return semester.id
         },
+
+        renameSemester: (id, name) =>
+          set((s) => {
+            const trimmed = name.trim().slice(0, VALIDATION_LIMITS.SEMESTER_NAME_MAX)
+            if (!trimmed) return // never rename to blank (schema requires min length 1)
+            const semester = s.data.semesters.find((sem) => sem.id === id)
+            if (!semester || semester.name === trimmed) return
+            semester.name = trimmed
+            stamp(s)
+          }),
 
         deleteSemester: (id) =>
           set((s) => {

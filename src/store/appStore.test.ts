@@ -83,6 +83,22 @@ describe('semester actions', () => {
     store.getState().selectSemester('spring25')
     expect(store.getState().currentSemesterId).toBe('spring25')
   })
+
+  it('renameSemester trims, renames, and stamps lastModified', () => {
+    const store = createAppStore(dataWithSemesters(), { now: () => T1 })
+    store.getState().renameSemester('spring25', '  Spring 2025 (A)  ')
+    const state = store.getState()
+    expect(state.data.semesters.find((s) => s.id === 'spring25')!.name).toBe('Spring 2025 (A)')
+    expect(state.data.lastModified).toBe(T1.toISOString())
+  })
+
+  it('renameSemester ignores a blank name and does not stamp', () => {
+    const store = createAppStore(dataWithSemesters(), { now: () => T1 })
+    store.getState().renameSemester('spring25', '   ')
+    const state = store.getState()
+    expect(state.data.semesters.find((s) => s.id === 'spring25')!.name).toBe('Spring 2025')
+    expect(state.data.lastModified).toBe(T0)
+  })
 })
 
 describe('applyColorTheme', () => {

@@ -132,6 +132,24 @@ describe('HeaderTicker', () => {
     expect(readText()).toBe(before)
   })
 
+  it('marks a non-actionable item as aria-disabled and does not deep-link on click', async () => {
+    const user = userEvent.setup()
+    // A brand-new empty session shows the no_semester nudge, whose target is
+    // 'none' — there is nothing to open, so clicking must be a no-op.
+    const session = makeSession()
+    const onSelect = vi.fn()
+    render(
+      <Providers session={session}>
+        <HeaderTicker now={NOW} onSelect={onSelect} />
+      </Providers>,
+    )
+
+    const ticker = screen.getByTestId('header-ticker')
+    expect(ticker).toHaveAttribute('aria-disabled', 'true')
+    await user.click(ticker)
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
   it('calls onSelect with the current item target when clicked', async () => {
     const user = userEvent.setup()
     const session = makeSession()

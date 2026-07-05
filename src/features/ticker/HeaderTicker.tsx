@@ -94,21 +94,30 @@ export function HeaderTicker({ now, onSelect = noop }: HeaderTickerProps) {
 
   if (!current) return null
 
+  // Motivational / streak / setup items have no course to open (target 'none').
+  // Keep the element a <button> (a test asserts that + aria-live) but make it
+  // read as non-interactive so it doesn't invite a click that goes nowhere.
+  const actionable = current.target.type !== 'none'
+
   return (
     <button
       type="button"
       data-testid="header-ticker"
-      onClick={() => onSelect(current.target)}
+      onClick={() => {
+        if (actionable) onSelect(current.target)
+      }}
       onMouseEnter={() => setInteracting(true)}
       onMouseLeave={() => setInteracting(false)}
       onFocus={() => setInteracting(true)}
       onBlur={() => setInteracting(false)}
       aria-live="polite"
+      aria-disabled={!actionable || undefined}
       title={current.text}
       className={cn(
         'flex w-full items-center gap-2.5 rounded-control border border-line bg-inset px-3 py-2.5',
-        'text-left text-[13px] text-ink-muted transition-colors hover:bg-panel hover:text-ink',
+        'text-left text-[13px] text-ink-muted transition-colors',
         'focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none',
+        actionable ? 'cursor-pointer hover:bg-panel hover:text-ink' : 'cursor-default',
       )}
     >
       <span
