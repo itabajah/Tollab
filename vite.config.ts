@@ -10,4 +10,16 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy vendors into their own cacheable chunks. Firebase is by
+        // far the largest dependency and only matters for cloud sync.
+        manualChunks: {
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/database'],
+          react: ['react', 'react-dom'],
+        },
+      },
+    },
+  },
 })

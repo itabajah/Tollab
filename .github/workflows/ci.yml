@@ -40,6 +40,16 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Bundle size gate (gzipped assets < 450 KB)
+        run: |
+          total=$(find dist/assets \( -name '*.js' -o -name '*.css' \) -exec sh -c 'gzip -c "$1" | wc -c' _ {} \; | awk '{s+=$1} END {print s}')
+          kb=$((total / 1024))
+          echo "Total gzipped assets: ${kb} KB"
+          if [ "$kb" -gt 450 ]; then
+            echo "::error::Bundle ${kb}KB exceeds the 450KB gzip budget"
+            exit 1
+          fi
+
       - name: Upload coverage on failure
         if: failure()
         uses: actions/upload-artifact@v4
