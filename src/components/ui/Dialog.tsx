@@ -29,10 +29,10 @@ export function Dialog({
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] data-[state=closed]:animate-[fade-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[fade-in_var(--duration-base)_var(--ease-standard)]" />
+        <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] data-[state=closed]:animate-[fade-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[overlay-in_var(--duration-base)_var(--ease-emphasized)]" />
         <RadixDialog.Content
           className={cn(
-            'fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[95vw] -translate-x-1/2 -translate-y-1/2 flex-col rounded-overlay border border-line bg-panel shadow-lg focus:outline-none data-[state=closed]:animate-[dialog-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[dialog-in_var(--duration-base)_var(--ease-standard)]',
+            'fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[95vw] -translate-x-1/2 -translate-y-1/2 flex-col rounded-overlay border border-line bg-panel shadow-lg focus:outline-none data-[state=closed]:animate-[dialog-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[dialog-in_var(--duration-base)_var(--ease-emphasized)]',
             wide ? 'max-w-[700px]' : 'max-w-[440px]',
           )}
         >
