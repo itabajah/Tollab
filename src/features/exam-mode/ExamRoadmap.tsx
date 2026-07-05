@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
 import { ExamNode } from './ExamNode'
-import { GapChip, TurnConnector } from './Connector'
+import { HorizontalConnector, TurnConnector } from './Connector'
 import { HiddenTray } from './HiddenTray'
 import { CustomExamDialog } from './CustomExamDialog'
 import { useExamActions } from './useExamActions'
@@ -47,7 +47,9 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
   if (!semester) return null
 
   const nodes = annotateExamStates(collectExams(semester, { moedFilter }), now)
-  const cols = computeExamColumns(width, nodes.length)
+  // Cap the displayed columns so the snake stays legible and every connector has
+  // room for its day-gap label; the width-based count still narrows on small panes.
+  const cols = Math.min(computeExamColumns(width, nodes.length), 4)
   const matrix = layoutSerpentine(nodes, cols)
   const progress = examProgress(nodes)
   const nextNode = nodes.find((node) => node.isNext) ?? null
@@ -159,7 +161,7 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
       ) : (
         <div
           ref={boardRef}
-          className="mt-4 grid gap-x-1 gap-y-0"
+          className="mt-4 grid items-start gap-x-14 gap-y-0"
           style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
         >
           {matrix.flat().map((cell, index) => {
@@ -169,8 +171,12 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
                 <TurnConnector key={`turn-${index}`} gapDays={cell.gapAfter} side={cell.side} />
               )
             }
+            // Reversed rows (the snake's right-to-left legs) flow leftward, so
+            // their arrowheads point left. Derived from the matrix row index —
+            // node rows are even; every 2nd node row is reversed.
+            const reverse = Math.floor(index / cols) % 4 === 2
             return (
-              <div key={cell.node.id} className="flex flex-col">
+              <div key={cell.node.id} className="relative">
                 <ExamNode
                   node={cell.node}
                   onOpen={() =>
@@ -184,9 +190,7 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
                   }
                 />
                 {cell.connectRight ? (
-                  <div className="mt-1 flex justify-end">
-                    <GapChip days={cell.gapAfter} />
-                  </div>
+                  <HorizontalConnector days={cell.gapAfter} dir={reverse ? 'left' : 'right'} />
                 ) : null}
               </div>
             )
