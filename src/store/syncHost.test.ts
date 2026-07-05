@@ -36,7 +36,14 @@ describe('createStorageSyncHost', () => {
     remoteData.semesters.push(createSemester('Winter 2026-2027', 'rs'))
     const payload: CloudPayload = {
       activeProfileId: activeId,
-      profiles: [{ id: activeId, name: 'Renamed Remotely', lastModified: NOW.toISOString(), data: remoteData }],
+      profiles: [
+        {
+          id: activeId,
+          name: 'Renamed Remotely',
+          lastModified: NOW.toISOString(),
+          data: remoteData,
+        },
+      ],
     }
 
     host.applyRemotePayload(payload)

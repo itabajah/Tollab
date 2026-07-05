@@ -113,12 +113,14 @@ describe('recording actions', () => {
   it('reorders recordings and persists per-tab sort', () => {
     const { store, courseId } = makeStore()
     store.getState().addRecording(courseId, 'lectures', '')
-    store.getState().updateRecording(
-      courseId,
-      'lectures',
-      currentCourse(store).recordings.tabs[0]!.items[0]!.id,
-      { name: 'First' },
-    )
+    store
+      .getState()
+      .updateRecording(
+        courseId,
+        'lectures',
+        currentCourse(store).recordings.tabs[0]!.items[0]!.id,
+        { name: 'First' },
+      )
     store.getState().addRecording(courseId, 'lectures', '')
     const first = currentCourse(store).recordings.tabs[0]!.items[0]!
     store.getState().setRecordingSort(courseId, 'lectures', 'manual')

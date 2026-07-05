@@ -7,7 +7,9 @@ let cachedApp: FirebaseApp | null = null
  * Lazily initializes the Firebase app from build-time env config.
  * Returns null when no config is present (offline/dev/E2E).
  */
-export function getFirebaseApp(config: FirebaseConfig | null = firebaseConfigFromEnv()): FirebaseApp | null {
+export function getFirebaseApp(
+  config: FirebaseConfig | null = firebaseConfigFromEnv(),
+): FirebaseApp | null {
   if (config === null) return null
   if (cachedApp === null) {
     // Drop undefined optional keys — Firebase's options reject them under

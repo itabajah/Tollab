@@ -1,4 +1,10 @@
-import { mergePayloads, compareIso, isEmptyProfile, type CloudPayload, type CloudProfile } from './merge'
+import {
+  mergePayloads,
+  compareIso,
+  isEmptyProfile,
+  type CloudPayload,
+  type CloudProfile,
+} from './merge'
 import { appDataSchema, createEmptyAppData, type AppData } from './model'
 
 const NOW = new Date('2026-07-04T12:00:00Z')
@@ -28,8 +34,12 @@ describe('compareIso', () => {
 describe('isEmptyProfile', () => {
   it('treats null data or zero semesters as empty', () => {
     expect(isEmptyProfile(profile('p', 'P', NOW.toISOString(), null))).toBe(true)
-    expect(isEmptyProfile(profile('p', 'P', NOW.toISOString(), createEmptyAppData(NOW.toISOString())))).toBe(true)
-    expect(isEmptyProfile(profile('p', 'P', NOW.toISOString(), dataAt(NOW.toISOString())))).toBe(false)
+    expect(
+      isEmptyProfile(profile('p', 'P', NOW.toISOString(), createEmptyAppData(NOW.toISOString()))),
+    ).toBe(true)
+    expect(isEmptyProfile(profile('p', 'P', NOW.toISOString(), dataAt(NOW.toISOString())))).toBe(
+      false,
+    )
   })
 })
 
@@ -51,11 +61,15 @@ describe('mergePayloads', () => {
   it('keeps the newer side for a shared profile (cloud newer)', () => {
     const local: CloudPayload = {
       activeProfileId: 'a',
-      profiles: [profile('a', 'Local', '2026-01-01T00:00:00Z', dataAt('2026-01-01T00:00:00Z', 'Old'))],
+      profiles: [
+        profile('a', 'Local', '2026-01-01T00:00:00Z', dataAt('2026-01-01T00:00:00Z', 'Old')),
+      ],
     }
     const cloud: CloudPayload = {
       activeProfileId: 'a',
-      profiles: [profile('a', 'Cloud', '2026-06-01T00:00:00Z', dataAt('2026-06-01T00:00:00Z', 'New'))],
+      profiles: [
+        profile('a', 'Cloud', '2026-06-01T00:00:00Z', dataAt('2026-06-01T00:00:00Z', 'New')),
+      ],
     }
     const merged = mergePayloads(local, cloud, NOW)
     expect(merged.profiles[0]!.data!.semesters[0]!.name).toBe('New')
@@ -81,7 +95,9 @@ describe('mergePayloads', () => {
     }
     const cloud: CloudPayload = {
       activeProfileId: 'a',
-      profiles: [profile('a', 'Real', '2026-01-01T00:00:00Z', dataAt('2026-01-01T00:00:00Z', 'Cloud'))],
+      profiles: [
+        profile('a', 'Real', '2026-01-01T00:00:00Z', dataAt('2026-01-01T00:00:00Z', 'Cloud')),
+      ],
     }
     const merged = mergePayloads(local, cloud, NOW)
     expect(merged.profiles[0]!.data!.semesters[0]!.name).toBe('Cloud')
@@ -104,7 +120,9 @@ describe('mergePayloads', () => {
   it('resolves active to cloud when the local active is empty/dropped', () => {
     const local: CloudPayload = {
       activeProfileId: 'empty',
-      profiles: [profile('empty', 'Empty', NOW.toISOString(), createEmptyAppData(NOW.toISOString()))],
+      profiles: [
+        profile('empty', 'Empty', NOW.toISOString(), createEmptyAppData(NOW.toISOString())),
+      ],
     }
     const cloud: CloudPayload = {
       activeProfileId: 'b',

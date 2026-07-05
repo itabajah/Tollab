@@ -6,7 +6,7 @@ import { IconButton } from '@/components/ui/IconButton'
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
-export function formatSlot(slot: ScheduleSlot): string {
+function formatSlot(slot: ScheduleSlot): string {
   return `${DAY_LABELS[slot.day]} ${slot.start}–${slot.end}`
 }
 

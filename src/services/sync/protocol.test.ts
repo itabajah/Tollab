@@ -14,7 +14,9 @@ function data(name: string): AppData {
 
 const payload: CloudPayload = {
   activeProfileId: 'p1',
-  profiles: [{ id: 'p1', name: 'Main', lastModified: NOW.toISOString(), data: data('Spring 2026') }],
+  profiles: [
+    { id: 'p1', name: 'Main', lastModified: NOW.toISOString(), data: data('Spring 2026') },
+  ],
 }
 
 describe('buildCloudRecord / v3 round-trip', () => {

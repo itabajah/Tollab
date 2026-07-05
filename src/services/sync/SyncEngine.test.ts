@@ -16,7 +16,10 @@ function data(name: string): AppData {
 }
 
 function payloadWith(id: string, name: string): CloudPayload {
-  return { activeProfileId: id, profiles: [{ id, name, lastModified: NOW.toISOString(), data: data('Spring 2026') }] }
+  return {
+    activeProfileId: id,
+    profiles: [{ id, name, lastModified: NOW.toISOString(), data: data('Spring 2026') }],
+  }
 }
 
 /** A controllable SyncHost whose local payload can be swapped between calls. */
@@ -51,7 +54,13 @@ describe('createSyncEngine', () => {
     vi.useFakeTimers()
     const backend = createFakeBackend()
     const { host } = makeHost(payloadWith('a', 'Alpha'))
-    const engine = createSyncEngine({ backend, host, clientId: 'me', debounceMs: 750, now: () => NOW })
+    const engine = createSyncEngine({
+      backend,
+      host,
+      clientId: 'me',
+      debounceMs: 750,
+      now: () => NOW,
+    })
     await engine.start()
     backend.saved.length = 0 // ignore the start push
 
@@ -97,7 +106,9 @@ describe('createSyncEngine', () => {
     const before = applied.length
     backend.saved.length = 0
 
-    backend.emitRemote(buildCloudRecord(payloadWith('b', 'Remote'), 'someone-else', 'w-remote', NOW))
+    backend.emitRemote(
+      buildCloudRecord(payloadWith('b', 'Remote'), 'someone-else', 'w-remote', NOW),
+    )
 
     expect(applied).toHaveLength(before + 1)
     expect(applied[applied.length - 1]!.profiles[0]!.id).toBe('b')
@@ -108,7 +119,13 @@ describe('createSyncEngine', () => {
     vi.useFakeTimers()
     const backend = createFakeBackend()
     const { host } = makeHost(payloadWith('a', 'Alpha'))
-    const engine = createSyncEngine({ backend, host, clientId: 'me', debounceMs: 750, now: () => NOW })
+    const engine = createSyncEngine({
+      backend,
+      host,
+      clientId: 'me',
+      debounceMs: 750,
+      now: () => NOW,
+    })
     await engine.start()
     backend.saved.length = 0
 

@@ -7,6 +7,7 @@ import { Field, Input, Select } from '@/components/ui/Field'
 import { useConfirm, usePrompt } from '@/components/ui/ConfirmProvider'
 import { useToast } from '@/components/ui/Toast'
 import { exportFileName, parseImportFile, ImportError } from '@/services/storage/exportImport'
+import { CloudStatus } from '@/features/sync/CloudStatus'
 import { downloadJson } from './download'
 import { cn } from '@/lib/cn'
 
@@ -168,6 +169,9 @@ function ProfileTab() {
           Add
         </Button>
       </div>
+
+      <SectionTitle>Cloud Sync</SectionTitle>
+      <CloudStatus />
 
       <SectionTitle>Local Data</SectionTitle>
       <div className="flex flex-wrap gap-2">
@@ -344,7 +348,12 @@ function FetchDataTab() {
             />
           )}
         </Field>
-        <Button className="mt-2" variant="primary" disabled={busy} onClick={() => void fetchSchedule()}>
+        <Button
+          className="mt-2"
+          variant="primary"
+          disabled={busy}
+          onClick={() => void fetchSchedule()}
+        >
           Fetch Schedule
         </Button>
       </div>

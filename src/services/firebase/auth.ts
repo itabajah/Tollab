@@ -29,8 +29,7 @@ export function createFirebaseAuth(app: FirebaseApp): AuthService {
   const auth: Auth = getAuth(app)
   return {
     currentUser: () => toAuthUser(auth.currentUser),
-    onChange: (callback) =>
-      onAuthStateChanged(auth, (user) => callback(toAuthUser(user))),
+    onChange: (callback) => onAuthStateChanged(auth, (user) => callback(toAuthUser(user))),
     signIn: async () => {
       const provider = new GoogleAuthProvider()
       provider.setCustomParameters({ prompt: 'select_account' })

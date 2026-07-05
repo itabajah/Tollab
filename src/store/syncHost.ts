@@ -34,7 +34,8 @@ export function createStorageSyncHost(storage: StorageLike, session: Session): S
       const metas = payload.profiles.map((p) => ({ id: p.id, name: p.name }))
       saveProfiles(storage, metas)
       for (const profile of payload.profiles) {
-        if (profile.data) saveProfileData(storage, profile.id, profile.data, profile.data.lastModified)
+        if (profile.data)
+          saveProfileData(storage, profile.id, profile.data, profile.data.lastModified)
       }
       const active =
         payload.activeProfileId && metas.some((m) => m.id === payload.activeProfileId)

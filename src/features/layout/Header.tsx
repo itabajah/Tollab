@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppActions, useAppState } from '@/hooks/session'
 import { IconButton } from '@/components/ui/IconButton'
 import { SettingsDialog } from '@/features/settings/SettingsDialog'
+import { CloudHeaderStatus } from '@/features/sync/CloudStatus'
 
 function SunIcon() {
   return (
@@ -73,8 +74,8 @@ export function Header() {
         <p className="text-sm text-ink-faint max-md:hidden">For Technionez</p>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-ink-faint max-md:hidden" data-cloud-status>
-          Not connected
+        <span className="max-md:hidden">
+          <CloudHeaderStatus />
         </span>
         <IconButton
           aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}

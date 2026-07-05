@@ -191,7 +191,11 @@ export function CourseFormDialog({
         </Field>
         <Field label="Faculty">
           {(id) => (
-            <Input id={id} value={form.faculty} onChange={(e) => patch('faculty', e.target.value)} />
+            <Input
+              id={id}
+              value={form.faculty}
+              onChange={(e) => patch('faculty', e.target.value)}
+            />
           )}
         </Field>
         <Field label="Location">
@@ -212,7 +216,11 @@ export function CourseFormDialog({
 
       <Field label="Syllabus URL">
         {(id) => (
-          <Input id={id} value={form.syllabus} onChange={(e) => patch('syllabus', e.target.value)} />
+          <Input
+            id={id}
+            value={form.syllabus}
+            onChange={(e) => patch('syllabus', e.target.value)}
+          />
         )}
       </Field>
 
@@ -246,8 +254,13 @@ export function CourseFormDialog({
       </Field>
 
       <div>
-        <p className="mb-2 text-[13px] tracking-[0.5px] text-ink-muted uppercase">Weekly schedule</p>
-        <ScheduleEditor slots={form.schedule} onChange={(schedule) => patch('schedule', schedule)} />
+        <p className="mb-2 text-[13px] tracking-[0.5px] text-ink-muted uppercase">
+          Weekly schedule
+        </p>
+        <ScheduleEditor
+          slots={form.schedule}
+          onChange={(schedule) => patch('schedule', schedule)}
+        />
       </div>
 
       {settings.colorTheme !== 'mono' ? (
@@ -292,7 +305,12 @@ export function CourseFormDialog({
   )
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={course ? 'Edit Course' : 'Add Course'} wide>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={course ? 'Edit Course' : 'Add Course'}
+      wide
+    >
       {course ? (
         <Tabs.Root defaultValue="recordings">
           <Tabs.List

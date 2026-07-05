@@ -21,7 +21,9 @@ export type FirebaseConfig = z.infer<typeof firebaseConfigSchema>
 type EnvLike = Record<string, string | undefined>
 
 /** Returns a validated Firebase config, or null when the required vars are unset. */
-export function firebaseConfigFromEnv(env: EnvLike = import.meta.env as EnvLike): FirebaseConfig | null {
+export function firebaseConfigFromEnv(
+  env: EnvLike = import.meta.env as EnvLike,
+): FirebaseConfig | null {
   const candidate = {
     apiKey: env.VITE_FIREBASE_API_KEY,
     authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
