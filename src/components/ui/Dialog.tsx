@@ -32,7 +32,12 @@ export function Dialog({
         <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] data-[state=closed]:animate-[fade-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[fade-in_var(--duration-base)_var(--ease-standard)]" />
         <RadixDialog.Content
           className={cn(
-            'fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[95vw] -translate-x-1/2 -translate-y-1/2 flex-col rounded-overlay border border-line bg-panel shadow-lg focus:outline-none data-[state=closed]:animate-[dialog-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[dialog-in_var(--duration-base)_var(--ease-emphasized)]',
+            // Center via the `transform` property (NOT Tailwind's -translate-*,
+            // which emit the separate CSS `translate` property). The dialog-in/out
+            // keyframes animate `transform`, so they must own the -50%/-50%
+            // centering too — otherwise the two compose and the dialog animates
+            // in off-center, then snaps to center when the animation ends.
+            'fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[95vw] [transform:translate(-50%,-50%)] flex-col rounded-overlay border border-line bg-panel shadow-lg focus:outline-none data-[state=closed]:animate-[dialog-out_var(--duration-fast)_var(--ease-standard)] data-[state=open]:animate-[dialog-in_var(--duration-base)_var(--ease-emphasized)]',
             wide ? 'max-w-[700px]' : 'max-w-[440px]',
           )}
         >

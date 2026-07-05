@@ -68,22 +68,16 @@ export function HorizontalConnector({ days, dir }: { days: number | null; dir: '
  * carries the day-gap label and ends in a downward arrowhead, aligned to the
  * side the snake wraps around.
  */
-export function TurnConnector({
-  gapDays,
-  side,
-}: {
-  gapDays: number | null
-  side: 'left' | 'right'
-}) {
+export function TurnConnector({ gapDays }: { gapDays: number | null }) {
+  // Rendered inside the flow-last node's (stretched) cell, so `flex-1` makes the
+  // line grow to exactly bridge the gap down to the next row — however tall that
+  // row is (e.g. when it holds a stacked same-day box). The two flex-1 segments
+  // keep the day-gap label centred with the arrowhead pinned to the bottom.
   return (
-    <div
-      className="flex flex-col items-center py-2"
-      style={{ justifySelf: side === 'right' ? 'end' : 'start' }}
-      aria-hidden="true"
-    >
-      <div className="h-6 w-0.5 rounded-full bg-line-strong" />
+    <div className="mt-1 flex min-h-12 flex-1 flex-col items-center" aria-hidden="true">
+      <div className="w-0.5 flex-1 rounded-full bg-line-strong" />
       <GapLabel days={gapDays} />
-      <div className="h-6 w-0.5 rounded-full bg-line-strong" />
+      <div className="w-0.5 flex-1 rounded-full bg-line-strong" />
       <Arrowhead dir="down" />
     </div>
   )

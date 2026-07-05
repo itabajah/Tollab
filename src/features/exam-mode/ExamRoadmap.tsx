@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
+import { cn } from '@/lib/cn'
 import { ExamNode } from './ExamNode'
 import { SharedExamDay } from './SharedExamDay'
 import { HorizontalConnector, TurnConnector } from './Connector'
@@ -66,6 +67,7 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
   // connector has room; the width-based count still narrows on small panes.
   const cols = Math.min(computeExamColumns(width, representatives.length), 3)
   const matrix = layoutSerpentine(representatives, cols)
+  const flat = matrix.flat()
   const progress = examProgress(nodes)
   const nextNode = nodes.find((node) => node.isNext) ?? null
 
@@ -179,20 +181,28 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
           className="mt-4 grid items-start gap-x-24 gap-y-0"
           style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
         >
-          {matrix.flat().map((cell, index) => {
+          {flat.map((cell, index) => {
             if (cell.kind === 'spacer') return <div key={`spacer-${index}`} />
-            if (cell.kind === 'turn') {
-              return (
-                <TurnConnector key={`turn-${index}`} gapDays={cell.gapAfter} side={cell.side} />
-              )
-            }
+            // Turn connectors are rendered INSIDE the flow-last node cell above
+            // them (so they can stretch to bridge a tall row); the matrix turn
+            // cell itself just holds the column's place.
+            if (cell.kind === 'turn') return <div key={`turn-${index}`} />
+
             // Reversed rows (the snake's right-to-left legs) flow leftward, so
             // their arrowheads point left. Derived from the matrix row index —
             // node rows are even; every 2nd node row is reversed.
             const reverse = Math.floor(index / cols) % 4 === 2
             const group = groupByRepId.get(cell.node.id)!
+            // A turn cell directly below (same column, next row) means this node
+            // is the row's flow-last: it carries the drop connector to the next
+            // row, and its cell stretches so the connector can fill the height.
+            const below = flat[index + cols]
+            const turnBelow = below && below.kind === 'turn' ? below : null
             return (
-              <div key={cell.node.id} className="relative">
+              <div
+                key={cell.node.id}
+                className={cn('relative flex flex-col', turnBelow && 'self-stretch')}
+              >
                 {group.length === 1 ? (
                   <ExamNode
                     node={cell.node}
@@ -217,6 +227,7 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
                 {cell.connectRight ? (
                   <HorizontalConnector days={cell.gapAfter} dir={reverse ? 'left' : 'right'} />
                 ) : null}
+                {turnBelow ? <TurnConnector gapDays={turnBelow.gapAfter} /> : null}
               </div>
             )
           })}
