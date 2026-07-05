@@ -21,8 +21,8 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
   }
 
   return (
-    <PanelGroup direction="horizontal" autoSaveId="tollab-split-v2" className="!h-screen">
-      <Panel defaultSize={65} minSize={30} className="!overflow-y-auto [scrollbar-gutter:stable]">
+    <PanelGroup direction="horizontal" autoSaveId="tollab-split-v3" className="!h-screen">
+      <Panel defaultSize={55} minSize={30} className="!overflow-y-auto [scrollbar-gutter:stable]">
         <div className="mx-auto w-full max-w-4xl px-8 pt-8 pb-16">{left}</div>
       </Panel>
       <PanelResizeHandle className="group relative w-2 cursor-col-resize outline-none">
@@ -34,8 +34,8 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
           <span className="size-[3px] rounded-full bg-ink-faint" />
         </div>
       </PanelResizeHandle>
-      <Panel defaultSize={35} minSize={20} className="!overflow-y-auto [scrollbar-gutter:stable]">
-        <div className="mx-auto w-full max-w-3xl px-6 pt-8 pb-16">{right}</div>
+      <Panel defaultSize={45} minSize={25} className="!overflow-y-auto [scrollbar-gutter:stable]">
+        <div className="mx-auto w-full max-w-4xl px-6 pt-8 pb-16">{right}</div>
       </Panel>
     </PanelGroup>
   )

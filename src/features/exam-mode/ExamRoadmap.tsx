@@ -7,6 +7,7 @@ import {
   examProgress,
   formatCountdown,
   layoutSerpentine,
+  type AnnotatedExamNode,
   type MoedFilter,
 } from '@/domain/examMode'
 import { useAppState } from '@/hooks/session'
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
 import { ExamNode } from './ExamNode'
+import { SharedExamDay } from './SharedExamDay'
 import { HorizontalConnector, TurnConnector } from './Connector'
 import { HiddenTray } from './HiddenTray'
 import { CustomExamDialog } from './CustomExamDialog'
@@ -47,10 +49,23 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
   if (!semester) return null
 
   const nodes = annotateExamStates(collectExams(semester, { moedFilter }), now)
-  // Cap the displayed columns so the snake stays legible and every connector has
-  // room for its day-gap label; the width-based count still narrows on small panes.
-  const cols = Math.min(computeExamColumns(width, nodes.length), 4)
-  const matrix = layoutSerpentine(nodes, cols)
+  // Same-day exams share one roadmap box (grouped here at render level, so the
+  // domain layout + its tests stay unchanged). Nodes are date-sorted, so exams
+  // on the same day are already adjacent; each group's first node represents it
+  // in the serpentine layout (a real node carrying the group's date, so the gap
+  // math between boxes is correct and never a spurious 0-day step).
+  const groups: AnnotatedExamNode[][] = []
+  for (const node of nodes) {
+    const last = groups[groups.length - 1]
+    if (last && last[0]!.date === node.date) last.push(node)
+    else groups.push([node])
+  }
+  const representatives = groups.map((g) => g[0]!)
+  const groupByRepId = new Map(representatives.map((rep, i) => [rep.id, groups[i]!]))
+  // Cap displayed columns so the snake stays legible and every (now longer)
+  // connector has room; the width-based count still narrows on small panes.
+  const cols = Math.min(computeExamColumns(width, representatives.length), 3)
+  const matrix = layoutSerpentine(representatives, cols)
   const progress = examProgress(nodes)
   const nextNode = nodes.find((node) => node.isNext) ?? null
 
@@ -161,7 +176,7 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
       ) : (
         <div
           ref={boardRef}
-          className="mt-4 grid items-start gap-x-14 gap-y-0"
+          className="mt-4 grid items-start gap-x-24 gap-y-0"
           style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
         >
           {matrix.flat().map((cell, index) => {
@@ -175,20 +190,30 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
             // their arrowheads point left. Derived from the matrix row index —
             // node rows are even; every 2nd node row is reversed.
             const reverse = Math.floor(index / cols) % 4 === 2
+            const group = groupByRepId.get(cell.node.id)!
             return (
               <div key={cell.node.id} className="relative">
-                <ExamNode
-                  node={cell.node}
-                  onOpen={() =>
-                    onOpenNode(cell.node.id, cell.node.kind, cell.node.courseId, cell.node.moed)
-                  }
-                  onRemove={() => onRemoveNode(cell.node.id, cell.node.name)}
-                  onEdit={
-                    cell.node.kind === 'custom'
-                      ? () => onOpenNode(cell.node.id, 'custom', null, null)
-                      : undefined
-                  }
-                />
+                {group.length === 1 ? (
+                  <ExamNode
+                    node={cell.node}
+                    onOpen={() =>
+                      onOpenNode(cell.node.id, cell.node.kind, cell.node.courseId, cell.node.moed)
+                    }
+                    onRemove={() => onRemoveNode(cell.node.id, cell.node.name)}
+                    onEdit={
+                      cell.node.kind === 'custom'
+                        ? () => onOpenNode(cell.node.id, 'custom', null, null)
+                        : undefined
+                    }
+                  />
+                ) : (
+                  <SharedExamDay
+                    group={group}
+                    onOpen={(n) => onOpenNode(n.id, n.kind, n.courseId, n.moed)}
+                    onRemove={(n) => onRemoveNode(n.id, n.name)}
+                    onEdit={(n) => onOpenNode(n.id, 'custom', null, null)}
+                  />
+                )}
                 {cell.connectRight ? (
                   <HorizontalConnector days={cell.gapAfter} dir={reverse ? 'left' : 'right'} />
                 ) : null}

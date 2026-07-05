@@ -10,6 +10,25 @@ const stateClasses: Record<AnnotatedExamNode['state'], string> = {
 }
 
 /**
+ * A compact mark distinguishing Moed A from Moed B at a glance: A is filled,
+ * B is outlined (monochrome, so it reads in both themes). Null for custom exams.
+ */
+export function MoedBadge({ moed }: { moed: 'A' | 'B' | null }) {
+  if (!moed) return null
+  return (
+    <span
+      title={`Moed ${moed}`}
+      className={cn(
+        'inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-[9px] font-bold',
+        moed === 'A' ? 'bg-ink text-panel' : 'border border-line-strong text-ink-muted',
+      )}
+    >
+      {moed}
+    </span>
+  )
+}
+
+/**
  * A single roadmap exam node. The per-course color lives on a leading dot so the
  * element border is free to express lifecycle state (today / passed) and the
  * NEXT ring can escalate as the exam nears. Course exams open the course; custom
@@ -65,9 +84,12 @@ export function ExamNode({
             className="size-2 shrink-0 rounded-full"
             style={{ backgroundColor: color }}
           />
-          <span className="truncate font-medium text-ink">{node.name}</span>
+          <span className="min-w-0 flex-1 truncate font-medium text-ink">{node.name}</span>
+          <MoedBadge moed={node.moed} />
         </span>
-        {node.label ? <span className="text-[10px] text-ink-muted">{node.label}</span> : null}
+        {!node.moed && node.label ? (
+          <span className="text-[10px] text-ink-muted">{node.label}</span>
+        ) : null}
         <span className="text-[10px] text-ink-faint">{formatShortDate(node.date)}</span>
         <span
           className={cn(

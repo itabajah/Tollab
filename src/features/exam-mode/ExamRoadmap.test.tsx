@@ -75,6 +75,26 @@ describe('ExamRoadmap', () => {
     expect(screen.getByTestId('exam-progress-fill')).toHaveStyle({ width: '50%' })
   })
 
+  it('groups two exams on the same day into a shared box', () => {
+    setup((s) => {
+      addCourse(s, 'Algorithms', { moedA: '2026-02-10', moedB: '' })
+      addCourse(s, 'Data Structures', { moedA: '2026-02-10', moedB: '' })
+      addCourse(s, 'Calculus', { moedA: '2026-02-20', moedB: '' })
+    })
+    // The two Feb 10 exams collapse into one box (no misleading 0-day step).
+    expect(screen.getByText('2 exams')).toBeInTheDocument()
+    // Both same-day exams still render, each with its own hide affordance.
+    expect(screen.getByText('Algorithms')).toBeInTheDocument()
+    expect(screen.getByText('Data Structures')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hide Algorithms' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hide Data Structures' })).toBeInTheDocument()
+    // A different day stays a standalone node.
+    expect(screen.getByText('Calculus').closest('[data-exam-id]')).toHaveAttribute(
+      'data-state',
+      'upcoming',
+    )
+  })
+
   it('filters by Moed', async () => {
     const user = userEvent.setup()
     setup((s) => {

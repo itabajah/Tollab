@@ -51,7 +51,7 @@ function Arrowhead({ dir }: { dir: 'left' | 'right' | 'down' }) {
 export function HorizontalConnector({ days, dir }: { days: number | null; dir: 'left' | 'right' }) {
   return (
     <div
-      className="pointer-events-none absolute top-7 left-full z-10 flex h-5 w-14 -translate-y-1/2 items-center gap-0.5"
+      className="pointer-events-none absolute top-7 left-full z-10 flex h-5 w-24 -translate-y-1/2 items-center gap-1"
       aria-hidden="true"
     >
       {dir === 'left' ? <Arrowhead dir="left" /> : null}
@@ -77,13 +77,13 @@ export function TurnConnector({
 }) {
   return (
     <div
-      className="flex flex-col items-center py-1.5"
+      className="flex flex-col items-center py-2"
       style={{ justifySelf: side === 'right' ? 'end' : 'start' }}
       aria-hidden="true"
     >
-      <div className="h-3 w-0.5 rounded-full bg-line-strong" />
+      <div className="h-6 w-0.5 rounded-full bg-line-strong" />
       <GapLabel days={gapDays} />
-      <div className="h-3 w-0.5 rounded-full bg-line-strong" />
+      <div className="h-6 w-0.5 rounded-full bg-line-strong" />
       <Arrowhead dir="down" />
     </div>
   )
