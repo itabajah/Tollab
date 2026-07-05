@@ -49,11 +49,7 @@ export function CloudHeaderStatus() {
   const email = useSyncState((s) => s.userEmail)
   const label = status === 'synced' && email ? 'Synced' : metaFor(status).label
   return (
-    <span
-      className="inline-flex items-center gap-1.5 text-xs text-ink-faint"
-      data-cloud-status={status}
-      title={label}
-    >
+    <span className="inline-flex items-center gap-1.5 text-xs text-ink-faint" title={label}>
       <StatusDot status={status} />
       <span className="max-md:hidden">{label}</span>
     </span>

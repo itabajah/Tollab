@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ScheduleSlot } from '@/domain/model'
 import { Field, Input, Select } from '@/components/ui/Field'
 import { IconButton } from '@/components/ui/IconButton'
+import { CloseIcon, PlusIcon } from '@/components/ui/icons'
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -55,18 +56,7 @@ export function ScheduleEditor({
                 className="inline-flex size-4 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-error-bg hover:text-error-border focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
                 onClick={() => onChange(slots.filter((_, i) => i !== index))}
               >
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
+                <CloseIcon width={10} height={10} strokeWidth={3} />
               </button>
             </span>
           ))
@@ -96,18 +86,7 @@ export function ScheduleEditor({
           )}
         </Field>
         <IconButton aria-label="Add slot" onClick={addSlot}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
+          <PlusIcon />
         </IconButton>
       </div>
       {error ? (

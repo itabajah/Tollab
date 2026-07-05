@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Field, Input, TextArea } from '@/components/ui/Field'
+import { ChevronDownIcon, ChevronUpIcon } from '@/components/ui/icons'
 import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
 import { cn } from '@/lib/cn'
 
@@ -112,19 +113,7 @@ function ReorderControls({
         className="!p-0.5"
         onClick={() => onMove(-1)}
       >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M18 15l-6-6-6 6" />
-        </svg>
+        <ChevronUpIcon width={12} height={12} strokeWidth={2.5} />
       </IconButton>
       <IconButton
         aria-label={`Move ${title} down`}
@@ -134,19 +123,7 @@ function ReorderControls({
         className="!p-0.5"
         onClick={() => onMove(1)}
       >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+        <ChevronDownIcon width={12} height={12} strokeWidth={2.5} />
       </IconButton>
     </div>
   )

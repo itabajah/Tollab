@@ -13,6 +13,7 @@ import { weekRangeFor } from '@/lib/dates'
 import { useAppState } from '@/hooks/session'
 import { useNow } from '@/hooks/useNow'
 import { IconButton } from '@/components/ui/IconButton'
+import { ChevronDownIcon } from '@/components/ui/icons'
 import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
 import { cn } from '@/lib/cn'
 
@@ -21,20 +22,9 @@ const HOUR_HEIGHT = 44 // px per hour
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
+    <ChevronDownIcon
       style={{ transform: open ? 'none' : 'rotate(-90deg)', transition: 'transform 0.15s' }}
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
+    />
   )
 }
 

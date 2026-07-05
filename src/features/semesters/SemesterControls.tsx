@@ -4,6 +4,7 @@ import { sortSemesters, generateSemesterOptions } from '@/domain/semester'
 import { VALIDATION_LIMITS } from '@/domain/model'
 import { Select, Field, Input } from '@/components/ui/Field'
 import { IconButton } from '@/components/ui/IconButton'
+import { PlusIcon } from '@/components/ui/icons'
 import { Button } from '@/components/ui/Button'
 import { Dialog, DialogActions } from '@/components/ui/Dialog'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
@@ -140,18 +141,7 @@ export function SemesterControls() {
         ))}
       </Select>
       <IconButton aria-label="Add semester" onClick={() => setAddOpen(true)}>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          aria-hidden="true"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <PlusIcon />
       </IconButton>
       {current ? (
         <IconButton aria-label="Delete semester" danger onClick={() => void onDelete()}>

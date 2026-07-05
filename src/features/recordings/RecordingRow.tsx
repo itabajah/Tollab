@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Field, Input } from '@/components/ui/Field'
+import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 import { EmbedPreview } from './EmbedPreview'
 
@@ -20,21 +21,8 @@ interface RecordingRowProps {
 }
 
 function Chevron({ dir }: { dir: 'up' | 'down' }) {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={dir === 'up' ? 'M18 15l-6-6-6 6' : 'M6 9l6 6 6-6'} />
-    </svg>
-  )
+  const Icon = dir === 'up' ? ChevronUpIcon : ChevronDownIcon
+  return <Icon width={12} height={12} strokeWidth={2.5} />
 }
 
 /**
@@ -166,19 +154,7 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
             size="sm"
             onClick={() => void onDelete()}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <CloseIcon width={14} height={14} />
           </IconButton>
         </div>
       </div>

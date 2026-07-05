@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getVideoEmbedInfo } from '@/lib/videoEmbed'
+import { Spinner } from '@/components/ui/icons'
 
 /**
  * Inline video preview. Renders a responsive 16:9 iframe for embeddable links
@@ -29,22 +30,7 @@ export function EmbedPreview({ url }: { url: string }) {
       <div className="relative aspect-video w-full overflow-hidden rounded-control border border-line bg-black">
         {!loaded ? (
           <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-            <svg className="size-6 animate-spin text-white/70" viewBox="0 0 24 24" fill="none">
-              <circle
-                cx="12"
-                cy="12"
-                r="9"
-                stroke="currentColor"
-                strokeWidth="3"
-                className="opacity-30"
-              />
-              <path
-                d="M21 12a9 9 0 0 0-9-9"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-            </svg>
+            <Spinner className="size-6 text-white/70" />
           </div>
         ) : null}
         <iframe
