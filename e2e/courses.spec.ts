@@ -15,7 +15,8 @@ test.describe('courses', () => {
     await page.getByLabel('Course number').fill('234247')
     await page.getByRole('button', { name: 'Save Course' }).click()
 
-    await expect(page.getByText('Algorithms 1')).toBeVisible()
+    // Target the card's edit button (the toast also contains the name).
+    await expect(page.getByRole('button', { name: /Edit Algorithms 1/ })).toBeVisible()
     await expect(page.getByText(/#234247/)).toBeVisible()
   })
 
@@ -24,10 +25,10 @@ test.describe('courses', () => {
     await page.getByRole('button', { name: 'Add Course' }).click()
     await page.getByLabel('Course name').fill('Calculus 2')
     await page.getByRole('button', { name: 'Save Course' }).click()
-    await expect(page.getByText('Calculus 2')).toBeVisible()
+    await expect(page.getByRole('button', { name: /Edit Calculus 2/ })).toBeVisible()
 
     await page.reload()
-    await expect(page.getByText('Calculus 2')).toBeVisible()
+    await expect(page.getByRole('button', { name: /Edit Calculus 2/ })).toBeVisible()
   })
 
   test('toggles dark theme and persists it', async ({ page }) => {
