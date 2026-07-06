@@ -1,0 +1,196 @@
+/**
+ * Applies parsed Cheesefork/ICS courses to AppData — port of the legacy
+ * import-export.js processImportedData. Pure: returns a new AppData plus a
+ * report of what was created or updated; the input is never mutated.
+ */
+
+import {
+  courseSchema,
+  type AppData,
+  type Course,
+  type Semester,
+  type Settings,
+} from '@/domain/model'
+import { newId } from '@/domain/ids'
+import { nextCourseColor } from '@/domain/colors'
+import { createSemester } from '@/domain/semester'
+import { translateSemesterName, type ImportedCourse, type ImportedSchedule } from './ics'
+
+export interface ImportReport {
+  createdSemester: boolean
+  createdCourses: string[]
+  updatedCourses: string[]
+}
+
+/** "234247 - אלגוריתמים 1" → number "234247", name "אלגוריתמים 1". */
+const NUMBER_PREFIX_RE = /^(\d{6,8})\s*[-–]\s*(.+)/
+
+/** Mirrors legacy findExistingCourse: number match first, then name substring. */
+function findExistingCourse(
+  courses: readonly Course[],
+  imported: ImportedCourse,
+): Course | undefined {
+  if (imported.number) {
+    const byNumber = courses.find(
+      (c) => c.name.includes(imported.number) || c.number === imported.number,
+    )
+    if (byNumber) return byNumber
+  }
+  if (!imported.name) return undefined
+  return courses.find((c) => c.name.includes(imported.name) || c.name === imported.name)
+}
+
+function isDuplicateSlot(
+  schedule: readonly { day: number; start: string; end: string }[],
+  slot: ImportedSchedule,
+): boolean {
+  return schedule.some((s) => s.day === slot.day && s.start === slot.start && s.end === slot.end)
+}
+
+/**
+ * Fills empty exam dates and appends missing schedule slots. Returns the
+ * merged copy, or null when nothing changed.
+ */
+function mergeImportedCourse(course: Course, imported: ImportedCourse): Course | null {
+  let changed = false
+
+  const exams = { ...course.exams }
+  if (!exams.moedA && imported.exams.moedA) {
+    exams.moedA = imported.exams.moedA
+    changed = true
+  }
+  if (!exams.moedB && imported.exams.moedB) {
+    exams.moedB = imported.exams.moedB
+    changed = true
+  }
+
+  const schedule = [...course.schedule]
+  for (const slot of imported.schedule) {
+    if (!isDuplicateSlot(schedule, slot)) {
+      schedule.push({ ...slot })
+      changed = true
+    }
+  }
+
+  return changed ? { ...course, exams, schedule } : null
+}
+
+function createImportedCourse(
+  imported: ImportedCourse,
+  existingColors: string[],
+  settings: Settings,
+): Course {
+  let number = imported.number
+  let name = imported.name
+
+  if (!number) {
+    const parts = NUMBER_PREFIX_RE.exec(name)
+    if (parts?.[1] && parts[2]) {
+      number = parts[1]
+      name = parts[2]
+    }
+  }
+
+  return courseSchema.parse({
+    id: newId(),
+    name,
+    color: nextCourseColor(existingColors, settings),
+    number,
+    lecturer: imported.lecturers.join(', '),
+    location: imported.locations.join(', '),
+    schedule: imported.schedule,
+    exams: imported.exams,
+  })
+}
+
+/**
+ * Imports courses into the semester named `semesterName` (Hebrew season names
+ * are translated first, matching legacy; lookup is case-insensitive and the
+ * semester is created when missing). Existing courses — matched by number or
+ * name substring — get empty exam dates filled and missing schedule slots
+ * added; the rest are created with the next palette color and schema
+ * defaults. `lastModified` is set to `nowIso`.
+ */
+export function applyImportedCourses(
+  data: AppData,
+  semesterName: string,
+  imported: ImportedCourse[],
+  nowIso: string,
+): { data: AppData; report: ImportReport; semesterId: string } {
+  const targetName = translateSemesterName(semesterName)
+  const existing = data.semesters.find((s) => s.name.toLowerCase() === targetName.toLowerCase())
+  const semester = existing ?? createSemester(targetName, newId())
+
+  const courses = [...semester.courses]
+  const createdCourses: string[] = []
+  const updatedCourses: string[] = []
+
+  for (const importedCourse of imported) {
+    const match = findExistingCourse(courses, importedCourse)
+    if (match) {
+      const merged = mergeImportedCourse(match, importedCourse)
+      if (merged) {
+        courses[courses.indexOf(match)] = merged
+        updatedCourses.push(merged.name)
+      }
+    } else {
+      const course = createImportedCourse(
+        importedCourse,
+        courses.map((c) => c.color),
+        data.settings,
+      )
+      courses.push(course)
+      createdCourses.push(course.name)
+    }
+  }
+
+  // A re-import into an existing semester that created/updated nothing must
+  // return the input `data` by reference (like runCatalogEnrichment does on a
+  // no-op). Otherwise a fresh semester clone defeats reconcileImport's identity
+  // check and a zero-change import silently reverts an edit that synced in while
+  // the fetch was in flight. A brand-new semester is always a real change.
+  if (existing && createdCourses.length === 0 && updatedCourses.length === 0) {
+    return {
+      data,
+      report: { createdSemester: false, createdCourses, updatedCourses },
+      semesterId: existing.id,
+    }
+  }
+
+  const nextSemester: Semester = { ...semester, courses }
+  const semesters = existing
+    ? data.semesters.map((s) => (s.id === existing.id ? nextSemester : s))
+    : [...data.semesters, nextSemester]
+
+  return {
+    data: { ...data, semesters, lastModified: nowIso },
+    report: { createdSemester: !existing, createdCourses, updatedCourses },
+    semesterId: semester.id,
+  }
+}
+
+/**
+ * Re-applies the result of an import onto the latest store data.
+ *
+ * A fetch (ICS / catalog / batch) can take seconds, during which a cloud-sync
+ * update may land locally. Replacing the store wholesale with a result derived
+ * from a pre-fetch snapshot would silently clobber that concurrent change. Since
+ * an import only ever produces new `semesters` (it never touches settings, and
+ * untouched semesters keep their reference), we overlay exactly the semesters the
+ * import created or changed onto `fresh` by id — preserving every other semester,
+ * plus settings and selection, that may have changed while the fetch was in
+ * flight. (A concurrent edit to the *same* semester being imported is still
+ * resolved last-write-wins in the import's favor — an inherent conflict.)
+ */
+export function reconcileImport(fresh: AppData, snapshot: AppData, imported: AppData): AppData {
+  const snapshotById = new Map(snapshot.semesters.map((s) => [s.id, s]))
+  const changed = imported.semesters.filter((s) => snapshotById.get(s.id) !== s)
+  if (changed.length === 0) return fresh
+
+  const changedById = new Map(changed.map((s) => [s.id, s]))
+  const freshIds = new Set(fresh.semesters.map((s) => s.id))
+  const semesters = fresh.semesters.map((s) => changedById.get(s.id) ?? s)
+  for (const s of changed) if (!freshIds.has(s.id)) semesters.push(s)
+
+  return { ...fresh, semesters }
+}

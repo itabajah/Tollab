@@ -1,0 +1,296 @@
+@import 'tailwindcss';
+
+/*
+ * Tollab design tokens.
+ * Monochrome system: near-black accent on light, near-white accent on dark;
+ * color enters only through per-course hues and fixed status colors. Depth comes
+ * from a shared elevation scale and tonal steps — never from new colors.
+ */
+:root {
+  color-scheme: light;
+  --bg-primary: #f6f6f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f1f2;
+  --text-primary: #1a1a1a;
+  --text-secondary: #525252;
+  --text-tertiary: #6f6f6f;
+  --border-primary: #e5e5e5;
+  --border-secondary: #d4d4d4;
+  --accent: #1a1a1a;
+  --accent-hover: #404040;
+  --success-bg: #f0fdf4;
+  --success-border: #16a34a;
+  --success-text: #15803d;
+  --error-bg: #fef2f2;
+  --error-border: #dc2626;
+  --error-text: #b91c1c;
+  --warning-bg: #fffbeb;
+  --warning-border: #d97706;
+  --warning-text: #b45309;
+  --progress-bg: #e5e5e5;
+  --progress-fill: #1a1a1a;
+  /* Keyboard focus ring (accent at low alpha — visible in both themes). */
+  --focus-ring: rgba(26, 26, 26, 0.45);
+  /* Layered elevation: a hairline + a soft ambient blur. */
+  --elevation-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --elevation-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --elevation-md: 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.1);
+  --elevation-lg: 0 4px 8px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.14);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #262626;
+  --text-primary: #fafafa;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #8c8c8c;
+  --border-primary: #2a2a2a;
+  --border-secondary: #404040;
+  --accent: #fafafa;
+  --accent-hover: #d4d4d4;
+  --success-bg: #052e16;
+  --success-border: #16a34a;
+  --success-text: #4ade80;
+  --error-bg: #450a0a;
+  --error-border: #dc2626;
+  --error-text: #f87171;
+  --warning-bg: #451a03;
+  --warning-border: #d97706;
+  --warning-text: #fbbf24;
+  --progress-bg: #262626;
+  --progress-fill: #fafafa;
+  --focus-ring: rgba(250, 250, 250, 0.5);
+  /* On near-black surfaces a black drop-shadow is invisible, so dark elevation
+     leans on a stronger ambient shadow plus an inset top highlight (a faux light
+     source) to read as genuinely raised. */
+  --elevation-xs: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --elevation-sm: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 6px rgba(0, 0, 0, 0.55);
+  --elevation-md: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 6px 20px rgba(0, 0, 0, 0.6);
+  --elevation-lg: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 40px rgba(0, 0, 0, 0.7);
+}
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+  --color-surface: var(--bg-primary);
+  --color-panel: var(--bg-secondary);
+  --color-inset: var(--bg-tertiary);
+  --color-ink: var(--text-primary);
+  --color-ink-muted: var(--text-secondary);
+  --color-ink-faint: var(--text-tertiary);
+  --color-line: var(--border-primary);
+  --color-line-strong: var(--border-secondary);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--bg-secondary);
+  --color-focus: var(--focus-ring);
+  --color-success-bg: var(--success-bg);
+  --color-success-border: var(--success-border);
+  --color-success-text: var(--success-text);
+  --color-error-bg: var(--error-bg);
+  --color-error-border: var(--error-border);
+  --color-error-text: var(--error-text);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-border: var(--warning-border);
+  --color-warning-text: var(--warning-text);
+  --color-progress-bg: var(--progress-bg);
+  --color-progress-fill: var(--progress-fill);
+
+  /* Elevation scale — swaps per theme via the --elevation-* vars above. */
+  --shadow-xs: var(--elevation-xs);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+}
+
+@theme {
+  /* Fixed status colors (theme-independent, from legacy toast.css / calendar now-line) */
+  --color-status-success: #10b981;
+  --color-status-error: #ef4444;
+  --color-status-warning: #f59e0b;
+  --color-status-info: #3b82f6;
+  --color-now-line: #ef4444;
+
+  --font-logo: 'Pacifico', cursive;
+
+  /* Radius scale — a restrained, modern step up from the legacy 2px. Circular
+     elements keep rounded-full; everything else draws from these three. */
+  --radius-xs: 4px;
+  --radius-control: 5px;
+  --radius-card: 6px;
+  --radius-overlay: 8px;
+
+  /* Motion — one shared easing + a couple of durations so the whole app moves
+     with a single, tunable cadence. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+}
+
+/* The recurring uppercase micro-label (form fields, section titles). Callers add
+   their own color/weight; this owns the size/tracking/transform. */
+@utility label-caps {
+  font-size: 0.8125rem;
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+@layer base {
+  body {
+    @apply bg-surface text-ink antialiased;
+    accent-color: var(--accent);
+    transition:
+      background-color 0.3s var(--ease-standard),
+      color 0.3s var(--ease-standard);
+  }
+
+  /* On-brand text selection instead of the browser default blue. */
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 18%, transparent);
+  }
+
+  /* Consistent, visible keyboard focus for raw <button>/<a>/[tabindex] that don't
+     go through the Button/IconButton primitives. Pointer clicks stay ring-free. */
+  :where(button, a, [role='button'], summary):focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-surface),
+      0 0 0 4px var(--focus-ring);
+  }
+}
+
+/* Full-spectrum track for the base-hue picker (Appearance settings, course color). */
+.hue-slider {
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    hsl(0, 45%, 50%),
+    hsl(60, 45%, 50%),
+    hsl(120, 45%, 50%),
+    hsl(180, 45%, 50%),
+    hsl(240, 45%, 50%),
+    hsl(300, 45%, 50%),
+    hsl(360, 45%, 50%)
+  );
+}
+.hue-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-secondary);
+  background: var(--accent);
+  cursor: pointer;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* A calm fade + a barely-there scale, in place (no slide). The full
+   translate(-50%, …) is constant so the dialog stays centered while it fades;
+   scale sits close to 1 so it settles rather than pops. The overlay's blur is
+   static (never animated — animating backdrop-filter janks); it fades in with
+   the overlay's own opacity instead. */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialog-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(60%);
+  }
+}
+
+/* Deep-link attention pulse (see useHighlight). Disabled by the reduced-motion
+   block below, which zeroes animation durations globally. */
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--accent);
+  }
+  30% {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* A soft one-shot pulse for an imminent (today/tomorrow) exam node. */
+@keyframes urgent-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--warning-border);
+  }
+}
+
+[data-highlight='true'] {
+  animation: highlight-pulse 1.4s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

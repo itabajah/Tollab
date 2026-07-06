@@ -1,0 +1,40 @@
+# Deploys the Realtime Database security rules (database.rules.json) that enforce
+# per-user isolation of tollab/users/<uid>/data. Kept separate from the Pages
+# deploy so a missing Firebase credential never blocks shipping the site, and
+# manual-dispatch only (like deploy.yml) while the rebuild is in progress.
+#
+# Requires two repo secrets:
+#   FIREBASE_TOKEN       — a CI token (`firebase login:ci`), or swap in a
+#                          service account via GOOGLE_APPLICATION_CREDENTIALS.
+#   FIREBASE_PROJECT_ID  — the Firebase project id.
+name: Deploy Firebase Database Rules
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Firebase credentials are configured
+        run: |
+          if [ -z "${{ secrets.FIREBASE_TOKEN }}" ] || [ -z "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
+            echo "::error::FIREBASE_TOKEN and FIREBASE_PROJECT_ID must be set to deploy database rules."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Deploy database rules
+        # Pin the major so a deploy running with FIREBASE_TOKEN in scope can't pull
+        # an unexpected (or compromised) firebase-tools release at run time.
+        run: >
+          npx -y firebase-tools@13 deploy
+          --only database
+          --project "${{ secrets.FIREBASE_PROJECT_ID }}"
+          --token "${{ secrets.FIREBASE_TOKEN }}"
+          --non-interactive
