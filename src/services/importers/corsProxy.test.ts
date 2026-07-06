@@ -1,6 +1,17 @@
-import { CORS_PROXIES, ProxyFetchError, fetchViaProxies } from './corsProxy'
+import { CORS_PROXIES, ProxyFetchError, fetchViaProxies, resolveProxies } from './corsProxy'
 
 const TARGET = 'https://www.youtube.com/playlist?list=PL123'
+
+/**
+ * A stable 3-proxy list injected into fetchViaProxies so the state-machine
+ * tests are independent of the real CORS_PROXIES list and of the runtime
+ * resolution (dev proxy / VITE_CORS_PROXY), which are tested separately below.
+ */
+const TEST_PROXIES: Array<(url: string) => string> = [
+  (url) => `https://p1.test/?u=${encodeURIComponent(url)}`,
+  (url) => `https://p2.test/?u=${encodeURIComponent(url)}`,
+  (url) => `https://p3.test/?u=${encodeURIComponent(url)}`,
+]
 
 interface StubCall {
   url: string
@@ -53,15 +64,52 @@ async function expectProxyFetchError(promise: Promise<string>): Promise<ProxyFet
 }
 
 describe('CORS_PROXIES', () => {
-  it('contains the three legacy proxy URL builders in order', () => {
+  it('lists the surviving public proxies, allorigins first', () => {
     const url = 'https://example.com/path?a=1&b=2'
     const encoded = encodeURIComponent(url)
-    expect(CORS_PROXIES).toHaveLength(3)
+    expect(CORS_PROXIES).toHaveLength(2)
     expect(CORS_PROXIES.map((make) => make(url))).toEqual([
-      `https://api.codetabs.com/v1/proxy?quest=${encoded}`,
-      `https://corsproxy.org/?${encoded}`,
       `https://api.allorigins.win/raw?url=${encoded}`,
+      `https://api.codetabs.com/v1/proxy?quest=${encoded}`,
     ])
+  })
+})
+
+describe('resolveProxies', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('ends with the public CORS_PROXIES, in order', () => {
+    const url = 'https://example.com/x'
+    const chain = resolveProxies()
+    const tail = chain.slice(chain.length - CORS_PROXIES.length)
+    expect(tail.map((make) => make(url))).toEqual(CORS_PROXIES.map((make) => make(url)))
+  })
+
+  it('prepends the same-origin dev proxy in development', () => {
+    const url = 'https://example.com/x?a=1'
+    const chain = resolveProxies()
+    if (import.meta.env.DEV) {
+      expect(chain[0]?.(url)).toBe(`/__cors?url=${encodeURIComponent(url)}`)
+      expect(chain).toHaveLength(CORS_PROXIES.length + 1)
+    } else {
+      expect(chain).toHaveLength(CORS_PROXIES.length)
+    }
+  })
+
+  it('includes a VITE_CORS_PROXY custom proxy, substituting {url}', () => {
+    vi.stubEnv('VITE_CORS_PROXY', 'https://worker.dev/?u={url}')
+    const url = 'https://example.com/x?a=1'
+    const built = resolveProxies().map((make) => make(url))
+    expect(built).toContain(`https://worker.dev/?u=${encodeURIComponent(url)}`)
+  })
+
+  it('appends the target when VITE_CORS_PROXY has no {url} placeholder', () => {
+    vi.stubEnv('VITE_CORS_PROXY', 'https://worker.dev/proxy?url=')
+    const url = 'https://example.com/x'
+    const built = resolveProxies().map((make) => make(url))
+    expect(built).toContain(`https://worker.dev/proxy?url=${encodeURIComponent(url)}`)
   })
 })
 
@@ -70,11 +118,11 @@ describe('fetchViaProxies', () => {
     const { impl, calls } = makeFetchStub([new Response('<html>ok</html>', { status: 200 })])
     const { delayFn, delays } = makeDelaySpy()
 
-    const text = await fetchViaProxies(TARGET, { fetchImpl: impl, delayFn })
+    const text = await fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES })
 
     expect(text).toBe('<html>ok</html>')
     expect(calls).toHaveLength(1)
-    expect(calls[0]?.url).toBe(CORS_PROXIES[0]?.(TARGET))
+    expect(calls[0]?.url).toBe(TEST_PROXIES[0]?.(TARGET))
     expect(delays).toEqual([])
   })
 
@@ -88,14 +136,15 @@ describe('fetchViaProxies', () => {
     const text = await fetchViaProxies(TARGET, {
       fetchImpl: impl,
       delayFn,
+      proxies: TEST_PROXIES,
       validate: (body) => body.includes('target'),
     })
 
     expect(text).toBe('the real target page')
     // Validation failure moves to the NEXT proxy (not a retry of the same one).
     expect(calls.map((call) => call.url)).toEqual([
-      CORS_PROXIES[0]?.(TARGET),
-      CORS_PROXIES[1]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[1]?.(TARGET),
     ])
     expect(delays).toEqual([])
   })
@@ -103,7 +152,7 @@ describe('fetchViaProxies', () => {
   it('passes an abort signal and an Accept header to the fetch implementation', async () => {
     const { impl, calls } = makeFetchStub([new Response('body', { status: 200 })])
 
-    await fetchViaProxies(TARGET, { fetchImpl: impl })
+    await fetchViaProxies(TARGET, { fetchImpl: impl, proxies: TEST_PROXIES })
 
     expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal)
     expect(calls[0]?.init?.headers).toEqual({
@@ -119,13 +168,13 @@ describe('fetchViaProxies', () => {
     ])
     const { delayFn, delays } = makeDelaySpy()
 
-    const text = await fetchViaProxies(TARGET, { fetchImpl: impl, delayFn })
+    const text = await fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES })
 
     expect(text).toBe('recovered')
     expect(calls.map((call) => call.url)).toEqual([
-      CORS_PROXIES[0]?.(TARGET),
-      CORS_PROXIES[0]?.(TARGET),
-      CORS_PROXIES[1]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[1]?.(TARGET),
     ])
     // One backoff delay before the single retry on proxy 1, none before a fresh proxy.
     expect(delays).toEqual([500])
@@ -138,12 +187,12 @@ describe('fetchViaProxies', () => {
     ])
     const { delayFn, delays } = makeDelaySpy()
 
-    const text = await fetchViaProxies(TARGET, { fetchImpl: impl, delayFn })
+    const text = await fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES })
 
     expect(text).toBe('found it')
     expect(calls.map((call) => call.url)).toEqual([
-      CORS_PROXIES[0]?.(TARGET),
-      CORS_PROXIES[1]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[1]?.(TARGET),
     ])
     expect(delays).toEqual([])
   })
@@ -155,12 +204,12 @@ describe('fetchViaProxies', () => {
     ])
     const { delayFn, delays } = makeDelaySpy()
 
-    const text = await fetchViaProxies(TARGET, { fetchImpl: impl, delayFn })
+    const text = await fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES })
 
     expect(text).toBe('welcome back')
     expect(calls.map((call) => call.url)).toEqual([
-      CORS_PROXIES[0]?.(TARGET),
-      CORS_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
     ])
     // 2000ms rate-limit wait after the 429, then the standard 500ms retry backoff.
     expect(delays).toEqual([2000, 500])
@@ -181,6 +230,7 @@ describe('fetchViaProxies', () => {
     const text = await fetchViaProxies(TARGET, {
       fetchImpl: impl,
       delayFn,
+      proxies: TEST_PROXIES,
       retriesPerProxy: 6,
     })
 
@@ -196,6 +246,7 @@ describe('fetchViaProxies', () => {
       fetchViaProxies(TARGET, {
         fetchImpl: impl,
         delayFn,
+        proxies: TEST_PROXIES,
         timeoutMs: 5,
         retriesPerProxy: 1,
       }),
@@ -203,9 +254,9 @@ describe('fetchViaProxies', () => {
 
     expect(error.attempts).toBe(3)
     expect(calls.map((call) => call.url)).toEqual([
-      CORS_PROXIES[0]?.(TARGET),
-      CORS_PROXIES[1]?.(TARGET),
-      CORS_PROXIES[2]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[1]?.(TARGET),
+      TEST_PROXIES[2]?.(TARGET),
     ])
   })
 
@@ -221,17 +272,19 @@ describe('fetchViaProxies', () => {
     ])
     const { delayFn } = makeDelaySpy()
 
-    const error = await expectProxyFetchError(fetchViaProxies(TARGET, { fetchImpl: impl, delayFn }))
+    const error = await expectProxyFetchError(
+      fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES }),
+    )
 
     // Default retriesPerProxy is 2: two attempts per proxy, three proxies.
     expect(error.attempts).toBe(6)
     expect(calls.map((call) => call.url)).toEqual([
-      CORS_PROXIES[0]?.(TARGET),
-      CORS_PROXIES[0]?.(TARGET),
-      CORS_PROXIES[1]?.(TARGET),
-      CORS_PROXIES[1]?.(TARGET),
-      CORS_PROXIES[2]?.(TARGET),
-      CORS_PROXIES[2]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[0]?.(TARGET),
+      TEST_PROXIES[1]?.(TARGET),
+      TEST_PROXIES[1]?.(TARGET),
+      TEST_PROXIES[2]?.(TARGET),
+      TEST_PROXIES[2]?.(TARGET),
     ])
   })
 
@@ -245,7 +298,9 @@ describe('fetchViaProxies', () => {
     ])
     const { delayFn, delays } = makeDelaySpy()
 
-    const error = await expectProxyFetchError(fetchViaProxies(TARGET, { fetchImpl: impl, delayFn }))
+    const error = await expectProxyFetchError(
+      fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES }),
+    )
 
     expect(error.attempts).toBe(5)
     expect(delays).toEqual([500, 500, 2000])
@@ -262,7 +317,9 @@ describe('fetchViaProxies', () => {
     ])
     const { delayFn } = makeDelaySpy()
 
-    const error = await expectProxyFetchError(fetchViaProxies(TARGET, { fetchImpl: impl, delayFn }))
+    const error = await expectProxyFetchError(
+      fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES }),
+    )
 
     expect(error).toBeInstanceOf(Error)
     expect(error.name).toBe('ProxyFetchError')
@@ -280,7 +337,12 @@ describe('fetchViaProxies', () => {
     const { delayFn } = makeDelaySpy()
 
     const error = await expectProxyFetchError(
-      fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, retriesPerProxy: 1 }),
+      fetchViaProxies(TARGET, {
+        fetchImpl: impl,
+        delayFn,
+        proxies: TEST_PROXIES,
+        retriesPerProxy: 1,
+      }),
     )
 
     expect(error.attempts).toBe(3)
@@ -292,7 +354,12 @@ describe('fetchViaProxies', () => {
     const { delayFn } = makeDelaySpy()
 
     const error = await expectProxyFetchError(
-      fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, retriesPerProxy: 0 }),
+      fetchViaProxies(TARGET, {
+        fetchImpl: impl,
+        delayFn,
+        proxies: TEST_PROXIES,
+        retriesPerProxy: 0,
+      }),
     )
 
     expect(error.attempts).toBe(0)
