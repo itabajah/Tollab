@@ -95,11 +95,15 @@ export function HeaderTicker({ now, onSelect = noop }: HeaderTickerProps) {
   if (!current) return null
 
   // Motivational / streak / setup items have no course to open (target 'none').
-  // Keep the element a <button> (a test asserts that + aria-live) but make it
-  // read as non-interactive so it doesn't invite a click that goes nowhere.
+  // Keep the element a <button> but make it read as non-interactive so it doesn't
+  // invite a click that goes nowhere.
   const actionable = current.target.type !== 'none'
 
   return (
+    // No aria-live: the strip auto-rotates every ~9s, and a live region would
+    // re-announce each rotation and continually interrupt screen-reader users.
+    // The current text is still the button's accessible name (read on focus), and
+    // rotation pauses while the strip is focused, so it stays explorable.
     <button
       type="button"
       data-testid="header-ticker"
@@ -110,7 +114,6 @@ export function HeaderTicker({ now, onSelect = noop }: HeaderTickerProps) {
       onMouseLeave={() => setInteracting(false)}
       onFocus={() => setInteracting(true)}
       onBlur={() => setInteracting(false)}
-      aria-live="polite"
       aria-disabled={!actionable || undefined}
       title={current.text}
       className={cn(

@@ -78,4 +78,41 @@ describe('CloudStatus', () => {
     await user.click(await screen.findByRole('button', { name: 'Disconnect' }))
     expect(screen.getByRole('button', { name: /sign in with google/i })).toBeInTheDocument()
   })
+
+  it('surfaces a failed sign-out with an error toast (no unhandled rejection)', async () => {
+    const user = userEvent.setup()
+    const storage = createMemoryStorage()
+    const session = createSession({ storage, now: () => NOW })
+    let current: AuthUser | null = null
+    const listeners = new Set<(u: AuthUser | null) => void>()
+    const auth: AuthService = {
+      currentUser: () => current,
+      onChange: (cb) => {
+        listeners.add(cb)
+        cb(current)
+        return () => listeners.delete(cb)
+      },
+      signIn: async () => {
+        current = { uid: 'u1', email: 'me@technion.ac.il' }
+        listeners.forEach((l) => l(current))
+      },
+      signOut: async () => {
+        throw new Error('network down')
+      },
+    }
+    const controller = createSyncController({
+      session,
+      storage,
+      clientId: 'c',
+      auth,
+      now: () => NOW,
+      delayFn: async () => {},
+      createBackend: () => createFakeBackend(),
+    })
+    renderWithController(controller)
+
+    await user.click(screen.getByRole('button', { name: /sign in with google/i }))
+    await user.click(await screen.findByRole('button', { name: 'Disconnect' }))
+    expect(await screen.findByText(/couldn.t sign out/i)).toBeInTheDocument()
+  })
 })

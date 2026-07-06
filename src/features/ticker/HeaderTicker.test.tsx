@@ -73,7 +73,8 @@ describe('HeaderTicker', () => {
 
     const ticker = screen.getByTestId('header-ticker')
     expect(ticker).toBeInTheDocument()
-    expect(ticker).toHaveAttribute('aria-live', 'polite')
+    // No aria-live: an auto-rotating strip must not re-announce every ~9s.
+    expect(ticker).not.toHaveAttribute('aria-live')
     expect(ticker.tagName).toBe('BUTTON')
     expect(readText().trim().length).toBeGreaterThan(0)
     expect(

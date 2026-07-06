@@ -37,6 +37,29 @@ function Consumer() {
       >
         ask-name
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          void confirm({
+            title: 'First',
+            message: 'first message',
+            confirmLabel: 'Delete',
+            dangerous: true,
+          }).then((ok) => {
+            document.title = `first:${ok}`
+          })
+          void confirm({
+            title: 'Second',
+            message: 'second message',
+            confirmLabel: 'Delete',
+            dangerous: true,
+          }).then((ok) => {
+            document.title = `second:${ok}`
+          })
+        }}
+      >
+        ask-twice
+      </button>
     </div>
   )
 }
@@ -67,6 +90,19 @@ describe('useConfirm', () => {
     await user.click(screen.getByRole('button', { name: 'ask' }))
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     await waitFor(() => expect(document.title).toBe('cancelled'))
+  })
+
+  it('supersedes an unsettled confirm — the first resolves false, the second still settles', async () => {
+    const user = userEvent.setup()
+    setup()
+    // Open two confirms in one tick: the second must supersede the first rather
+    // than leaving its promise to hang forever.
+    await user.click(screen.getByRole('button', { name: 'ask-twice' }))
+    await waitFor(() => expect(document.title).toBe('first:false'))
+    expect(screen.getByText('second message')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(document.title).toBe('second:true'))
   })
 })
 

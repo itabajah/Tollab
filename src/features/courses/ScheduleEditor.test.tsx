@@ -28,4 +28,27 @@ describe('ScheduleEditor', () => {
 
     expect(onChange).toHaveBeenCalledWith([{ day: 1, start: '10:00', end: '12:00' }])
   })
+
+  it('rejects empty times without calling onChange', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<ScheduleEditor slots={[]} onChange={onChange} />)
+
+    await user.click(screen.getByRole('button', { name: 'Add slot' }))
+
+    expect(screen.getByText(/enter valid times/i)).toBeInTheDocument()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('removes an existing slot via its Remove button', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <ScheduleEditor slots={[{ day: 1, start: '10:00', end: '12:00' }]} onChange={onChange} />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /remove mon 10:00/i }))
+
+    expect(onChange).toHaveBeenCalledWith([])
+  })
 })

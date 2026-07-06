@@ -59,16 +59,17 @@ export function FetchDataTab() {
         icsUrl.trim(),
         { season: startSeason, year: startYear },
         { season: endSeason, year: endYear },
-        { semesterName: '', nowIso: new Date().toISOString() },
+        { semesterName: '', nowIso: now.toISOString() },
       )
       applyResult(snapshot, result.data)
-      // Switch to the newest semester now in the store (sort is newest-first).
-      const newest = sortSemesters(session.appStore.getState().data.semesters)[0]
-      if (newest) session.appStore.getState().selectSemester(newest.id)
       if (result.imported.length === 0) {
         setStatus('No semesters found in that range.')
         toast.error('Batch import found nothing')
       } else {
+        // Only switch selection when something was actually imported (sort is
+        // newest-first); an empty range must not jump the user off their semester.
+        const newest = sortSemesters(session.appStore.getState().data.semesters)[0]
+        if (newest) session.appStore.getState().selectSemester(newest.id)
         const skipped = result.skipped.length ? ` Skipped: ${result.skipped.join(', ')}.` : ''
         setStatus(`Imported ${result.imported.map((i) => i.name).join(', ')}.${skipped}`)
         toast.success(`Imported ${result.imported.length} semesters`)
@@ -96,7 +97,7 @@ export function FetchDataTab() {
       const result = await runIcsImport(snapshot, icsUrl.trim(), {
         // With no active semester the importer names the new one from the ICS itself.
         semesterName: semester?.name ?? '',
-        nowIso: new Date().toISOString(),
+        nowIso: now.toISOString(),
       })
       applyResult(snapshot, result.data)
       // If we imported with no semester selected, switch to the one just created.
@@ -123,7 +124,7 @@ export function FetchDataTab() {
       const { runCatalogEnrichment } = await import('@/services/importers/runImport')
       const snapshot = session.appStore.getState().data
       const result = await runCatalogEnrichment(snapshot, semester.id, {
-        nowIso: new Date().toISOString(),
+        nowIso: now.toISOString(),
       })
       applyResult(snapshot, result.data)
       setStatus(`Updated ${result.updatedCount} courses from the catalog.`)

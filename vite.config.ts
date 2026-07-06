@@ -11,7 +11,26 @@ import { fileURLToPath } from 'node:url'
  *
  * `apply: 'serve'` keeps it out of the built app entirely: production is a
  * static GitHub Pages site, so it falls back to public proxies / VITE_CORS_PROXY.
+ *
+ * The target host is restricted to the services the importers actually call, so
+ * a page open in the dev browser can't turn this into an open proxy / SSRF into
+ * the dev machine's localhost or intranet (the response carries ACAO: *).
  */
+const ALLOWED_PROXY_HOST_SUFFIXES = [
+  'cheesefork.cf',
+  'youtube.com',
+  'youtu.be',
+  'googlevideo.com',
+  'panopto.com',
+  'panopto.eu',
+  'technion.ac.il',
+]
+
+function isAllowedProxyHost(hostname: string): boolean {
+  const h = hostname.toLowerCase()
+  return ALLOWED_PROXY_HOST_SUFFIXES.some((suffix) => h === suffix || h.endsWith(`.${suffix}`))
+}
+
 function corsDevProxy(): Plugin {
   return {
     name: 'tollab-cors-dev-proxy',
@@ -27,6 +46,17 @@ function corsDevProxy(): Plugin {
           const target = new URL(req.url ?? '', 'http://localhost').searchParams.get('url')
           if (!target || !/^https?:\/\//i.test(target)) {
             fail(400, 'Dev CORS proxy: missing or invalid ?url=')
+            return
+          }
+          let targetUrl: URL
+          try {
+            targetUrl = new URL(target)
+          } catch {
+            fail(400, 'Dev CORS proxy: unparseable ?url=')
+            return
+          }
+          if (!isAllowedProxyHost(targetUrl.hostname)) {
+            fail(403, `Dev CORS proxy: host not allowed (${targetUrl.hostname})`)
             return
           }
           const upstream = await fetch(target, {

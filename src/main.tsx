@@ -9,6 +9,8 @@ import { getFirebaseApp } from '@/services/firebase/app'
 import { createFirebaseAuth } from '@/services/firebase/auth'
 import { createFirebaseBackend } from '@/services/sync/firebaseBackend'
 import { Providers } from '@/features/app/Providers'
+import { notifySaveError } from '@/features/app/saveError'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import App from '@/App'
 
 const storage = localStorage
@@ -20,7 +22,10 @@ let syncController: SyncController | null = null
 const session = createSession({
   storage,
   onDirty: () => syncController?.notifyLocalChange(),
-  onSaveError: (error) => console.error('[Tollab] Failed to save data', error),
+  onSaveError: (error) => {
+    console.error('[Tollab] Failed to save data', error)
+    notifySaveError()
+  },
 })
 
 // Cloud sync is optional: only wired when a Firebase config was built in.
@@ -50,8 +55,10 @@ document.addEventListener('visibilitychange', () => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Providers session={session} syncController={syncController}>
-      <App />
-    </Providers>
+    <ErrorBoundary>
+      <Providers session={session} syncController={syncController}>
+        <App />
+      </Providers>
+    </ErrorBoundary>
   </StrictMode>,
 )

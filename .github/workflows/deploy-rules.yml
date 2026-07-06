@@ -30,8 +30,10 @@ jobs:
           node-version: 22
 
       - name: Deploy database rules
+        # Pin the major so a deploy running with FIREBASE_TOKEN in scope can't pull
+        # an unexpected (or compromised) firebase-tools release at run time.
         run: >
-          npx -y firebase-tools deploy
+          npx -y firebase-tools@13 deploy
           --only database
           --project "${{ secrets.FIREBASE_PROJECT_ID }}"
           --token "${{ secrets.FIREBASE_TOKEN }}"

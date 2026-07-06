@@ -44,6 +44,26 @@ describe('isEmptyProfile', () => {
 })
 
 describe('mergePayloads', () => {
+  it('frees a renamed profile’s old name so a later distinct profile keeps it (no spurious suffix)', () => {
+    const local: CloudPayload = {
+      activeProfileId: '1',
+      profiles: [profile('1', 'Uni', '2026-01-01T00:00:00Z', dataAt('2026-01-01T00:00:00Z'))],
+    }
+    const cloud: CloudPayload = {
+      activeProfileId: '1',
+      profiles: [
+        // id 1 is newer on the cloud and renamed → wins, freeing the name 'Uni'.
+        profile('1', 'Renamed', '2026-02-01T00:00:00Z', dataAt('2026-02-01T00:00:00Z')),
+        // A genuinely-distinct profile that owns 'Uni' — must NOT become 'Uni (2)'.
+        profile('2', 'Uni', '2026-01-01T00:00:00Z', dataAt('2026-01-01T00:00:00Z')),
+      ],
+    }
+    const merged = mergePayloads(local, cloud, NOW)
+    const byId = new Map(merged.profiles.map((p) => [p.id, p.name]))
+    expect(byId.get('1')).toBe('Renamed')
+    expect(byId.get('2')).toBe('Uni')
+  })
+
   it('unions distinct profiles from both sides', () => {
     const local: CloudPayload = {
       activeProfileId: 'a',

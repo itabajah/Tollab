@@ -52,6 +52,9 @@ function ProgressStat({ icon, value, label }: { icon: ReactNode; value: string; 
   return (
     <span className="inline-flex items-center gap-1 text-xs text-ink-muted" title={label}>
       {icon}
+      {/* The icon is decorative (aria-hidden) and `title` is only a mouse tooltip,
+          so an sr-only label carries the meaning to assistive tech. */}
+      <span className="sr-only">{label}: </span>
       {value}
     </span>
   )

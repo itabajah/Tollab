@@ -5,6 +5,7 @@ import { NowProvider } from '@/hooks/useNow'
 import { ToastProvider } from '@/components/ui/Toast'
 import { ConfirmProvider } from '@/components/ui/ConfirmProvider'
 import { CourseDialogProvider } from '@/features/courses/CourseDialogProvider'
+import { SaveErrorWatcher } from './SaveErrorWatcher'
 import type { Session } from '@/store/session'
 import type { SyncController } from '@/store/syncController'
 
@@ -33,6 +34,7 @@ export function Providers({
           <ToastProvider>
             <ConfirmProvider>
               <ThemeSync />
+              <SaveErrorWatcher />
               <CourseDialogProvider>{children}</CourseDialogProvider>
             </ConfirmProvider>
           </ToastProvider>

@@ -196,6 +196,22 @@ describe('applyImportedCourses — creating courses', () => {
 })
 
 describe('applyImportedCourses — merging into existing courses', () => {
+  it('returns the input data by reference on a no-op re-import (preserves concurrent edits)', () => {
+    const data = makeData([springWith([algoCourse({ number: '234247' })])])
+    // Re-import the same course (matched by number) with nothing new to add.
+    const imported = makeImported({ name: 'אלגוריתמים 1', number: '234247' })
+    const result = applyImportedCourses(data, 'Spring 2026', [imported], NOW)
+
+    expect(result.report).toEqual({
+      createdSemester: false,
+      createdCourses: [],
+      updatedCourses: [],
+    })
+    // Reference-equal so reconcileImport treats the semester as unchanged and a
+    // concurrent remote edit that synced in during the fetch isn't reverted.
+    expect(result.data).toBe(data)
+  })
+
   it('matches by exact course number and fills empty exam dates', () => {
     const data = makeData([springWith([algoCourse({ number: '234247' })])])
     const imported = makeImported({

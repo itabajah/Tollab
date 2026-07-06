@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { RecordingItem, RecordingSort } from '@/domain/model'
 import { supportsInlinePreview } from '@/lib/videoEmbed'
+import { safeHref } from '@/lib/safeHref'
 import { useAppActions } from '@/hooks/session'
 import { useConfirm } from '@/components/ui/ConfirmProvider'
 import { Button } from '@/components/ui/Button'
@@ -126,7 +127,7 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               {!embeddable && item.videoLink !== '' ? (
                 <a
-                  href={item.videoLink}
+                  href={safeHref(item.videoLink)}
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-control text-sm text-accent underline hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
@@ -138,7 +139,7 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
               ) : null}
               {item.slideLink !== '' ? (
                 <a
-                  href={item.slideLink}
+                  href={safeHref(item.slideLink)}
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-control text-sm text-accent underline hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"

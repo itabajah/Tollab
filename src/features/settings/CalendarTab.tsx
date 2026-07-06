@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { CalendarSettings } from '@/domain/model'
 import { useAppActions, useAppState } from '@/hooks/session'
 import { Button } from '@/components/ui/Button'
 import { Field, Input } from '@/components/ui/Field'
@@ -6,6 +7,8 @@ import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/cn'
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+type Touched = { start: boolean; end: boolean; days: boolean }
 
 export function CalendarTab() {
   const semester = useAppState((s) => s.data.semesters.find((x) => x.id === s.currentSemesterId))
@@ -16,6 +19,10 @@ export function CalendarTab() {
   const [days, setDays] = useState<number[]>(
     semester?.calendarSettings.visibleDays ?? [0, 1, 2, 3, 4, 5],
   )
+  // Track which fields the user actually edited since mount, so Save writes only
+  // those — a field left untouched keeps its live value and isn't clobbered by
+  // this form's mount-time snapshot if a cloud sync changed it meanwhile.
+  const [touched, setTouched] = useState<Touched>({ start: false, end: false, days: false })
   const [error, setError] = useState<string | null>(null)
 
   if (!semester) {
@@ -25,6 +32,7 @@ export function CalendarTab() {
   }
 
   const toggleDay = (day: number) => {
+    setTouched((t) => ({ ...t, days: true }))
     setDays((current) =>
       current.includes(day) ? current.filter((d) => d !== day) : [...current, day].sort(),
     )
@@ -45,7 +53,16 @@ export function CalendarTab() {
       setError('End hour must be after the start hour')
       return
     }
-    updateCalendarSettings(semester.id, { startHour: start, endHour: end, visibleDays: days })
+    if (days.length === 0) {
+      setError('Select at least one day')
+      return
+    }
+    const patch: Partial<CalendarSettings> = {}
+    if (touched.start) patch.startHour = start
+    if (touched.end) patch.endHour = end
+    if (touched.days) patch.visibleDays = days
+    if (Object.keys(patch).length > 0) updateCalendarSettings(semester.id, patch)
+    setTouched({ start: false, end: false, days: false })
     setError(null)
     toast.success('Calendar settings saved')
   }
@@ -61,7 +78,10 @@ export function CalendarTab() {
               min={0}
               max={23}
               value={startHour}
-              onChange={(e) => setStartHour(e.target.value)}
+              onChange={(e) => {
+                setTouched((t) => ({ ...t, start: true }))
+                setStartHour(e.target.value)
+              }}
             />
           )}
         </Field>
@@ -73,7 +93,10 @@ export function CalendarTab() {
               min={1}
               max={24}
               value={endHour}
-              onChange={(e) => setEndHour(e.target.value)}
+              onChange={(e) => {
+                setTouched((t) => ({ ...t, end: true }))
+                setEndHour(e.target.value)
+              }}
             />
           )}
         </Field>

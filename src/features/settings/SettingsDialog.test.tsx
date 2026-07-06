@@ -167,4 +167,21 @@ describe('SettingsDialog — Calendar tab', () => {
     await user.click(screen.getByRole('tab', { name: 'Calendar' }))
     expect(screen.getByText(/create a semester/i)).toBeInTheDocument()
   })
+
+  it('rejects saving with no visible days selected', async () => {
+    const user = userEvent.setup()
+    const { session } = setup((s) => s.appStore.getState().addSemester('Spring 2026'))
+    await user.click(screen.getByRole('tab', { name: 'Calendar' }))
+    // Uncheck every default-visible day (Sun–Fri).
+    for (const label of ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri']) {
+      await user.click(screen.getByRole('checkbox', { name: label }))
+    }
+    await user.click(screen.getByRole('button', { name: 'Save calendar settings' }))
+
+    expect(screen.getByText(/select at least one day/i)).toBeInTheDocument()
+    // The stored visible-days set is left untouched (no empty-grid save).
+    expect(session.appStore.getState().data.semesters[0]!.calendarSettings.visibleDays).toEqual([
+      0, 1, 2, 3, 4, 5,
+    ])
+  })
 })

@@ -3,6 +3,7 @@ import {
   extractNumber,
   sortRecordings,
   moveRecording,
+  moveRecordingAmongVisible,
   generateRecordingName,
   recordingsProgress,
   canDeleteTab,
@@ -189,6 +190,33 @@ describe('moveRecording', () => {
 
   it('handles an empty list', () => {
     expect(moveRecording([], 'a', 1)).toEqual([])
+  })
+})
+
+describe('moveRecordingAmongVisible', () => {
+  const visible = (item: RecordingItem) => !item.watched
+
+  it('moves past an adjacent hidden (watched) neighbor so the visible order changes', () => {
+    const items = [rec({ id: 'a' }), rec({ id: 'w', watched: true }), rec({ id: 'b' })]
+    // 'a' moves down: it must skip the hidden 'w' and swap with the visible 'b'.
+    expect(ids(moveRecordingAmongVisible(items, 'a', 1, visible))).toEqual(['b', 'w', 'a'])
+  })
+
+  it('is a same-order copy when there is no visible neighbor in that direction', () => {
+    const items = [rec({ id: 'a' }), rec({ id: 'w', watched: true })]
+    const result = moveRecordingAmongVisible(items, 'a', 1, visible)
+    expect(ids(result)).toEqual(['a', 'w'])
+    expect(result).not.toBe(items)
+  })
+
+  it('matches moveRecording when everything is visible', () => {
+    const items = [rec({ id: 'a' }), rec({ id: 'b' }), rec({ id: 'c' })]
+    expect(ids(moveRecordingAmongVisible(items, 'b', -1, () => true))).toEqual(['b', 'a', 'c'])
+  })
+
+  it('is a no-op for an unknown id', () => {
+    const items = [rec({ id: 'a' }), rec({ id: 'b' })]
+    expect(ids(moveRecordingAmongVisible(items, 'missing', 1, visible))).toEqual(['a', 'b'])
   })
 })
 

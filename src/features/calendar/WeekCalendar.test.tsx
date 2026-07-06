@@ -140,12 +140,38 @@ describe('WeekCalendar', () => {
   })
 
   it('filters to a single day in mobile day mode', async () => {
+    const original = window.matchMedia
+    // Report the mobile breakpoint as matching so single-day mode engages.
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('767.98px'),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia
+    try {
+      const user = userEvent.setup()
+      setup()
+      await user.click(screen.getByRole('button', { name: /today only/i }))
+      // only the current day's column header (Wed) remains among weekday headers
+      expect(screen.getByText('Wed')).toBeInTheDocument()
+      expect(screen.queryByText('Sun')).not.toBeInTheDocument()
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
+  it('does not collapse to a single day on desktop (single-day mode is mobile-gated)', async () => {
+    // Default matchMedia reports no match (desktop). Toggling "today only" must
+    // NOT strand the grid on one column with no visible control to restore it.
     const user = userEvent.setup()
     setup()
     await user.click(screen.getByRole('button', { name: /today only/i }))
-    // only the current day's column header (Wed) remains among weekday headers
+    expect(screen.getByText('Sun')).toBeInTheDocument()
     expect(screen.getByText('Wed')).toBeInTheDocument()
-    expect(screen.queryByText('Sun')).not.toBeInTheDocument()
   })
 
   it('collapses and expands the grid', async () => {

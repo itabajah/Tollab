@@ -97,13 +97,16 @@ export function mergePayloads(local: CloudPayload, cloud: CloudPayload, _now: Da
         finalName = makeNameUnique(finalName, taken)
       }
       byId.set(cp.id, { ...chosen, name: finalName })
-      taken.add(finalName)
-      continue
+    } else {
+      const uniqueName = makeNameUnique(cp.name, taken)
+      byId.set(cp.id, { ...cp, name: uniqueName })
     }
 
-    const uniqueName = makeNameUnique(cp.name, taken)
-    taken.add(uniqueName)
-    byId.set(cp.id, { ...cp, name: uniqueName })
+    // Rebuild the taken-name set from the live profiles so a rename (the winning
+    // side changed the name of a shared-id profile) doesn't leave the old name
+    // orphaned in the set and spuriously suffix a later distinct profile.
+    taken.clear()
+    for (const p of byId.values()) taken.add(p.name)
   }
 
   const profiles = Array.from(byId.values())

@@ -172,7 +172,9 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
           <p className="text-sm text-ink-muted">
             {moedFilter === 'all'
               ? 'All exams are hidden — restore one below.'
-              : `No ${moedFilter === 'A' ? 'Moed A' : 'Moed B'} exams in this semester.`}
+              : hiddenNodes.length > 0
+                ? `All ${moedFilter === 'A' ? 'Moed A' : 'Moed B'} exams are hidden — restore below.`
+                : `No ${moedFilter === 'A' ? 'Moed A' : 'Moed B'} exams in this semester.`}
           </p>
         </div>
       ) : (

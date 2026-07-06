@@ -51,13 +51,21 @@ export function getVideoEmbedInfo(url: string): VideoEmbedInfo {
 /**
  * The origin to embed a Panopto session from — but only when it is an actual
  * Panopto host. The session id is reflected into an iframe `src`, so the origin
- * must never be an arbitrary domain taken from user input (e.g. a crafted
- * `https://evil.example/Panopto?id=…`); we allow only hosts that name Panopto.
+ * must never be an arbitrary domain taken from user input. A substring check like
+ * `includes('panopto')` would admit attacker-registrable hosts (panopto.attacker.com,
+ * mypanopto.net); match real Panopto/Technion domains by host suffix instead.
  */
 function panoptoOrigin(url: string): string | null {
   try {
     const { hostname, origin } = new URL(url)
-    return hostname.toLowerCase().includes('panopto') ? origin : null
+    const h = hostname.toLowerCase()
+    const ok =
+      h === 'panopto.com' ||
+      h.endsWith('.panopto.com') ||
+      h === 'panopto.eu' ||
+      h.endsWith('.panopto.eu') ||
+      h.endsWith('.technion.ac.il')
+    return ok ? origin : null
   } catch {
     return null
   }

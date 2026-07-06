@@ -396,7 +396,9 @@ export function validateCustomExam(input: CustomExamInput): {
 // Color sanitizer (legacy XSS guard)
 // ---------------------------------------------------------------------------
 
-const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/
+// Only structurally-valid CSS hex lengths (3/4/6/8). #12345 and #1234567 are not
+// valid colors — the browser ignores them, so they must fall through to the accent.
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
 const HSL_COLOR = /^hsla?\(\s*[\d.]+\s*,\s*[\d.]+%\s*,\s*[\d.]+%\s*(?:,\s*[\d.]+\s*)?\)$/
 const RGB_COLOR = /^rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(?:,\s*[\d.]+\s*)?\)$/
 const NAMED_COLOR = /^[a-zA-Z]+$/

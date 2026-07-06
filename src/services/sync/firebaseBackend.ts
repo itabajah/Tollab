@@ -23,10 +23,16 @@ export function createFirebaseBackend(app: FirebaseApp, uid: string): CloudBacke
     async save(record: CloudRecordV3) {
       await set(nodeRef, record)
     },
-    subscribe(onValueChange) {
-      return onValue(nodeRef, (snapshot) => {
-        onValueChange(snapshot.exists() ? (snapshot.val() as unknown) : null)
-      })
+    subscribe(onValueChange, onError) {
+      return onValue(
+        nodeRef,
+        (snapshot) => {
+          onValueChange(snapshot.exists() ? (snapshot.val() as unknown) : null)
+        },
+        // RTDB cancels the listener (and only console.warns) on permission/auth
+        // loss; forward it so the engine can flip status off 'synced'.
+        (error) => onError?.(error),
+      )
     },
   }
 }

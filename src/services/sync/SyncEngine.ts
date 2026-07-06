@@ -10,6 +10,12 @@ export interface SyncEngineOptions {
   debounceMs?: number
   onStatus?: (status: SyncStatus) => void
   now?: () => Date
+  /** Attempts for the initial load before giving up (default 3). */
+  loadAttempts?: number
+  /** Base backoff between load retries, multiplied by the attempt number (default 400ms). */
+  retryDelayMs?: number
+  /** Injectable delay so tests can drive retries without real timers. */
+  delayFn?: (ms: number) => Promise<void>
 }
 
 export interface SyncEngine {
@@ -45,7 +51,15 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
   const { backend, host, clientId } = options
   const debounceMs = options.debounceMs ?? 750
   const now = options.now ?? (() => new Date())
+  const loadAttempts = Math.max(1, options.loadAttempts ?? 3)
+  const retryDelayMs = options.retryDelayMs ?? 400
+  const delay =
+    options.delayFn ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
   const setStatus = (status: SyncStatus) => options.onStatus?.(status)
+
+  /** 'offline' when the browser reports no connection, else a generic 'error'. */
+  const statusForError = (): SyncStatus =>
+    typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error'
 
   const recentWriteIds: string[] = []
   let unsubscribe: (() => void) | null = null
@@ -69,9 +83,30 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
       setStatus('synced')
       return true
     } catch {
-      setStatus('error')
+      setStatus(statusForError())
       return false
     }
+  }
+
+  /**
+   * Loads the remote record, retrying a bounded number of times with linear
+   * backoff so a transient failure at startup (flaky connection, cold RTDB)
+   * doesn't disable sync for the whole session. Throws only after the last
+   * attempt fails, and bails immediately if the engine is stopped mid-retry.
+   */
+  const loadWithRetry = async (): Promise<unknown | null> => {
+    let lastError: unknown
+    for (let attempt = 1; attempt <= loadAttempts; attempt++) {
+      try {
+        return await backend.load()
+      } catch (error) {
+        lastError = error
+        if (stopped || attempt === loadAttempts) break
+        await delay(retryDelayMs * attempt)
+        if (stopped) break
+      }
+    }
+    throw lastError
   }
 
   const applyRemote = (payload: CloudPayload) => {
@@ -119,7 +154,7 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
     async start() {
       setStatus('connecting')
       try {
-        const raw = await backend.load()
+        const raw = await loadWithRetry()
         if (stopped) return // torn down during the load round-trip
         const normalized = raw !== null ? normalizeCloudRecord(raw) : null
         const cloudPayload: CloudPayload = normalized?.payload ?? {
@@ -131,12 +166,16 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
         applyRemote(merged)
         const ok = await pushPayload(merged)
         if (stopped) return
-        unsubscribe = backend.subscribe(handleRemote)
+        unsubscribe = backend.subscribe(handleRemote, () => {
+          // The live listener was cancelled (permission/connection loss); reflect
+          // that sync is no longer live rather than falsely holding 'synced'.
+          if (!stopped) setStatus(statusForError())
+        })
         if (ok) setStatus('synced')
       } catch {
-        // load() rejected (network/permission) — surface it instead of hanging
-        // on 'connecting', and never let the rejection escape unhandled.
-        if (!stopped) setStatus('error')
+        // load() still failed after retries (network/permission) — surface it
+        // instead of hanging on 'connecting', and never let it escape unhandled.
+        if (!stopped) setStatus(statusForError())
       }
     },
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getVideoEmbedInfo } from '@/lib/videoEmbed'
+import { safeHref } from '@/lib/safeHref'
 import { Spinner } from '@/components/ui/icons'
 
 /**
@@ -15,7 +16,7 @@ export function EmbedPreview({ url }: { url: string }) {
   if (embedUrl === null) {
     return (
       <a
-        href={url}
+        href={safeHref(url)}
         target="_blank"
         rel="noreferrer"
         className="text-sm text-accent underline hover:text-accent-hover"
@@ -43,7 +44,7 @@ export function EmbedPreview({ url }: { url: string }) {
         />
       </div>
       <a
-        href={url}
+        href={safeHref(url)}
         target="_blank"
         rel="noreferrer"
         className="self-start text-xs text-ink-faint underline hover:text-ink"

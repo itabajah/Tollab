@@ -94,6 +94,10 @@ export function CloudStatus() {
     try {
       await controller.signOut()
       toast.info('Signed out of cloud sync')
+    } catch {
+      // Mirror connect(): surface a failed sign-out instead of leaving it as an
+      // unhandled rejection with no feedback.
+      toast.error('Couldn’t sign out — check your connection and try again.')
     } finally {
       setPending(false)
     }

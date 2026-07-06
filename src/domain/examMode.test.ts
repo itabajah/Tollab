@@ -731,12 +731,17 @@ describe('validateCustomExam', () => {
 // ---------------------------------------------------------------------------
 
 describe('cssColor', () => {
-  it('allows hex colors of 3-8 digits', () => {
+  it('allows valid hex lengths (3/4/6/8) and rejects malformed 5/7-digit hex', () => {
     expect(cssColor('#fff')).toBe('#fff')
+    expect(cssColor('#ffff')).toBe('#ffff')
     expect(cssColor('#3b82f6')).toBe('#3b82f6')
     expect(cssColor('#12345678')).toBe('#12345678')
     expect(cssColor('#ggg')).toBe('var(--accent)')
     expect(cssColor('#ff')).toBe('var(--accent)')
+    // 5- and 7-digit hex are not valid CSS colors — the browser ignores them, so
+    // they must fall through to the accent fallback rather than be returned as-is.
+    expect(cssColor('#12345')).toBe('var(--accent)')
+    expect(cssColor('#1234567')).toBe('var(--accent)')
   })
 
   it('allows hsl/hsla colors', () => {

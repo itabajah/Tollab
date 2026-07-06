@@ -30,14 +30,19 @@ function makeFakeAuth() {
       emit()
     },
   }
-  return auth
+  /** Drives an arbitrary auth state (used to test a direct A→B account switch). */
+  const emitUser = (next: AuthUser | null) => {
+    user = next
+    emit()
+  }
+  return { auth, emitUser }
 }
 
 function setup() {
   const storage = createMemoryStorage()
   const session = createSession({ storage, now: () => NOW })
-  const auth = makeFakeAuth()
-  let backend: FakeBackend | null = null
+  const { auth, emitUser } = makeFakeAuth()
+  const backends: FakeBackend[] = []
   const controller = createSyncController({
     session,
     storage,
@@ -45,12 +50,21 @@ function setup() {
     auth,
     now: () => NOW,
     debounceMs: 500,
+    delayFn: async () => {},
     createBackend: () => {
-      backend = createFakeBackend()
+      const backend = createFakeBackend()
+      backends.push(backend)
       return backend
     },
   })
-  return { session, storage, controller, getBackend: () => backend }
+  return {
+    session,
+    storage,
+    controller,
+    emitUser,
+    getBackend: () => backends[backends.length - 1] ?? null,
+    getBackends: () => backends,
+  }
 }
 
 afterEach(() => {
@@ -168,13 +182,14 @@ describe('createSyncController', () => {
   it('surfaces a failed engine start as error status without throwing', async () => {
     const storage = createMemoryStorage()
     const session = createSession({ storage, now: () => NOW })
-    const auth = makeFakeAuth()
+    const { auth } = makeFakeAuth()
     const controller = createSyncController({
       session,
       storage,
       clientId: 'c',
       auth,
       now: () => NOW,
+      delayFn: async () => {},
       createBackend: () => {
         const b = createFakeBackend()
         b.load = () => Promise.reject(new Error('load failed'))
@@ -184,5 +199,29 @@ describe('createSyncController', () => {
 
     await expect(controller.signIn()).resolves.toBeUndefined()
     expect(controller.store.getState().status).toBe('error')
+  })
+
+  it('does not leak account A’s engine when switching directly to account B', async () => {
+    const { controller, emitUser, getBackends } = setup()
+
+    emitUser({ uid: 'A', email: 'a@technion.ac.il' })
+    await vi.waitFor(() => expect(controller.store.getState().status).toBe('synced'))
+    const backendA = getBackends()[0]!
+
+    // Switch straight to B with no intervening sign-out.
+    emitUser({ uid: 'B', email: 'b@technion.ac.il' })
+    await vi.waitFor(() => expect(controller.store.getState().userEmail).toBe('b@technion.ac.il'))
+    await vi.waitFor(() => expect(controller.store.getState().status).toBe('synced'))
+    const backends = getBackends()
+    expect(backends).toHaveLength(2)
+    const backendB = backends[1]!
+
+    // A local change + flush now reaches ONLY B's engine; A's was torn down first.
+    backendA.saved.length = 0
+    backendB.saved.length = 0
+    controller.notifyLocalChange()
+    await controller.flush()
+    expect(backendB.saved.length).toBeGreaterThanOrEqual(1)
+    expect(backendA.saved).toHaveLength(0)
   })
 })

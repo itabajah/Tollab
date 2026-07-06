@@ -5,8 +5,13 @@ import type { CloudRecordV3 } from './protocol'
 export interface CloudBackend {
   load(): Promise<unknown | null>
   save(record: CloudRecordV3): Promise<void>
-  /** Subscribes to remote changes; returns an unsubscribe function. */
-  subscribe(onValue: (raw: unknown) => void): () => void
+  /**
+   * Subscribes to remote changes; returns an unsubscribe function. `onError` is
+   * invoked if the backend cancels the subscription (e.g. permission revoked or
+   * connection lost) so the engine can reflect that sync is no longer live
+   * instead of silently reporting 'synced' forever.
+   */
+  subscribe(onValue: (raw: unknown) => void, onError?: (error: unknown) => void): () => void
 }
 
 export type SyncStatus = 'idle' | 'connecting' | 'syncing' | 'synced' | 'offline' | 'error'

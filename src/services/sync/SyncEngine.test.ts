@@ -143,7 +143,7 @@ describe('createSyncEngine', () => {
     expect(backend.saved).toHaveLength(0) // nothing local-only to recover → no push-back
   })
 
-  it('goes to error status (not stuck on connecting) when the initial load fails', async () => {
+  it('goes to error status (not stuck on connecting) when the initial load keeps failing', async () => {
     const backend = createFakeBackend()
     backend.load = () => Promise.reject(new Error('network down'))
     const { host } = makeHost(payloadWith('a', 'Alpha'))
@@ -153,11 +153,76 @@ describe('createSyncEngine', () => {
       host,
       clientId: 'me',
       now: () => NOW,
+      loadAttempts: 2,
+      delayFn: async () => {},
       onStatus: (s) => statuses.push(s),
     })
 
     await expect(engine.start()).resolves.toBeUndefined() // no unhandled rejection
     expect(statuses[statuses.length - 1]).toBe('error')
+  })
+
+  it('retries a transient load failure and still starts sync (subscribe + push)', async () => {
+    const backend = createFakeBackend()
+    backend.setStored(buildCloudRecord(payloadWith('a', 'Alpha'), 'other', 'w0', NOW))
+    backend.failNextLoads(2) // first two loads throw, third succeeds
+    const { host } = makeHost(payloadWith('a', 'Alpha'))
+    const statuses: string[] = []
+    const engine = createSyncEngine({
+      backend,
+      host,
+      clientId: 'me',
+      now: () => NOW,
+      loadAttempts: 3,
+      delayFn: async () => {},
+      onStatus: (s) => statuses.push(s),
+    })
+
+    await engine.start()
+    // Recovered: pushed the merged payload and reached 'synced' rather than 'error'.
+    expect(backend.saved).toHaveLength(1)
+    expect(statuses[statuses.length - 1]).toBe('synced')
+  })
+
+  it('flips off "synced" when the live subscription is cancelled (onError)', async () => {
+    const backend = createFakeBackend()
+    const { host } = makeHost(payloadWith('a', 'Alpha'))
+    const statuses: string[] = []
+    const engine = createSyncEngine({
+      backend,
+      host,
+      clientId: 'me',
+      now: () => NOW,
+      onStatus: (s) => statuses.push(s),
+    })
+    await engine.start()
+    expect(statuses[statuses.length - 1]).toBe('synced')
+
+    backend.emitError(new Error('permission revoked'))
+    expect(statuses[statuses.length - 1]).toBe('error')
+  })
+
+  it('reports "offline" instead of "error" when the browser is offline', async () => {
+    vi.stubGlobal('navigator', { onLine: false })
+    try {
+      const backend = createFakeBackend()
+      backend.load = () => Promise.reject(new Error('offline'))
+      const { host } = makeHost(payloadWith('a', 'Alpha'))
+      const statuses: string[] = []
+      const engine = createSyncEngine({
+        backend,
+        host,
+        clientId: 'me',
+        now: () => NOW,
+        loadAttempts: 1,
+        delayFn: async () => {},
+        onStatus: (s) => statuses.push(s),
+      })
+      await engine.start()
+      expect(statuses[statuses.length - 1]).toBe('offline')
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('flush() pushes immediately, cancelling any pending debounce', async () => {

@@ -90,6 +90,34 @@ export function moveRecording(
 }
 
 /**
+ * Moves the recording with `id` past its adjacent *visible* neighbor (skipping
+ * hidden items) so a manual reorder produces a real visible change even when
+ * watched recordings are hidden. Returns a NEW array; a same-order copy when the
+ * id is unknown or the move would cross the visible boundary. When everything is
+ * visible this is identical to {@link moveRecording}. Mirrors
+ * {@link moveHomeworkAmongVisible} for homework.
+ */
+export function moveRecordingAmongVisible(
+  items: readonly RecordingItem[],
+  id: string,
+  delta: -1 | 1,
+  isVisible: (item: RecordingItem) => boolean,
+): RecordingItem[] {
+  const next = [...items]
+  const from = next.findIndex((item) => item.id === id)
+  if (from === -1) return next
+  let to = from + delta
+  while (to >= 0 && to < next.length && !isVisible(next[to]!)) to += delta
+  if (to < 0 || to >= next.length) return next
+  const a = next[from]
+  const b = next[to]
+  if (a === undefined || b === undefined) return next
+  next[from] = b
+  next[to] = a
+  return next
+}
+
+/**
  * Default name for a new recording: "Video N" for YouTube links,
  * "Recording N" for Panopto, otherwise the singularized tab name
  * (one trailing 's' stripped) — with N = existingCount + 1.

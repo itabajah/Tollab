@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { Dialog, DialogActions } from './Dialog'
 import { Button } from './Button'
 import { Field, Input } from './Field'
@@ -103,8 +111,13 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     settlePrompt(promptValue)
   }
 
+  // confirm/prompt are stable useCallbacks; memoizing the wrapper keeps the
+  // context value referentially stable so consumers (incl. per-row homework /
+  // recording items) don't re-render on every keystroke while a prompt is open.
+  const value = useMemo(() => ({ confirm, prompt }), [confirm, prompt])
+
   return (
-    <ConfirmContext.Provider value={{ confirm, prompt }}>
+    <ConfirmContext.Provider value={value}>
       {children}
 
       {confirmState ? (

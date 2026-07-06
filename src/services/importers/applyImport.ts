@@ -144,6 +144,18 @@ export function applyImportedCourses(
     }
   }
 
+  // A re-import into an existing semester that created/updated nothing must
+  // return the input `data` by reference (like runCatalogEnrichment does on a
+  // no-op). Otherwise a fresh semester clone defeats reconcileImport's identity
+  // check and a zero-change import silently reverts an edit that synced in while
+  // the fetch was in flight. A brand-new semester is always a real change.
+  if (existing && createdCourses.length === 0 && updatedCourses.length === 0) {
+    return {
+      data,
+      report: { createdSemester: false, createdCourses, updatedCourses },
+    }
+  }
+
   const nextSemester: Semester = { ...semester, courses }
   const semesters = existing
     ? data.semesters.map((s) => (s.id === existing.id ? nextSemester : s))

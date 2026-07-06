@@ -14,6 +14,8 @@ export interface SyncControllerOptions {
   createBackend: (uid: string) => CloudBackend
   now?: () => Date
   debounceMs?: number
+  /** Passed through to the engine's initial-load retry (tests inject a no-op). */
+  delayFn?: (ms: number) => Promise<void>
 }
 
 export interface SyncController {
@@ -55,6 +57,7 @@ export function createSyncController(options: SyncControllerOptions): SyncContro
       clientId,
       ...(options.debounceMs !== undefined ? { debounceMs: options.debounceMs } : {}),
       ...(options.now ? { now: options.now } : {}),
+      ...(options.delayFn ? { delayFn: options.delayFn } : {}),
       onStatus: (status) => {
         if (engineToken === token) store.getState().setStatus(status)
       },

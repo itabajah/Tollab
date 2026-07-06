@@ -16,7 +16,7 @@ import { generateCourseColor } from '@/domain/colors'
 import { courseDetailFields, moveCourseInList, type CourseInput } from '@/domain/course'
 import { moveHomeworkAmongVisible, nextLinkLabel } from '@/domain/homework'
 import {
-  moveRecording as moveRecordingList,
+  moveRecordingAmongVisible,
   generateRecordingName,
   canDeleteTab,
   canRenameTab,
@@ -115,7 +115,7 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
   const now = options.now ?? (() => new Date())
 
   return createStore<AppStoreState>()(
-    immer((set) => {
+    immer((set, get) => {
       const stamp = (draft: { data: AppData }) => {
         draft.data.lastModified = now().toISOString()
       }
@@ -383,11 +383,22 @@ export function createAppStore(initial: AppData, options: AppStoreOptions = {}) 
             if (item) item.watched = !item.watched
           }),
 
-        moveRecording: (courseId, tabId, itemId, delta) =>
+        moveRecording: (courseId, tabId, itemId, delta) => {
+          // Reorder against the *visible* list so a move isn't silently swallowed
+          // by an adjacent hidden (watched) item. Visibility is a global setting,
+          // read here outside the recipe (which only receives the course).
+          const showWatched = get().data.settings.showWatchedRecordings
           mutateCourse(courseId, (course) => {
             const tab = course.recordings.tabs.find((t) => t.id === tabId)
-            if (tab) tab.items = moveRecordingList(tab.items, itemId, delta)
-          }),
+            if (tab)
+              tab.items = moveRecordingAmongVisible(
+                tab.items,
+                itemId,
+                delta,
+                (item) => showWatched || !item.watched,
+              )
+          })
+        },
 
         setRecordingSort: (courseId, tabId, sort) =>
           mutateCourse(courseId, (course) => {

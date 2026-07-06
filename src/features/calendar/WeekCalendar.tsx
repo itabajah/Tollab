@@ -12,6 +12,7 @@ import {
 import { weekRangeFor } from '@/lib/dates'
 import { useAppState } from '@/hooks/session'
 import { useNow } from '@/hooks/useNow'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { IconButton } from '@/components/ui/IconButton'
 import { ChevronDownIcon } from '@/components/ui/icons'
 import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
@@ -35,6 +36,10 @@ export function WeekCalendar({ now: nowProp }: { now?: Date }) {
     s.data.semesters.find((sem) => sem.id === s.currentSemesterId),
   )
   const { openCourse } = useCourseDialog()
+  // The "Today only" toggle is mobile-only (md:hidden). Gate single-day mode on
+  // the same breakpoint so a viewport growing past it doesn't strand the desktop
+  // grid on one column with no visible control to restore the full week.
+  const isMobile = useMediaQuery('(max-width: 767.98px)')
   const [collapsed, setCollapsed] = useState(false)
   const [singleDay, setSingleDay] = useState(false)
 
@@ -60,9 +65,10 @@ export function WeekCalendar({ now: nowProp }: { now?: Date }) {
     }
   }
 
-  const cfg: GridConfig = singleDay
-    ? { ...semester.calendarSettings, visibleDays: [now.getDay()] }
-    : semester.calendarSettings
+  const cfg: GridConfig =
+    singleDay && isMobile
+      ? { ...semester.calendarSettings, visibleDays: [now.getDay()] }
+      : semester.calendarSettings
   const visibleDays = cfg.visibleDays
 
   const slots = layoutWeek(semester.courses, cfg)
