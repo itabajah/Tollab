@@ -64,21 +64,33 @@ export function HorizontalConnector({ days, dir }: { days: number | null; dir: '
 }
 
 /**
- * The row-drop turn connector between two serpentine rows: a vertical line that
- * carries the day-gap label and ends in a downward arrowhead, aligned to the
- * side the snake wraps around.
+ * The row-drop turn connector, rendered as its own cell in the serpentine's
+ * "turn" row: a vertical line carrying the day-gap label and ending in a
+ * downward arrowhead. Its fixed height is the breathing room between two
+ * stacked rows, so a tall box (e.g. a same-day group) never collides with the
+ * row below. The flow-last node above grows a {@link TurnStem} down to meet it,
+ * so the drop stays visually attached even when that node is short.
  */
 export function TurnConnector({ gapDays }: { gapDays: number | null }) {
-  // Rendered inside the flow-last node's (stretched) cell, so `flex-1` makes the
-  // line grow to exactly bridge the gap down to the next row — however tall that
-  // row is (e.g. when it holds a stacked same-day box). The two flex-1 segments
-  // keep the day-gap label centred with the arrowhead pinned to the bottom.
   return (
-    <div className="mt-1 flex min-h-12 flex-1 flex-col items-center" aria-hidden="true">
-      <div className="w-0.5 flex-1 rounded-full bg-line-strong" />
+    <div className="flex flex-col items-center py-2" aria-hidden="true">
+      <div className="h-6 w-0.5 rounded-full bg-line-strong" />
       <GapLabel days={gapDays} />
-      <div className="w-0.5 flex-1 rounded-full bg-line-strong" />
+      <div className="h-6 w-0.5 rounded-full bg-line-strong" />
       <Arrowhead dir="down" />
+    </div>
+  )
+}
+
+/**
+ * A stem grown inside the flow-last node's stretched cell: `flex-1` makes it
+ * fill whatever vertical space the node leaves in a tall row, so the drop
+ * connector in the turn row below stays joined to the (possibly short) node.
+ */
+export function TurnStem() {
+  return (
+    <div className="mt-1 flex flex-1 flex-col items-center" aria-hidden="true">
+      <div className="w-0.5 flex-1 rounded-full bg-line-strong" />
     </div>
   )
 }

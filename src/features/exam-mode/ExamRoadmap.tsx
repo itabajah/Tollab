@@ -20,7 +20,7 @@ import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
 import { cn } from '@/lib/cn'
 import { ExamNode } from './ExamNode'
 import { SharedExamDay } from './SharedExamDay'
-import { HorizontalConnector, TurnConnector } from './Connector'
+import { HorizontalConnector, TurnConnector, TurnStem } from './Connector'
 import { HiddenTray } from './HiddenTray'
 import { CustomExamDialog } from './CustomExamDialog'
 import { useExamActions } from './useExamActions'
@@ -183,10 +183,11 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
         >
           {flat.map((cell, index) => {
             if (cell.kind === 'spacer') return <div key={`spacer-${index}`} />
-            // Turn connectors are rendered INSIDE the flow-last node cell above
-            // them (so they can stretch to bridge a tall row); the matrix turn
-            // cell itself just holds the column's place.
-            if (cell.kind === 'turn') return <div key={`turn-${index}`} />
+            // The turn cell drops the snake to the next row; its fixed height is
+            // the gap between rows. The flow-last node above grows a stem down
+            // into it (below) so the drop stays attached even in a tall row.
+            if (cell.kind === 'turn')
+              return <TurnConnector key={`turn-${index}`} gapDays={cell.gapAfter} />
 
             // Reversed rows (the snake's right-to-left legs) flow leftward, so
             // their arrowheads point left. Derived from the matrix row index —
@@ -194,8 +195,8 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
             const reverse = Math.floor(index / cols) % 4 === 2
             const group = groupByRepId.get(cell.node.id)!
             // A turn cell directly below (same column, next row) means this node
-            // is the row's flow-last: it carries the drop connector to the next
-            // row, and its cell stretches so the connector can fill the height.
+            // is the row's flow-last: its cell stretches and grows a stem down to
+            // meet the drop connector, so the two stay joined in a tall row.
             const below = flat[index + cols]
             const turnBelow = below && below.kind === 'turn' ? below : null
             return (
@@ -227,7 +228,7 @@ export function ExamRoadmap({ now: nowProp }: { now?: Date }) {
                 {cell.connectRight ? (
                   <HorizontalConnector days={cell.gapAfter} dir={reverse ? 'left' : 'right'} />
                 ) : null}
-                {turnBelow ? <TurnConnector gapDays={turnBelow.gapAfter} /> : null}
+                {turnBelow ? <TurnStem /> : null}
               </div>
             )
           })}

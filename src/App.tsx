@@ -68,7 +68,7 @@ function LeftPane() {
       <Header />
       <HeaderTicker onSelect={onSelect} />
       <SemesterControls />
-      <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-16 lg:[scrollbar-gutter:stable]">
+      <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-4 lg:[scrollbar-gutter:stable]">
         {hasSemester ? <CourseList /> : <NoSemesterYet />}
       </div>
     </div>
