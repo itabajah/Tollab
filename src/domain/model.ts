@@ -117,7 +117,9 @@ export const courseSchema = z.object({
   faculty: z.string().max(200).default(''),
   location: z.string().max(200).default(''),
   grade: z.string().max(10).default(''),
-  syllabus: z.string().max(VALIDATION_LIMITS.URL_MAX).default(''),
+  // Free text (a description that may embed links), not a bare URL — the Technion
+  // catalog fills this with the course's prose syllabus. Sized like `notes`.
+  syllabus: z.string().max(VALIDATION_LIMITS.NOTES_MAX).default(''),
   notes: z.string().max(VALIDATION_LIMITS.NOTES_MAX).default(''),
   exams: examDatesSchema.prefault({}),
   schedule: z.array(scheduleSlotSchema).default([]),

@@ -50,7 +50,7 @@ export function FetchDataTab() {
       return
     }
     setBusy(true)
-    setStatus('Fetching semesters…')
+    setStatus('Fetching semesters and course details…')
     const { runBatchIcsImport, BatchIcsError } = await import('@/services/importers/runImport')
     const snapshot = session.appStore.getState().data
     try {
@@ -71,7 +71,11 @@ export function FetchDataTab() {
         const newest = sortSemesters(session.appStore.getState().data.semesters)[0]
         if (newest) session.appStore.getState().selectSemester(newest.id)
         const skipped = result.skipped.length ? ` Skipped: ${result.skipped.join(', ')}.` : ''
-        setStatus(`Imported ${result.imported.map((i) => i.name).join(', ')}.${skipped}`)
+        const enrichedTotal = result.imported.reduce((n, i) => n + i.enriched, 0)
+        const enriched = enrichedTotal
+          ? ` Enriched ${enrichedTotal} from the Technion catalog.`
+          : ''
+        setStatus(`Imported ${result.imported.map((i) => i.name).join(', ')}.${enriched}${skipped}`)
         toast.success(`Imported ${result.imported.length} semesters`)
       }
     } catch (e) {
@@ -90,7 +94,7 @@ export function FetchDataTab() {
       return
     }
     setBusy(true)
-    setStatus('Fetching schedule…')
+    setStatus('Fetching schedule and course details…')
     try {
       const { runIcsImport } = await import('@/services/importers/runImport')
       const snapshot = session.appStore.getState().data
@@ -106,7 +110,12 @@ export function FetchDataTab() {
         if (newest) session.appStore.getState().selectSemester(newest.id)
       }
       const { createdCourses, updatedCourses } = result.report
-      setStatus(`Imported ${createdCourses.length} new, updated ${updatedCourses.length} courses.`)
+      const enriched = result.enrichedCount
+        ? ` Enriched ${result.enrichedCount} from the Technion catalog.`
+        : ''
+      setStatus(
+        `Imported ${createdCourses.length} new, updated ${updatedCourses.length} courses.${enriched}`,
+      )
       toast.success('Schedule imported')
     } catch {
       setStatus('Could not fetch the schedule. Check the link and try again.')
@@ -146,7 +155,10 @@ export function FetchDataTab() {
             No semester yet — fetching a schedule creates one automatically from the link.
           </p>
         ) : null}
-        <Field label="Cheesefork ICS link" hint="Paste the calendar export URL from cheesefork.cf">
+        <Field
+          label="Cheesefork ICS link"
+          hint="Paste the calendar export URL from cheesefork.cf — course details are pulled from the Technion automatically"
+        >
           {(id) => (
             <Input
               id={id}
@@ -255,8 +267,9 @@ export function FetchDataTab() {
         <div>
           <SectionTitle>Enrich Course Data (Technion)</SectionTitle>
           <p className="mb-2 text-xs text-ink-faint">
-            Fills missing points, lecturer, faculty, and exam dates from the public Technion
-            catalog. Existing values are never overwritten.
+            Fills missing points, lecturer, faculty, syllabus, and exam dates from the public
+            Technion catalog — existing values are never overwritten. This runs automatically after
+            a Cheesefork fetch; use it to re-check later (e.g. once exam dates are published).
           </p>
           <Button variant="secondary" loading={busy} onClick={() => void fetchCatalog()}>
             Fetch Course Data

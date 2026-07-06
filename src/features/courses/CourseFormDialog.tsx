@@ -32,7 +32,7 @@ interface FormState {
   schedule: ScheduleSlot[]
 }
 
-type FieldKey = 'name' | 'points' | 'grade' | 'syllabus'
+type FieldKey = 'name' | 'points' | 'grade'
 type FieldErrors = Partial<Record<FieldKey, string>>
 
 function initialState(course: Course | null, defaultHue: number): FormState {
@@ -71,7 +71,6 @@ function initialState(course: Course | null, defaultHue: number): FormState {
 }
 
 const isNumeric = (v: string) => /^\d+(\.\d+)?$/.test(v)
-const isLikelyUrl = (v: string) => /^https?:\/\//i.test(v) || /^[\w-]+(\.[\w-]+)+/.test(v)
 
 /** Lightweight per-field validation. Empty optional fields are always valid. */
 function validate(form: FormState): FieldErrors {
@@ -87,9 +86,6 @@ function validate(form: FormState): FieldErrors {
 
   const points = form.points.trim()
   if (points && !isNumeric(points)) errors.points = 'Points must be a number'
-
-  const syllabus = form.syllabus.trim()
-  if (syllabus && !isLikelyUrl(syllabus)) errors.syllabus = 'Enter a valid URL (https://…)'
 
   return errors
 }
@@ -305,17 +301,12 @@ export function CourseFormDialog({
         </Field>
       </div>
 
-      <Field label="Syllabus URL" error={errors.syllabus}>
+      <Field label="Syllabus" hint="Free text — may include links">
         {(id) => (
-          <Input
+          <TextArea
             id={id}
             value={form.syllabus}
-            inputMode="url"
-            aria-invalid={errors.syllabus ? true : undefined}
-            onChange={(e) => {
-              patch('syllabus', e.target.value)
-              clearError('syllabus')
-            }}
+            onChange={(e) => patch('syllabus', e.target.value)}
           />
         )}
       </Field>

@@ -24,11 +24,23 @@ export interface IcsImportOptions {
   nowIso: string
   fetchImpl?: typeof fetch
   delayFn?: (ms: number) => Promise<void>
+  /**
+   * Enrich the imported semester from the Technion catalog right after the ICS is
+   * applied (default `true`). Every Cheesefork fetch thus lands fully-populated
+   * courses — points, lecturer, faculty, syllabus, exam dates — in one step.
+   */
+  enrich?: boolean
+  /** A pre-fetched catalog to enrich from, so a batch downloads it only once. */
+  catalog?: Map<string, CatalogEntry>
 }
 
 export interface IcsImportResult {
   data: AppData
   report: ImportReport
+  /** The semester the courses were imported into (created or matched). */
+  semesterId: string
+  /** How many courses the follow-up catalog enrichment updated (0 if disabled/none). */
+  enrichedCount: number
 }
 
 /** Strips the trailing `<name>.ics` to get the folder URL the batch derives from. */
@@ -45,7 +57,7 @@ export function icsFileName(ref: SemesterRef): string {
 
 export interface BatchIcsResult {
   data: AppData
-  imported: Array<{ name: string; created: number; updated: number }>
+  imported: Array<{ name: string; created: number; updated: number; enriched: number }>
   skipped: string[]
 }
 
@@ -78,6 +90,14 @@ export async function runBatchIcsImport(
     throw new BatchIcsError('The start semester is after the end semester.')
   }
 
+  // Download the (large) Technion catalog once and reuse it for every semester in
+  // the range, rather than re-fetching it per import. Best-effort: a failure
+  // yields an empty catalog and the schedules still import un-enriched.
+  const catalog =
+    options.enrich === false
+      ? new Map<string, CatalogEntry>()
+      : await fetchTechnionCatalog(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {})
+
   let current = data
   const imported: BatchIcsResult['imported'] = []
   const skipped: string[] = []
@@ -90,6 +110,8 @@ export async function runBatchIcsImport(
         nowIso: options.nowIso,
         ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
         ...(options.delayFn ? { delayFn: options.delayFn } : {}),
+        enrich: options.enrich !== false,
+        catalog,
       })
       // A missing file (404) throws above and is skipped. A file that fetches but
       // holds no events — a semester not yet published, or an empty export —
@@ -104,6 +126,7 @@ export async function runBatchIcsImport(
         name,
         created: result.report.createdCourses.length,
         updated: result.report.updatedCourses.length,
+        enriched: result.enrichedCount,
       })
     } catch {
       skipped.push(name)
@@ -113,7 +136,12 @@ export async function runBatchIcsImport(
   return { data: current, imported, skipped }
 }
 
-/** Fetches a Cheesefork ICS URL through the proxy chain and applies it. */
+/**
+ * Fetches a Cheesefork ICS URL through the proxy chain, applies it, and — unless
+ * `enrich` is false — enriches the imported semester from the Technion catalog so
+ * the fetch lands fully-populated courses in one step. Enrichment is best-effort:
+ * an unreachable catalog simply leaves the imported schedule un-enriched.
+ */
 export async function runIcsImport(
   data: AppData,
   icsUrl: string,
@@ -125,13 +153,31 @@ export async function runIcsImport(
   })
   const { courses, semesterHint } = parseIcs(text)
   const semesterName = options.semesterName || semesterHint || 'Imported Semester'
-  return applyImportedCourses(data, semesterName, courses, options.nowIso)
+  const applied = applyImportedCourses(data, semesterName, courses, options.nowIso)
+
+  if (options.enrich === false) {
+    return { ...applied, enrichedCount: 0 }
+  }
+
+  const catalog =
+    options.catalog ??
+    (await fetchTechnionCatalog(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}))
+  const enriched = enrichSemesterCourses(applied.data, applied.semesterId, catalog, options.nowIso)
+  return {
+    data: enriched.data,
+    report: applied.report,
+    semesterId: applied.semesterId,
+    enrichedCount: enriched.updatedCount,
+  }
 }
 
-export interface CatalogEnrichOptions {
-  nowIso: string
+export interface CatalogFetchOptions {
   fetchImpl?: typeof fetch
   baseUrl?: string
+}
+
+export interface CatalogEnrichOptions extends CatalogFetchOptions {
+  nowIso: string
 }
 
 export interface CatalogEnrichResult {
@@ -150,28 +196,21 @@ async function fetchJson(fetchImpl: typeof fetch, url: string): Promise<unknown 
 }
 
 /**
- * Enriches the target semester's courses with the public Technion SAP catalog,
- * filling only empty fields. Reads `last_semesters.json` (direct fetch, no
- * proxy needed — GitHub raw sends permissive CORS) and merges every listed
- * semester's course file into one catalog.
+ * Fetches and merges the public Technion SAP catalog into one map keyed by
+ * digit-stripped course number. Reads `last_semesters.json` (a direct fetch — no
+ * proxy needed; GitHub raw sends permissive CORS) then every listed semester's
+ * course file, first entry winning on collision. Every failure degrades to a
+ * smaller/empty map rather than throwing, so enrichment is always best-effort.
  */
-export async function runCatalogEnrichment(
-  data: AppData,
-  semesterId: string,
-  options: CatalogEnrichOptions,
-): Promise<CatalogEnrichResult> {
+export async function fetchTechnionCatalog(
+  options: CatalogFetchOptions = {},
+): Promise<Map<string, CatalogEntry>> {
   const fetchImpl = options.fetchImpl ?? fetch
   const baseUrl = options.baseUrl ?? TECHNION_SAP_BASE_URL
 
-  const semesterIndex = data.semesters.findIndex((s) => s.id === semesterId)
-  if (semesterIndex === -1) return { data, updatedCount: 0 }
-
-  const lastRaw = await fetchJson(fetchImpl, catalogUrls(baseUrl, 0, 0).lastSemesters)
-  const refs = parseLastSemesters(lastRaw)
-  if (refs.length === 0) return { data, updatedCount: 0 }
-
   const catalog = new Map<string, CatalogEntry>()
-  for (const ref of refs) {
+  const lastRaw = await fetchJson(fetchImpl, catalogUrls(baseUrl, 0, 0).lastSemesters)
+  for (const ref of parseLastSemesters(lastRaw)) {
     const url = catalogUrls(baseUrl, ref.year, ref.semester).courses
     const raw = await fetchJson(fetchImpl, url)
     if (!raw) continue
@@ -179,7 +218,23 @@ export async function runCatalogEnrichment(
       if (!catalog.has(number)) catalog.set(number, entry)
     }
   }
-  if (catalog.size === 0) return { data, updatedCount: 0 }
+  return catalog
+}
+
+/**
+ * Pure: fills the empty fields of one semester's courses from an already-fetched
+ * catalog, never overwriting existing values. A no-op (semester missing, empty
+ * catalog, or every match already populated) returns `data` by reference and
+ * leaves `lastModified` untouched, so `reconcileImport` can detect the no-change.
+ */
+export function enrichSemesterCourses(
+  data: AppData,
+  semesterId: string,
+  catalog: Map<string, CatalogEntry>,
+  nowIso: string,
+): CatalogEnrichResult {
+  const semesterIndex = data.semesters.findIndex((s) => s.id === semesterId)
+  if (semesterIndex === -1 || catalog.size === 0) return { data, updatedCount: 0 }
 
   let updatedCount = 0
   const nextSemesters = data.semesters.map((semester, index) => {
@@ -194,12 +249,30 @@ export async function runCatalogEnrichment(
     return { ...semester, courses: nextCourses }
   })
 
-  // A no-op enrichment (every matched course already fully populated) must not
-  // churn object identity or bump lastModified — return the data untouched.
   if (updatedCount === 0) return { data, updatedCount: 0 }
 
   return {
-    data: { ...data, semesters: nextSemesters, lastModified: options.nowIso },
+    data: { ...data, semesters: nextSemesters, lastModified: nowIso },
     updatedCount,
   }
+}
+
+/**
+ * Enriches the target semester's courses with the public Technion SAP catalog,
+ * filling only empty fields — the standalone "Fetch Course Data" action (a
+ * Cheesefork import enriches inline, sharing one catalog download).
+ */
+export async function runCatalogEnrichment(
+  data: AppData,
+  semesterId: string,
+  options: CatalogEnrichOptions,
+): Promise<CatalogEnrichResult> {
+  // Skip the (large) catalog download entirely when the semester isn't present.
+  if (!data.semesters.some((s) => s.id === semesterId)) return { data, updatedCount: 0 }
+
+  const catalog = await fetchTechnionCatalog({
+    ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
+    ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
+  })
+  return enrichSemesterCourses(data, semesterId, catalog, options.nowIso)
 }

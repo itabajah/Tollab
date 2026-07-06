@@ -60,6 +60,19 @@ describe('CourseList', () => {
     expect(session.appStore.getState().data.semesters[0]!.courses[0]!.name).toBe('Calculus 2')
   })
 
+  it('saves a free-text syllabus that is not a URL (may embed a link)', async () => {
+    const user = userEvent.setup()
+    const session = setup()
+    await user.click(screen.getByRole('button', { name: /add course/i }))
+    await user.type(screen.getByLabelText('Course name'), 'Algorithms 1')
+    const syllabus = 'Greedy, DP and network flows. Details: https://example.com/syllabus'
+    await user.type(screen.getByLabelText('Syllabus'), syllabus)
+    await user.click(screen.getByRole('button', { name: 'Save Course' }))
+    const course = session.appStore.getState().data.semesters[0]!.courses[0]!
+    expect(course.name).toBe('Algorithms 1')
+    expect(course.syllabus).toBe(syllabus)
+  })
+
   it('blocks saving a course with no name', async () => {
     const user = userEvent.setup()
     const session = setup()

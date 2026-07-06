@@ -116,7 +116,7 @@ export function applyImportedCourses(
   semesterName: string,
   imported: ImportedCourse[],
   nowIso: string,
-): { data: AppData; report: ImportReport } {
+): { data: AppData; report: ImportReport; semesterId: string } {
   const targetName = translateSemesterName(semesterName)
   const existing = data.semesters.find((s) => s.name.toLowerCase() === targetName.toLowerCase())
   const semester = existing ?? createSemester(targetName, newId())
@@ -153,6 +153,7 @@ export function applyImportedCourses(
     return {
       data,
       report: { createdSemester: false, createdCourses, updatedCourses },
+      semesterId: existing.id,
     }
   }
 
@@ -164,6 +165,7 @@ export function applyImportedCourses(
   return {
     data: { ...data, semesters, lastModified: nowIso },
     report: { createdSemester: !existing, createdCourses, updatedCourses },
+    semesterId: semester.id,
   }
 }
 

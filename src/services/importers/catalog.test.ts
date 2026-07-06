@@ -125,6 +125,16 @@ describe('matchCatalogEntry', () => {
     expect(matchCatalogEntry(catalog, { number: '', name: 'אלגוריתמים' })).toBe(entryOf('02340247'))
   })
 
+  it('prefers an exact name match over an earlier merely-containing entry', () => {
+    // 'פיזיקה 1מ' is inserted first and *contains* 'פיזיקה 1', but the exact
+    // 'פיזיקה 1' must win — auto-enrich would otherwise write the wrong course.
+    const inline = parseCatalog([
+      { general: { 'מספר מקצוע': '00970001', 'שם מקצוע': 'פיזיקה 1מ' } },
+      { general: { 'מספר מקצוע': '00970002', 'שם מקצוע': 'פיזיקה 1' } },
+    ])
+    expect(matchCatalogEntry(inline, { number: '', name: 'פיזיקה 1' })).toBe(inline.get('00970002'))
+  })
+
   it('matches a legacy 6-digit number via the name fallback', () => {
     // 234247 is not a substring of the SAP number 02340247, so only the name matches.
     expect(matchCatalogEntry(catalog, { number: '234247', name: 'אלגוריתמים 1' })).toBe(

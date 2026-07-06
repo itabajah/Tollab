@@ -124,6 +124,14 @@ export function matchCatalogEntry(
 
   const localName = course.name.toLowerCase().trim()
   if (localName) {
+    // Prefer an exact (normalized) name match; only then fall back to the legacy
+    // "catalog name contains the local name" heuristic. Auto-enrichment runs this
+    // on every Cheesefork import — where courses usually arrive without a number —
+    // so exact-first stops an ambiguous name ("פיזיקה 1") from silently binding to
+    // the first merely-containing entry ("פיזיקה 1מ") just because it comes first.
+    for (const entry of catalog.values()) {
+      if (entry.name.toLowerCase().trim() === localName) return entry
+    }
     for (const entry of catalog.values()) {
       if (entry.name.toLowerCase().includes(localName)) return entry
     }

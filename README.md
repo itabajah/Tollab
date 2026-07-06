@@ -26,16 +26,16 @@ Technion coursework is scattered across Cheesefork, the SAP catalog, Panopto, an
 
 ## Features
 
-|                                   |                                                                                                                                                                                           |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 📅 **Weekly schedule**            | Lane-packed grid with a live "now" line, all-day exam/homework chips, a collapsible view, and a mobile single-day mode. Overnight (past-midnight) classes render correctly.               |
-| ✅ **Homework**                   | Per-course and cross-course views, six sort orders, due-date urgency badges, inline notes and links, manual reordering that respects hidden/completed items.                              |
-| 🎓 **Exam roadmap**               | A serpentine Moed A/B roadmap that **auto-activates 14 days before your first exam**, with day-gap emphasis, hide/restore, and custom exams.                                              |
-| 🎥 **Recordings**                 | Per-course tabs with inline YouTube/Panopto previews, natural-order sorting, and bulk import from a playlist or Panopto folder.                                                           |
-| 📥 **One-click import**           | Pull your whole schedule from a Cheesefork ICS link (single or batch across semesters), then enrich courses from the public Technion SAP catalog — existing values are never overwritten. |
-| ☁️ **Offline-first + cloud sync** | localStorage is the source of truth; optional Google sign-in syncs all profiles through a single Realtime Database node with a conflict-safe last-write-wins merge.                       |
-| 🌗 **Monochrome by design**       | A single-accent light/dark design system built on Tailwind v4 tokens. Color enters only through per-course hues and status signals. Honors `prefers-reduced-motion`.                      |
-| 👥 **Profiles**                   | Keep multiple degrees/tracks side by side; each syncs independently.                                                                                                                      |
+|                                   |                                                                                                                                                                                                              |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 📅 **Weekly schedule**            | Lane-packed grid with a live "now" line, all-day exam/homework chips, a collapsible view, and a mobile single-day mode. Overnight (past-midnight) classes render correctly.                                  |
+| ✅ **Homework**                   | Per-course and cross-course views, six sort orders, due-date urgency badges, inline notes and links, manual reordering that respects hidden/completed items.                                                 |
+| 🎓 **Exam roadmap**               | A serpentine Moed A/B roadmap that **auto-activates 14 days before your first exam**, with day-gap emphasis, hide/restore, and custom exams.                                                                 |
+| 🎥 **Recordings**                 | Per-course tabs with inline YouTube/Panopto previews, natural-order sorting, and bulk import from a playlist or Panopto folder.                                                                              |
+| 📥 **One-click import**           | Pull your whole schedule from a Cheesefork ICS link (single or batch across semesters); every fetch then auto-enriches courses from the public Technion SAP catalog — existing values are never overwritten. |
+| ☁️ **Offline-first + cloud sync** | localStorage is the source of truth; optional Google sign-in syncs all profiles through a single Realtime Database node with a conflict-safe last-write-wins merge.                                          |
+| 🌗 **Monochrome by design**       | A single-accent light/dark design system built on Tailwind v4 tokens. Color enters only through per-course hues and status signals. Honors `prefers-reduced-motion`.                                         |
+| 👥 **Profiles**                   | Keep multiple degrees/tracks side by side; each syncs independently.                                                                                                                                         |
 
 ## Architecture
 
