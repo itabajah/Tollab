@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Field, Input } from '@/components/ui/Field'
-import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from '@/components/ui/icons'
+import { ChevronDownIcon, ChevronUpIcon, CloseIcon, PlayIcon } from '@/components/ui/icons'
 import { cn } from '@/lib/cn'
 import { EmbedPreview } from './EmbedPreview'
 
@@ -39,6 +39,11 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
   const label = item.name || 'Recording'
   const embeddable = item.videoLink !== '' && supportsInlinePreview(item.videoLink)
   const manual = sort === 'manual'
+  // The meta row carries the open-in-new-tab / "no link" note (only when the
+  // title itself isn't the preview toggle) and a slides link; render nothing
+  // when there's neither.
+  const metaLinks =
+    (!embeddable && item.videoLink !== '') || item.videoLink === '' || item.slideLink !== ''
 
   const onDelete = async () => {
     const ok = await confirm({
@@ -75,44 +80,74 @@ export function RecordingRow({ courseId, tabId, item, sort, isFirst, isLast }: R
         />
 
         <div className="min-w-0 flex-1">
-          <p
-            className={cn(
-              'text-sm break-words text-ink',
-              item.watched && 'text-ink-faint line-through',
-            )}
-            title={item.name || undefined}
-          >
-            {item.name || <span className="text-ink-faint italic">Untitled recording</span>}
-          </p>
+          {embeddable ? (
+            // The whole title row is the preview toggle — no separate button. A
+            // play glyph signals it's clickable; it flips to a collapse chevron
+            // while the embed is open.
+            <button
+              type="button"
+              onClick={() => setPlaying((p) => !p)}
+              aria-expanded={playing}
+              aria-label={`${playing ? 'Hide' : 'Show'} preview of ${label}`}
+              title={item.name || undefined}
+              className="group/prev -mx-1 -my-0.5 flex w-full items-start gap-1.5 rounded-control px-1 py-0.5 text-left transition-colors hover:bg-inset focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
+            >
+              {playing ? (
+                <ChevronUpIcon width={14} height={14} className="mt-0.5 shrink-0 text-ink-faint" />
+              ) : (
+                <PlayIcon
+                  width={13}
+                  height={13}
+                  className="mt-0.5 shrink-0 text-ink-faint transition-colors group-hover/prev:text-accent"
+                />
+              )}
+              <span
+                className={cn(
+                  'text-sm break-words text-ink',
+                  item.watched && 'text-ink-faint line-through',
+                )}
+              >
+                {item.name || <span className="text-ink-faint italic">Untitled recording</span>}
+              </span>
+            </button>
+          ) : (
+            <p
+              className={cn(
+                'text-sm break-words text-ink',
+                item.watched && 'text-ink-faint line-through',
+              )}
+              title={item.name || undefined}
+            >
+              {item.name || <span className="text-ink-faint italic">Untitled recording</span>}
+            </p>
+          )}
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            {embeddable ? (
-              <Button size="sm" variant="secondary" onClick={() => setPlaying((p) => !p)}>
-                {playing ? 'Hide' : 'Preview'}
-              </Button>
-            ) : item.videoLink !== '' ? (
-              <a
-                href={item.videoLink}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-control text-sm text-accent underline hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
-              >
-                Open video
-              </a>
-            ) : (
-              <span className="text-xs text-ink-faint">No video link</span>
-            )}
-            {item.slideLink !== '' ? (
-              <a
-                href={item.slideLink}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-control text-sm text-accent underline hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
-              >
-                Slides
-              </a>
-            ) : null}
-          </div>
+          {metaLinks ? (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {!embeddable && item.videoLink !== '' ? (
+                <a
+                  href={item.videoLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-control text-sm text-accent underline hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
+                >
+                  Open video
+                </a>
+              ) : item.videoLink === '' ? (
+                <span className="text-xs text-ink-faint">No video link</span>
+              ) : null}
+              {item.slideLink !== '' ? (
+                <a
+                  href={item.slideLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-control text-sm text-accent underline hover:text-accent-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
+                >
+                  Slides
+                </a>
+              ) : null}
+            </div>
+          ) : null}
 
           {playing && embeddable ? (
             <div className="mt-2">

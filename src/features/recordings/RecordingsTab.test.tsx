@@ -215,17 +215,18 @@ describe('RecordingsTab', () => {
     expect(tabItems(session, 'lectures').map((i) => i.name)).toEqual(['Video 2', 'Video 1'])
   })
 
-  it('shows an inline embed preview when toggling play, and hides it again', async () => {
+  it('toggles an inline embed preview by clicking the recording, and hides it again', async () => {
     const { user } = setup((session, courseId) => {
       session.appStore
         .getState()
         .addRecording(courseId, 'lectures', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
     })
-    await user.click(screen.getByRole('button', { name: 'Preview' }))
+    // The title row itself is the toggle now — there is no separate Preview button.
+    await user.click(screen.getByRole('button', { name: /show preview/i }))
     const iframe = screen.getByTitle('Video preview')
     expect(iframe.getAttribute('src')).toContain('youtube.com/embed/dQw4w9WgXcQ')
 
-    await user.click(screen.getByRole('button', { name: 'Hide' }))
+    await user.click(screen.getByRole('button', { name: /hide preview/i }))
     expect(screen.queryByTitle('Video preview')).not.toBeInTheDocument()
   })
 
@@ -233,7 +234,7 @@ describe('RecordingsTab', () => {
     setup((session, courseId) => {
       session.appStore.getState().addRecording(courseId, 'lectures', 'https://example.com/lecture')
     })
-    expect(screen.queryByRole('button', { name: 'Preview' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /show preview/i })).not.toBeInTheDocument()
     expect(screen.queryByTitle('Video preview')).not.toBeInTheDocument()
     const link = screen.getByRole('link', { name: /open video/i })
     expect(link).toHaveAttribute('href', 'https://example.com/lecture')

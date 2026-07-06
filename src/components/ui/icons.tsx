@@ -105,6 +105,22 @@ export function PlusIcon({
   )
 }
 
+/** Filled play triangle. */
+export function PlayIcon({ width = 16, height = 16, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}
+
 /** Indeterminate spinner (track ring + rotating arc). Size via className. */
 export function Spinner({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (

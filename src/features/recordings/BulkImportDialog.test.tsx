@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BulkImportDialog } from './BulkImportDialog'
 import { Providers } from '@/features/app/Providers'
@@ -129,5 +129,31 @@ describe('BulkImportDialog', () => {
     await user.click(screen.getByRole('button', { name: /fetch list/i }))
     await waitFor(() => expect(screen.getByText(/could not fetch that link/i)).toBeInTheDocument())
     expect(tabItems(session, 'lectures')).toHaveLength(0)
+  })
+
+  it('imports Panopto recordings from pasted console data (no fetch)', async () => {
+    const { session, user } = setup(async () => {
+      throw new Error('Panopto must not fetch')
+    })
+    await user.click(screen.getByRole('button', { name: 'Panopto' }))
+    const json = JSON.stringify([
+      { t: 'Panopto 1', u: 'https://p/Panopto/Pages/Viewer.aspx?id=aaa' },
+      { t: 'Panopto 2', u: 'https://p/Panopto/Pages/Viewer.aspx?id=bbb' },
+    ])
+    // fireEvent (not userEvent.type) — the JSON has { and [ which type() treats specially.
+    fireEvent.change(screen.getByLabelText('Panopto data'), { target: { value: json } })
+
+    expect(await screen.findByText('Panopto 1')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /add selected recordings/i }))
+
+    const items = tabItems(session, 'lectures')
+    expect(items.map((i) => i.name)).toEqual(['Panopto 1', 'Panopto 2'])
+  })
+
+  it('shows an error when the pasted Panopto data is unusable', async () => {
+    const { user } = setup(async () => [])
+    await user.click(screen.getByRole('button', { name: 'Panopto' }))
+    fireEvent.change(screen.getByLabelText('Panopto data'), { target: { value: 'garbage' } })
+    expect(await screen.findByText(/doesn't look like the copied list/i)).toBeInTheDocument()
   })
 })

@@ -29,6 +29,58 @@ export class RecordingImportError extends Error {
   }
 }
 
+/**
+ * The console one-liner users run on their (signed-in) Panopto folder page. It
+ * reads every session row from the fully-loaded DOM and `copy()`s a JSON array
+ * of `{ t: title, u: viewerUrl }` to the clipboard. This sidesteps the auth +
+ * CORS wall entirely — a private folder's sessions are only ever visible to the
+ * logged-in browser, never to a server-side proxy — by running in the
+ * authenticated origin. The result is pasted back and parsed by
+ * {@link parsePanoptoConsoleData}.
+ */
+export const PANOPTO_CONSOLE_SNIPPET =
+  "copy(JSON.stringify([...document.querySelectorAll('tr[aria-label][id]')]" +
+  '.filter(r=>/^[a-f0-9-]{36}$/i.test(r.id))' +
+  ".map(r=>({t:r.getAttribute('aria-label'),u:location.origin+'/Panopto/Pages/Viewer.aspx?id='+r.id}))))"
+
+function firstString(record: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === 'string' && value.length > 0) return value
+  }
+  return null
+}
+
+/**
+ * Parses the clipboard JSON produced by {@link PANOPTO_CONSOLE_SNIPPET} into
+ * recordings. Accepts the compact `{t,u}` shape the snippet emits as well as a
+ * `{title,url}` shape; trims titles, de-duplicates by URL, and drops malformed
+ * entries. Returns `[]` for anything that isn't a JSON array of video objects,
+ * so callers can treat "empty" as "nothing usable pasted".
+ */
+export function parsePanoptoConsoleData(text: string): ImportedRecording[] {
+  let raw: unknown
+  try {
+    raw = JSON.parse(text)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(raw)) return []
+
+  const recordings: ImportedRecording[] = []
+  const seen = new Set<string>()
+  for (const entry of raw) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const record = entry as Record<string, unknown>
+    const name = firstString(record, ['t', 'title', 'name'])
+    const videoLink = firstString(record, ['u', 'url', 'videoLink'])
+    if (!name || !videoLink || seen.has(videoLink)) continue
+    seen.add(videoLink)
+    recordings.push({ name: name.trim(), videoLink })
+  }
+  return recordings
+}
+
 function proxyOptions(options: RecordingImportOptions, validate: (body: string) => boolean) {
   return {
     validate,
@@ -79,7 +131,10 @@ export async function runPanoptoImport(
   const html = await fetchViaProxies(url, proxyOptions(options, looksLikePanopto))
   const videos = parsePanoptoHtml(html, info.baseDomain)
   if (videos.length === 0) {
-    throw new RecordingImportError('No recordings found in that Panopto folder.')
+    throw new RecordingImportError(
+      "No recordings found. Panopto only lists a folder's videos when it's publicly viewable — " +
+        "folders that require signing in can't be imported by link.",
+    )
   }
   return videos.map((video) => ({ name: video.title, videoLink: video.url }))
 }

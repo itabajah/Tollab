@@ -12,6 +12,7 @@ export interface SegmentedControlProps<T extends string> {
   onChange: (value: T) => void
   'aria-label': string
   size?: 'sm' | 'md'
+  disabled?: boolean
   className?: string
 }
 
@@ -24,6 +25,7 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   size = 'md',
+  disabled = false,
   className,
   ...aria
 }: SegmentedControlProps<T>) {
@@ -37,10 +39,11 @@ export function SegmentedControl<T extends string>({
         <button
           key={option.value}
           type="button"
+          disabled={disabled}
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            'rounded-xs font-medium ease-standard transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus',
+            'rounded-xs font-medium ease-standard transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-50',
             size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs',
             value === option.value
               ? 'bg-panel text-ink shadow-sm'

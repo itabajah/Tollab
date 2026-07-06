@@ -2,6 +2,7 @@ import {
   runYoutubeImport,
   runPanoptoImport,
   runRecordingImport,
+  parsePanoptoConsoleData,
   RecordingImportError,
 } from './recordingsImport'
 
@@ -148,6 +149,39 @@ describe('runPanoptoImport', () => {
         delayFn: noDelay,
       }),
     ).rejects.toThrow(/No recordings/)
+  })
+})
+
+describe('parsePanoptoConsoleData', () => {
+  it('parses the {t,u} JSON the console snippet emits', () => {
+    const json = JSON.stringify([
+      { t: 'Lecture 1', u: 'https://x.panopto.eu/Panopto/Pages/Viewer.aspx?id=aaa' },
+      { t: 'Lecture 2', u: 'https://x.panopto.eu/Panopto/Pages/Viewer.aspx?id=bbb' },
+    ])
+    expect(parsePanoptoConsoleData(json)).toEqual([
+      { name: 'Lecture 1', videoLink: 'https://x.panopto.eu/Panopto/Pages/Viewer.aspx?id=aaa' },
+      { name: 'Lecture 2', videoLink: 'https://x.panopto.eu/Panopto/Pages/Viewer.aspx?id=bbb' },
+    ])
+  })
+
+  it('accepts {title,url}, trims titles, and de-duplicates by url', () => {
+    const json = JSON.stringify([
+      { title: '  Rec  ', url: 'https://p/Viewer.aspx?id=1' },
+      { title: 'Dup link', url: 'https://p/Viewer.aspx?id=1' },
+      { t: 'Third', u: 'https://p/Viewer.aspx?id=2' },
+    ])
+    expect(parsePanoptoConsoleData(json)).toEqual([
+      { name: 'Rec', videoLink: 'https://p/Viewer.aspx?id=1' },
+      { name: 'Third', videoLink: 'https://p/Viewer.aspx?id=2' },
+    ])
+  })
+
+  it('returns [] for non-JSON, a non-array, or entries missing a title or url', () => {
+    expect(parsePanoptoConsoleData('not json at all')).toEqual([])
+    expect(parsePanoptoConsoleData('{"t":"x","u":"y"}')).toEqual([]) // an object, not an array
+    expect(
+      parsePanoptoConsoleData(JSON.stringify([{ t: 'no url' }, { u: 'no title' }, null, 42])),
+    ).toEqual([])
   })
 })
 
