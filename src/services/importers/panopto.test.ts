@@ -1,14 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { extractPanoptoInfo, parsePanoptoHtml, parsePanoptoSavedPage } from './panopto'
+import { extractPanoptoInfo, parsePanoptoHtml } from './panopto'
 
 const BASE = 'https://panopto.technion.ac.il'
 
 const folderFixture = readFileSync(
   new URL('./__fixtures__/panopto-folder.html', import.meta.url),
-  'utf8',
-)
-const savedPageFixture = readFileSync(
-  new URL('./__fixtures__/panopto-saved-page.html', import.meta.url),
   'utf8',
 )
 
@@ -185,35 +181,5 @@ describe('parsePanoptoHtml', () => {
 
   it('returns an empty array for HTML without any video data', () => {
     expect(parsePanoptoHtml('<html><body>Nothing here</body></html>', BASE)).toEqual([])
-  })
-})
-
-describe('parsePanoptoSavedPage', () => {
-  it('extracts rows with a UUID id and aria-label title from a saved folder page', () => {
-    expect(parsePanoptoSavedPage(savedPageFixture)).toEqual([
-      { id: '1a2b3c4d-5e6f-4a1b-9c8d-0e1f2a3b4c5d', title: 'Lecture 1 & Introduction' },
-      { id: '2b3c4d5e-6f7a-4b2c-8d9e-1f2a3b4c5d6e', title: "Lecture 2 'Recursion'" },
-      { id: '3c4d5e6f-7a8b-4c3d-9e0f-2a3b4c5d6e7f', title: 'Tutorial – Heaps <draft>' },
-    ])
-  })
-
-  it('keeps the first title when the same row id appears twice', () => {
-    const titles = parsePanoptoSavedPage(savedPageFixture).map((video) => video.title)
-
-    expect(titles).not.toContain('Lecture 2 duplicate row')
-  })
-
-  it('leaves unknown entities untouched while decoding known ones', () => {
-    const html =
-      '<tr id="11111111-2222-4333-8444-555555555555" aria-label="A &amp; B &unknownentity; &gt; C">'
-
-    expect(parsePanoptoSavedPage(html)).toEqual([
-      { id: '11111111-2222-4333-8444-555555555555', title: 'A & B &unknownentity; > C' },
-    ])
-  })
-
-  it('returns an empty array when no video rows exist', () => {
-    expect(parsePanoptoSavedPage('<html><body><table></table></body></html>')).toEqual([])
-    expect(parsePanoptoSavedPage('')).toEqual([])
   })
 })

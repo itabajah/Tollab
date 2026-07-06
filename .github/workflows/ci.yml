@@ -79,8 +79,8 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Build (E2E mode)
-        run: pnpm build:e2e
+      - name: Build
+        run: pnpm build
 
       - name: Run Playwright tests
         run: pnpm e2e

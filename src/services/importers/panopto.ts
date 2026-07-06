@@ -1,18 +1,13 @@
 /**
  * Panopto folder/session extraction (legacy video-fetch.js port).
- * Runs a cascade of extractors over folder-page HTML and parses locally
- * saved Panopto pages with regexes (no DOM — this runs in node too).
+ * Runs a cascade of extractors over folder-page HTML with regexes (no DOM —
+ * this runs in node too).
  */
 
 export interface PanoptoVideo {
   id: string
   title: string
   url: string
-}
-
-export interface PanoptoSavedVideo {
-  id: string
-  title: string
 }
 
 export interface PanoptoUrlInfo {
@@ -175,46 +170,6 @@ export function parsePanoptoHtml(html: string, baseDomain: string): PanoptoVideo
   collectHrefLinks(html, baseDomain, videos, seenIds)
   collectSessionIds(html, baseDomain, videos, seenIds)
   collectJsonSessions(html, baseDomain, videos, seenIds)
-
-  return videos
-}
-
-const NAMED_ENTITIES: Record<string, string> = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: "'",
-  nbsp: ' ',
-}
-
-function decodeHtmlEntities(str: string): string {
-  return str.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (full, entity: string) => {
-    if (entity.startsWith('#')) {
-      const isHex = entity[1] === 'x' || entity[1] === 'X'
-      const code = Number.parseInt(entity.slice(isHex ? 2 : 1), isHex ? 16 : 10)
-      return Number.isNaN(code) || code > 0x10ffff ? full : String.fromCodePoint(code)
-    }
-    return NAMED_ENTITIES[entity.toLowerCase()] ?? full
-  })
-}
-
-/**
- * Parses a locally saved Panopto folder page. Video rows look like
- * `<tr id="UUID" ... aria-label="Title">`; rows are de-duplicated by id and
- * titles are HTML-entity decoded.
- */
-export function parsePanoptoSavedPage(html: string): PanoptoSavedVideo[] {
-  const videos: PanoptoSavedVideo[] = []
-  const seenIds = new Set<string>()
-
-  for (const match of html.matchAll(/<tr\s+id="([a-f0-9-]{36})"[^>]*aria-label="([^"]+)"/gi)) {
-    const id = match[1]
-    const title = decodeHtmlEntities(match[2]?.trim() ?? '')
-    if (!id || !title || seenIds.has(id)) continue
-    seenIds.add(id)
-    videos.push({ id, title })
-  }
 
   return videos
 }

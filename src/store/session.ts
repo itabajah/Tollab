@@ -49,8 +49,6 @@ export interface Session {
   switchProfile: (id: string) => void
   importProfile: (parsed: ParsedImport) => { profileId: string; name: string }
   buildExport: () => ExportFileV3
-  /** Replaces the active profile's data without marking it dirty for sync. */
-  applyExternalData: (data: AppData) => void
   /** Silently re-reads profiles, active id and active data from storage (post-sync). */
   refreshFromStorage: () => void
   flush: () => void
@@ -279,12 +277,6 @@ export function createSession(options: SessionOptions): Session {
       const { profiles: metas, activeProfileId } = profilesStore.getState()
       const meta = metas.find((p) => p.id === activeProfileId)
       return buildExportFile(meta?.name ?? 'Profile', appStore.getState().data, now().toISOString())
-    },
-
-    applyExternalData(data) {
-      setDataSilently(data)
-      const id = profilesStore.getState().activeProfileId
-      persist(() => saveProfileData(storage, id, data, data.lastModified))
     },
 
     refreshFromStorage() {

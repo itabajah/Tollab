@@ -88,7 +88,6 @@ export function buildTickerItems(ctx: TickerContext): TickerItem[] {
         courseMaybe: courseTag(current.course.name),
         start: current.slot.start,
         end: current.slot.end,
-        location: current.course.location,
       },
       target: { type: 'course', courseId: current.course.id },
     })

@@ -50,8 +50,10 @@ export function ExamNode({
   onEdit?: (() => void) | undefined
 }) {
   const color = cssColor(node.color)
-  const urgent = node.isNext && node.daysUntil !== null && node.daysUntil <= 3
-  const veryUrgent = node.isNext && node.daysUntil !== null && node.daysUntil <= 1
+  // daysUntil is always a number (NaN when the date is unparseable, never null);
+  // NaN comparisons are false, so the urgency guards need no explicit null check.
+  const urgent = node.isNext && node.daysUntil <= 3
+  const veryUrgent = node.isNext && node.daysUntil <= 1
 
   return (
     <div
