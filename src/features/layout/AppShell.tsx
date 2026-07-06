@@ -8,7 +8,10 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
  * - ≥ 1320px: both sections already fit comfortably — the right pane is wide
  *   enough for the full weekly calendar without horizontal scroll at the default
  *   split — so the split is a fixed 55/45 with NO drag handle; the middle line
- *   would only be clutter.
+ *   would only be clutter. The pair is capped (max-w) and centered so that on
+ *   very wide screens the two sections stay a tight, symmetric unit instead of
+ *   drifting apart around a large empty centre gutter (each pane otherwise
+ *   centres its own capped content, and the two inner margins compound).
  * - 1024–1319px (or whenever browser zoom shrinks the CSS viewport into that
  *   band): the sections start to compete for width, so a draggable 55/45 split
  *   appears, persisted via autoSaveId ('tollab-split-v3').
@@ -39,7 +42,7 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
   if (roomy) {
     return (
       <div
-        className="grid h-screen"
+        className="mx-auto grid h-screen w-full max-w-[1680px]"
         style={{ gridTemplateColumns: 'minmax(0, 55fr) minmax(0, 45fr)' }}
       >
         <div className="overflow-hidden">{leftInner}</div>
