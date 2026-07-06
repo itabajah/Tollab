@@ -3,13 +3,22 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 /**
- * Two-pane resizable layout (replaces the legacy Split.js integration).
- * Desktop: draggable 55/45 split persisted via autoSaveId ('tollab-split-v3');
- * each pane scrolls independently and caps its content at max-w-4xl. Below
- * 1024px the panes stack into one scrolling column.
+ * Two-pane layout (replaces the legacy Split.js integration).
+ *
+ * - ≥ 1320px: both sections already fit comfortably — the right pane is wide
+ *   enough for the full weekly calendar without horizontal scroll at the default
+ *   split — so the split is a fixed 55/45 with NO drag handle; the middle line
+ *   would only be clutter.
+ * - 1024–1319px (or whenever browser zoom shrinks the CSS viewport into that
+ *   band): the sections start to compete for width, so a draggable 55/45 split
+ *   appears, persisted via autoSaveId ('tollab-split-v3').
+ * - ≤ 1023px: the panes stack into one scrolling column.
+ *
+ * Both panes cap their content at max-w-4xl and scroll independently.
  */
 export function AppShell({ left, right }: { left: ReactNode; right: ReactNode }) {
   const stacked = useMediaQuery('(max-width: 1023px)')
+  const roomy = useMediaQuery('(min-width: 1320px)')
 
   if (stacked) {
     return (
@@ -20,12 +29,29 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
     )
   }
 
+  // p-8 (not pt-8) on the left keeps the inner course-list scroll field clear of
+  // the window edge instead of running flush to it. Shared by both desktop
+  // branches so the fixed and draggable splits are pixel-identical apart from the
+  // handle.
+  const leftInner = <div className="mx-auto h-full w-full max-w-4xl p-8">{left}</div>
+  const rightInner = <div className="mx-auto w-full max-w-4xl px-6 pt-8 pb-16">{right}</div>
+
+  if (roomy) {
+    return (
+      <div
+        className="grid h-screen"
+        style={{ gridTemplateColumns: 'minmax(0, 55fr) minmax(0, 45fr)' }}
+      >
+        <div className="overflow-hidden">{leftInner}</div>
+        <div className="overflow-y-auto [scrollbar-gutter:stable]">{rightInner}</div>
+      </div>
+    )
+  }
+
   return (
     <PanelGroup direction="horizontal" autoSaveId="tollab-split-v3" className="!h-screen">
       <Panel defaultSize={55} minSize={30} className="!overflow-hidden">
-        {/* p-8 (not pt-8): the bottom padding keeps the inner course-list scroll
-            field clear of the window edge instead of running flush to it. */}
-        <div className="mx-auto h-full w-full max-w-4xl p-8">{left}</div>
+        {leftInner}
       </Panel>
       <PanelResizeHandle className="group relative w-2 cursor-col-resize outline-none">
         {/* The visible hairline sits centered in a wider transparent hit area. */}
@@ -37,7 +63,7 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
         </div>
       </PanelResizeHandle>
       <Panel defaultSize={45} minSize={25} className="!overflow-y-auto [scrollbar-gutter:stable]">
-        <div className="mx-auto w-full max-w-4xl px-6 pt-8 pb-16">{right}</div>
+        {rightInner}
       </Panel>
     </PanelGroup>
   )

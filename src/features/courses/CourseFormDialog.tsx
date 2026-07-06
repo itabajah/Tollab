@@ -134,6 +134,14 @@ export function CourseFormDialog({
   const [seededOpen, setSeededOpen] = useState(false)
   const [tab, setTab] = useState<CourseTab>(initialTab ?? 'recordings')
 
+  // Freeze the course used for RENDERING while the dialog is closing. The parent
+  // clears the course the instant close begins, but Radix keeps the content
+  // mounted through the exit animation — without this freeze the tabbed
+  // (Recordings) view would visibly flip to the course-less "Add" details form
+  // for the duration of the fade-out. Tracks the live course only while open.
+  const [renderCourse, setRenderCourse] = useState<Course | null>(course)
+  if (open && renderCourse !== course) setRenderCourse(course)
+
   // Re-seed the form (and the active tab, for deep-links) each time the dialog
   // OPENS — the component stays mounted while `open` toggles, so otherwise
   // reopening the same course would resurface edits the user had cancelled.
@@ -380,7 +388,7 @@ export function CourseFormDialog({
 
   const footer = (
     <DialogActions>
-      {course ? (
+      {renderCourse ? (
         <Button variant="danger" className="mr-auto" onClick={() => void onDelete()}>
           Delete Course
         </Button>
@@ -398,10 +406,10 @@ export function CourseFormDialog({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={course ? 'Edit Course' : 'Add Course'}
+      title={renderCourse ? 'Edit Course' : 'Add Course'}
       wide
     >
-      {course ? (
+      {renderCourse ? (
         <Tabs.Root value={tab} onValueChange={(v) => setTab(v as CourseTab)}>
           <Tabs.List className="mb-4 flex gap-1 border-b border-line" aria-label="Course sections">
             <Tabs.Trigger value="recordings" className={courseTabTrigger}>
@@ -415,10 +423,10 @@ export function CourseFormDialog({
             </Tabs.Trigger>
           </Tabs.List>
           <Tabs.Content value="recordings">
-            <RecordingsTab courseId={course.id} />
+            <RecordingsTab courseId={renderCourse.id} />
           </Tabs.Content>
           <Tabs.Content value="homework">
-            <HomeworkTab courseId={course.id} highlightId={highlightHomeworkId} />
+            <HomeworkTab courseId={renderCourse.id} highlightId={highlightHomeworkId} />
           </Tabs.Content>
           <Tabs.Content value="details">
             {detailsBody}
