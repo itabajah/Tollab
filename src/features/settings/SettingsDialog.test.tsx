@@ -115,11 +115,16 @@ describe('SettingsDialog — Fetch Data tab', () => {
     expect(screen.getByRole('button', { name: /fetch range/i })).toBeInTheDocument()
   })
 
-  it('prompts to create a semester first when none exists', async () => {
+  it('lets you fetch a schedule before any semester exists (no gate)', async () => {
     const user = userEvent.setup()
     setup()
     await user.click(screen.getByRole('tab', { name: 'Fetch Data' }))
-    expect(screen.getByText(/create a semester/i)).toBeInTheDocument()
+    // No "create a semester first" gate — the ICS import is available immediately
+    // and creates the semester from the link.
+    expect(screen.queryByText(/create a semester first/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /fetch schedule/i })).toBeInTheDocument()
+    // Catalog enrichment needs courses to enrich, so it stays hidden until a semester exists.
+    expect(screen.queryByRole('button', { name: /fetch course data/i })).not.toBeInTheDocument()
   })
 })
 

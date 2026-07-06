@@ -123,6 +123,35 @@ describe('runBatchIcsImport', () => {
     ])
   })
 
+  it('skips a semester whose ICS fetches but is empty (no blank semester created)', async () => {
+    // Spring 2024 fetches 200 OK but has no events — it must be skipped, not
+    // turned into an empty semester.
+    const EMPTY_ICS = ['BEGIN:VCALENDAR', 'END:VCALENDAR'].join('\r\n')
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('winter-2024-2025'))
+        return new Response(ICS_FOR('קורס חורף'), { status: 200 })
+      if (url.includes('spring-2024')) return new Response(EMPTY_ICS, { status: 200 })
+      if (url.includes('summer-2024')) return new Response(ICS_FOR('קורס קיץ'), { status: 200 })
+      return new Response('', { status: 404 })
+    })
+
+    const result = await runBatchIcsImport(
+      baseData(),
+      'https://cheesefork.cf/ical/winter-2024-2025.ics',
+      { season: 'Winter', year: 2024 },
+      { season: 'Summer', year: 2024 },
+      { semesterName: '', nowIso: NOW, fetchImpl, delayFn: async () => {} },
+    )
+
+    expect(result.imported.map((i) => i.name)).toEqual(['Winter 2024-2025', 'Summer 2024'])
+    expect(result.skipped).toEqual(['Spring 2024'])
+    expect(result.data.semesters.map((s) => s.name).sort()).toEqual([
+      'Summer 2024',
+      'Winter 2024-2025',
+    ])
+  })
+
   it('throws when the sample url is not an .ics link', async () => {
     await expect(
       runBatchIcsImport(

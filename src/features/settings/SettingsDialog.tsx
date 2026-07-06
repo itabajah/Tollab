@@ -8,16 +8,21 @@ import { FetchDataTab } from './FetchDataTab'
 const tabTrigger =
   'rounded-xs border border-transparent px-3 py-1.5 text-sm text-ink-muted transition-colors hover:text-ink data-[state=active]:border-line data-[state=active]:bg-inset data-[state=active]:text-ink'
 
+export type SettingsTab = 'profile' | 'appearance' | 'calendar' | 'fetch'
+
 export function SettingsDialog({
   open,
   onOpenChange,
+  initialTab = 'profile',
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Which tab to open on. Defaults to Profile; the empty-state opens on "fetch". */
+  initialTab?: SettingsTab
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Settings" wide>
-      <Tabs.Root defaultValue="profile">
+      <Tabs.Root defaultValue={initialTab}>
         <Tabs.List
           className="mb-4 flex gap-1 border-b border-line pb-2"
           aria-label="Settings sections"

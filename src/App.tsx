@@ -8,6 +8,7 @@ import { AppShell } from '@/features/layout/AppShell'
 import { Header } from '@/features/layout/Header'
 import { HeaderTicker } from '@/features/ticker/HeaderTicker'
 import { SemesterControls, AddSemesterDialog } from '@/features/semesters/SemesterControls'
+import { SettingsDialog } from '@/features/settings/SettingsDialog'
 import { CourseList } from '@/features/courses/CourseList'
 import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
 import { tickerTargetToRequest } from '@/features/courses/tickerTarget'
@@ -19,6 +20,7 @@ import { Button } from '@/components/ui/Button'
 
 function NoSemesterYet() {
   const [addOpen, setAddOpen] = useState(false)
+  const [fetchOpen, setFetchOpen] = useState(false)
   return (
     <div className="rounded-card border border-dashed border-line-strong px-6 py-14 text-center">
       <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-inset text-ink-faint">
@@ -39,18 +41,25 @@ function NoSemesterYet() {
       </div>
       <h2 className="text-lg font-medium text-ink">No semester yet</h2>
       <p className="mx-auto mt-1.5 max-w-xs text-sm text-ink-muted">
-        Create a semester to track your courses, weekly schedule, homework, and exams.
+        Start from scratch, or pull your whole schedule straight from Cheesefork.
       </p>
-      <Button className="mt-5" variant="primary" onClick={() => setAddOpen(true)}>
-        Create your first semester
-      </Button>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+        <Button variant="primary" onClick={() => setAddOpen(true)}>
+          Create your first semester
+        </Button>
+        <Button variant="secondary" onClick={() => setFetchOpen(true)}>
+          Import from Cheesefork
+        </Button>
+      </div>
       <AddSemesterDialog open={addOpen} onOpenChange={setAddOpen} />
+      <SettingsDialog open={fetchOpen} onOpenChange={setFetchOpen} initialTab="fetch" />
     </div>
   )
 }
 
-// LeftPane does not read the clock, so it does not re-render on the minute tick;
-// only its HeaderTicker child (a `useNow` consumer) does.
+// LeftPane's heavy child — the course list — does not read the clock, so it does
+// not re-render on the minute tick; only the HeaderTicker and the (dormant)
+// Add-Semester date picker, both `useNow` consumers, do.
 function LeftPane() {
   const hasSemester = useAppState((s) => s.currentSemesterId !== null)
   const { openCourse } = useCourseDialog()

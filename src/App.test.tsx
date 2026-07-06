@@ -38,6 +38,15 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { name: 'Weekly Schedule' })).toBeInTheDocument()
   })
 
+  it('opens Cheesefork import straight from the empty state', async () => {
+    const user = userEvent.setup()
+    renderApp()
+    await user.click(screen.getByRole('button', { name: /import from cheesefork/i }))
+    // The settings dialog opens on the Fetch Data tab, ready to import — and with
+    // no semester there is no gate, so the fetch control is available immediately.
+    expect(await screen.findByRole('button', { name: /fetch schedule/i })).toBeInTheDocument()
+  })
+
   it('shows a mobile scroll-to-homework shortcut only on the stacked layout', async () => {
     const original = window.matchMedia
     // Report the mobile breakpoint as matching.

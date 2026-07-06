@@ -91,6 +91,14 @@ export async function runBatchIcsImport(
         ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
         ...(options.delayFn ? { delayFn: options.delayFn } : {}),
       })
+      // A missing file (404) throws above and is skipped. A file that fetches but
+      // holds no events — a semester not yet published, or an empty export —
+      // would otherwise create a blank semester; skip those too rather than
+      // littering the switcher with empties.
+      if (result.report.createdSemester && result.report.createdCourses.length === 0) {
+        skipped.push(name)
+        continue
+      }
       current = result.data
       imported.push({
         name,

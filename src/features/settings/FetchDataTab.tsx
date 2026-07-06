@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { sortSemesters } from '@/domain/semester'
 import type { AppData } from '@/domain/model'
 import { useAppState, useSession } from '@/hooks/session'
+import { useNow } from '@/hooks/useNow'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Select } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
@@ -11,8 +12,9 @@ import { SectionTitle } from './SectionTitle'
 const BATCH_SEASONS = ['Winter', 'Spring', 'Summer'] as const
 type BatchSeason = (typeof BATCH_SEASONS)[number]
 
-function batchYearOptions(): number[] {
-  const current = new Date().getFullYear()
+/** Year choices for the batch range, relative to `now`: next year down to five back. */
+function batchYearOptions(now: Date): number[] {
+  const current = now.getFullYear()
   const years: number[] = []
   for (let y = current + 1; y >= current - 5; y--) years.push(y)
   return years
@@ -22,19 +24,16 @@ export function FetchDataTab() {
   const session = useSession()
   const semester = useAppState((s) => s.data.semesters.find((x) => x.id === s.currentSemesterId))
   const toast = useToast()
+  const now = useNow()
   const [icsUrl, setIcsUrl] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [batch, setBatch] = useState(false)
-  const years = batchYearOptions()
+  const years = useMemo(() => batchYearOptions(now), [now])
   const [startSeason, setStartSeason] = useState<BatchSeason>('Winter')
   const [startYear, setStartYear] = useState(years[years.length - 1]!)
   const [endSeason, setEndSeason] = useState<BatchSeason>('Winter')
   const [endYear, setEndYear] = useState(years[0]!)
-
-  if (!semester) {
-    return <p className="text-sm text-ink-muted">Create a semester first to fetch data into it.</p>
-  }
 
   // A fetch can take seconds; a cloud-sync update may land while it runs. Re-read
   // the latest store data and overlay only the import-touched semesters onto it,
@@ -95,10 +94,16 @@ export function FetchDataTab() {
       const { runIcsImport } = await import('@/services/importers/runImport')
       const snapshot = session.appStore.getState().data
       const result = await runIcsImport(snapshot, icsUrl.trim(), {
-        semesterName: semester.name,
+        // With no active semester the importer names the new one from the ICS itself.
+        semesterName: semester?.name ?? '',
         nowIso: new Date().toISOString(),
       })
       applyResult(snapshot, result.data)
+      // If we imported with no semester selected, switch to the one just created.
+      if (!semester) {
+        const newest = sortSemesters(session.appStore.getState().data.semesters)[0]
+        if (newest) session.appStore.getState().selectSemester(newest.id)
+      }
       const { createdCourses, updatedCourses } = result.report
       setStatus(`Imported ${createdCourses.length} new, updated ${updatedCourses.length} courses.`)
       toast.success('Schedule imported')
@@ -111,6 +116,7 @@ export function FetchDataTab() {
   }
 
   const fetchCatalog = async () => {
+    if (!semester) return
     setBusy(true)
     setStatus('Fetching course data from the Technion catalog…')
     try {
@@ -134,6 +140,11 @@ export function FetchDataTab() {
     <div className="flex flex-col gap-4">
       <div>
         <SectionTitle>Import Schedule (Cheesefork)</SectionTitle>
+        {!semester ? (
+          <p className="mb-2 text-xs text-ink-faint">
+            No semester yet — fetching a schedule creates one automatically from the link.
+          </p>
+        ) : null}
         <Field label="Cheesefork ICS link" hint="Paste the calendar export URL from cheesefork.cf">
           {(id) => (
             <Input
@@ -239,16 +250,18 @@ export function FetchDataTab() {
         ) : null}
       </div>
 
-      <div>
-        <SectionTitle>Enrich Course Data (Technion)</SectionTitle>
-        <p className="mb-2 text-xs text-ink-faint">
-          Fills missing points, lecturer, faculty, and exam dates from the public Technion catalog.
-          Existing values are never overwritten.
-        </p>
-        <Button variant="secondary" loading={busy} onClick={() => void fetchCatalog()}>
-          Fetch Course Data
-        </Button>
-      </div>
+      {semester ? (
+        <div>
+          <SectionTitle>Enrich Course Data (Technion)</SectionTitle>
+          <p className="mb-2 text-xs text-ink-faint">
+            Fills missing points, lecturer, faculty, and exam dates from the public Technion
+            catalog. Existing values are never overwritten.
+          </p>
+          <Button variant="secondary" loading={busy} onClick={() => void fetchCatalog()}>
+            Fetch Course Data
+          </Button>
+        </div>
+      ) : null}
 
       {status ? (
         <p role="status" aria-live="polite" className="text-xs text-ink-muted">

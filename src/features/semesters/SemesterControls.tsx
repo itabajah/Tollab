@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { useAppActions, useAppState } from '@/hooks/session'
+import { useNow } from '@/hooks/useNow'
 import { sortSemesters, generateSemesterOptions } from '@/domain/semester'
 import { VALIDATION_LIMITS } from '@/domain/model'
 import { Select, Field, Input } from '@/components/ui/Field'
@@ -20,7 +21,8 @@ export function AddSemesterDialog({
   const semesters = useAppState((s) => s.data.semesters)
   const { addSemester } = useAppActions()
   const toast = useToast()
-  const options = useMemo(() => generateSemesterOptions(new Date()), [])
+  const now = useNow()
+  const options = useMemo(() => generateSemesterOptions(now), [now])
   const [choice, setChoice] = useState(options[0] ?? 'custom')
   const [customName, setCustomName] = useState('')
   const [error, setError] = useState<string | null>(null)
