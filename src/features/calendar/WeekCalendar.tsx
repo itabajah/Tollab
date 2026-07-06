@@ -21,9 +21,10 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const HOUR_HEIGHT = 44 // px per hour
 
 function ChevronIcon({ open }: { open: boolean }) {
+  // Down when expanded; rotates to point LEFT (not right) when collapsed.
   return (
     <ChevronDownIcon
-      style={{ transform: open ? 'none' : 'rotate(-90deg)', transition: 'transform 0.15s' }}
+      style={{ transform: open ? 'none' : 'rotate(90deg)', transition: 'transform 0.15s' }}
     />
   )
 }

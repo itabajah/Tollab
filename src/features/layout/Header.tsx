@@ -67,7 +67,7 @@ export function Header() {
 
   return (
     <header className="flex items-center justify-between gap-3">
-      <div className="select-none">
+      <div className="flex select-none items-baseline gap-2.5">
         <h1 className="font-logo bg-gradient-to-br from-accent to-ink-muted bg-clip-text text-[clamp(28px,5vw,44px)] tracking-[4px] text-transparent">
           Tollab
         </h1>

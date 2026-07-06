@@ -61,11 +61,16 @@ function LeftPane() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    // On desktop the pane fills its height and only the course list scrolls, so
+    // the header/ticker/semester controls stay put no matter how many courses
+    // there are. On mobile (stacked) it's normal flow and the page scrolls.
+    <div className="flex flex-col gap-6 lg:h-full">
       <Header />
       <HeaderTicker onSelect={onSelect} />
       <SemesterControls />
-      {hasSemester ? <CourseList /> : <NoSemesterYet />}
+      <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-16 lg:[scrollbar-gutter:stable]">
+        {hasSemester ? <CourseList /> : <NoSemesterYet />}
+      </div>
     </div>
   )
 }

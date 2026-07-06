@@ -22,8 +22,8 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
 
   return (
     <PanelGroup direction="horizontal" autoSaveId="tollab-split-v3" className="!h-screen">
-      <Panel defaultSize={55} minSize={30} className="!overflow-y-auto [scrollbar-gutter:stable]">
-        <div className="mx-auto w-full max-w-4xl px-8 pt-8 pb-16">{left}</div>
+      <Panel defaultSize={55} minSize={30} className="!overflow-hidden">
+        <div className="mx-auto h-full w-full max-w-4xl px-8 pt-8">{left}</div>
       </Panel>
       <PanelResizeHandle className="group relative w-2 cursor-col-resize outline-none">
         {/* The visible hairline sits centered in a wider transparent hit area. */}
