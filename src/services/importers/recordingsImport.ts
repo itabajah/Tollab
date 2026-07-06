@@ -29,12 +29,23 @@ export class RecordingImportError extends Error {
   }
 }
 
-function proxyOptions(options: RecordingImportOptions) {
+function proxyOptions(options: RecordingImportOptions, validate: (body: string) => boolean) {
   return {
+    validate,
     ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
     ...(options.delayFn ? { delayFn: options.delayFn } : {}),
   }
 }
+
+/** A real YouTube playlist page embeds ytInitialData (empty playlists too); a
+ *  proxy's own redirect/landing page has neither this nor watch links. */
+const looksLikeYouTube = (html: string): boolean =>
+  html.includes('ytInitialData') || html.includes('/watch?v=')
+
+/** A Panopto page carries the Panopto chrome and/or the DeliveryInfo session
+ *  blocks the parser reads; a proxy's own page has neither. */
+const looksLikePanopto = (html: string): boolean =>
+  /panopto/i.test(html) || html.includes('DeliveryInfo')
 
 /** Fetches a YouTube playlist page and returns its videos as recordings. */
 export async function runYoutubeImport(
@@ -47,7 +58,7 @@ export async function runYoutubeImport(
   }
   const html = await fetchViaProxies(
     `https://www.youtube.com/playlist?list=${playlistId}`,
-    proxyOptions(options),
+    proxyOptions(options, looksLikeYouTube),
   )
   const { videos } = parseYouTubePlaylistHtml(html)
   if (videos.length === 0) {
@@ -65,7 +76,7 @@ export async function runPanoptoImport(
   if (!info) {
     throw new RecordingImportError('That does not look like a Panopto link.')
   }
-  const html = await fetchViaProxies(url, proxyOptions(options))
+  const html = await fetchViaProxies(url, proxyOptions(options, looksLikePanopto))
   const videos = parsePanoptoHtml(html, info.baseDomain)
   if (videos.length === 0) {
     throw new RecordingImportError('No recordings found in that Panopto folder.')

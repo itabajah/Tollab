@@ -32,6 +32,13 @@ export interface FetchViaProxiesOptions {
   timeoutMs?: number
   retriesPerProxy?: number
   delayFn?: (ms: number) => Promise<void>
+  /**
+   * Optional body check. Some proxies answer 200 with their OWN page (a
+   * redirect/landing/error page) instead of the target — which would otherwise
+   * be accepted as a successful fetch. When provided and it returns false, the
+   * response is rejected and the next proxy is tried.
+   */
+  validate?: (body: string) => boolean
 }
 
 const defaultDelay = (ms: number): Promise<void> =>
@@ -58,6 +65,7 @@ export async function fetchViaProxies(
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const retriesPerProxy = opts.retriesPerProxy ?? DEFAULT_RETRIES_PER_PROXY
   const delayFn = opts.delayFn ?? defaultDelay
+  const validate = opts.validate
 
   const errors: string[] = []
   let attempts = 0
@@ -81,7 +89,13 @@ export async function fetchViaProxies(
         })
 
         if (response.ok) {
-          return await response.text()
+          const body = await response.text()
+          if (validate && !validate(body)) {
+            // 200, but not the page we asked for (proxy served its own content).
+            errors.push(`Proxy ${proxyIndex + 1}: response failed validation`)
+            break
+          }
+          return body
         }
 
         if (response.status === 429) {

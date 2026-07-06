@@ -78,6 +78,28 @@ describe('fetchViaProxies', () => {
     expect(delays).toEqual([])
   })
 
+  it('skips a 200 whose body fails validation and moves to the next proxy', async () => {
+    const { impl, calls } = makeFetchStub([
+      new Response('a proxy landing page', { status: 200 }),
+      new Response('the real target page', { status: 200 }),
+    ])
+    const { delayFn, delays } = makeDelaySpy()
+
+    const text = await fetchViaProxies(TARGET, {
+      fetchImpl: impl,
+      delayFn,
+      validate: (body) => body.includes('target'),
+    })
+
+    expect(text).toBe('the real target page')
+    // Validation failure moves to the NEXT proxy (not a retry of the same one).
+    expect(calls.map((call) => call.url)).toEqual([
+      CORS_PROXIES[0]?.(TARGET),
+      CORS_PROXIES[1]?.(TARGET),
+    ])
+    expect(delays).toEqual([])
+  })
+
   it('passes an abort signal and an Accept header to the fetch implementation', async () => {
     const { impl, calls } = makeFetchStub([new Response('body', { status: 200 })])
 

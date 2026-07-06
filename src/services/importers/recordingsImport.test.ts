@@ -81,10 +81,29 @@ describe('runYoutubeImport', () => {
   it('rejects a playlist with no videos', async () => {
     await expect(
       runYoutubeImport('https://www.youtube.com/playlist?list=PL123', {
-        fetchImpl: okFetch('<html><body>empty</body></html>'),
+        // A real (but empty) playlist page still embeds ytInitialData.
+        fetchImpl: okFetch(
+          '<html><body><script>var ytInitialData = {"contents":{}};</script></body></html>',
+        ),
         delayFn: noDelay,
       }),
     ).rejects.toThrow(/No videos/)
+  })
+
+  it('skips a proxy that answers 200 with its own (non-YouTube) page', async () => {
+    // First proxy: a redirect/landing page (no ytInitialData). Second: the real page.
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('<html><title>301 Moved</title></html>', { status: 200 }))
+      .mockResolvedValueOnce(new Response(YT_HTML, { status: 200 }))
+
+    const result = await runYoutubeImport('https://www.youtube.com/playlist?list=PL123', {
+      fetchImpl,
+      delayFn: noDelay,
+    })
+
+    expect(result).toHaveLength(2)
+    expect(fetchImpl).toHaveBeenCalledTimes(2) // the junk 200 did not short-circuit
   })
 
   it('rejects when every proxy fails', async () => {
@@ -124,7 +143,8 @@ describe('runPanoptoImport', () => {
   it('rejects an empty folder', async () => {
     await expect(
       runPanoptoImport('https://panopto.technion.ac.il/Panopto/Pages/Sessions/List.aspx', {
-        fetchImpl: okFetch('<html>no sessions</html>'),
+        // An empty Panopto folder page still carries the Panopto chrome.
+        fetchImpl: okFetch('<html><body>Panopto — no sessions in this folder</body></html>'),
         delayFn: noDelay,
       }),
     ).rejects.toThrow(/No recordings/)

@@ -163,6 +163,37 @@ describe('parseYouTubePlaylistHtml', () => {
     ])
   })
 
+  it('walks the current lockupViewModel playlist structure and ignores non-video lockups', () => {
+    const lockup = (id: string, title: string | null, type = 'LOCKUP_CONTENT_TYPE_VIDEO') => ({
+      lockupViewModel: {
+        contentId: id,
+        contentType: type,
+        ...(title ? { metadata: { lockupMetadataViewModel: { title: { content: title } } } } : {}),
+      },
+    })
+    // Deliberately nested + reordered vs the legacy path to prove the walk is
+    // path-independent; a PLAYLIST-type lockup must be skipped.
+    const data = {
+      contents: {
+        someRenderer: {
+          items: [
+            lockup('aaaaaaaaaaa', 'Lecture 1'),
+            lockup('bbbbbbbbbbb', 'Lecture 2'),
+            lockup('ccccccccccc', null), // no title -> "Video N"
+            lockup('PLrelatedxx', 'Related playlist', 'LOCKUP_CONTENT_TYPE_PLAYLIST'),
+          ],
+        },
+      },
+    }
+    const html = `<script>var ytInitialData = ${JSON.stringify(data)};</script>`
+
+    expect(parseYouTubePlaylistHtml(html).videos).toEqual([
+      { id: 'aaaaaaaaaaa', title: 'Lecture 1', url: 'https://www.youtube.com/watch?v=aaaaaaaaaaa' },
+      { id: 'bbbbbbbbbbb', title: 'Lecture 2', url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' },
+      { id: 'ccccccccccc', title: 'Video 3', url: 'https://www.youtube.com/watch?v=ccccccccccc' },
+    ])
+  })
+
   it('reads the playlist title from the header renderer when metadata is absent', () => {
     const html =
       '<script>var ytInitialData = ' +
