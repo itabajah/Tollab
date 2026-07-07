@@ -59,15 +59,18 @@ function corsDevProxy(): Plugin {
             fail(403, `Dev CORS proxy: host not allowed (${targetUrl.hostname})`)
             return
           }
-          const upstream = await fetch(target, {
-            redirect: 'follow',
-            headers: {
-              'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-              Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-              'Accept-Language': 'en-US,en;q=0.9',
-            },
-          })
+          const upstreamHeaders: Record<string, string> = {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+          }
+          // Skip YouTube's EU/UK consent interstitial (see workers/cors-proxy).
+          const h = targetUrl.hostname.toLowerCase()
+          if (['youtube.com', 'youtu.be'].some((s) => h === s || h.endsWith(`.${s}`))) {
+            upstreamHeaders.Cookie = 'SOCS=CAI; CONSENT=YES+cb.20210328-17-p0.en+FX+678'
+          }
+          const upstream = await fetch(target, { redirect: 'follow', headers: upstreamHeaders })
           const body = Buffer.from(await upstream.arrayBuffer())
           res.statusCode = upstream.status
           res.setHeader('Access-Control-Allow-Origin', '*')

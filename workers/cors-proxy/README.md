@@ -45,13 +45,14 @@ Wrangler prints the deployed `*.workers.dev` URL.
 The app reads a build-time variable `VITE_CORS_PROXY`. The `{url}` placeholder is
 replaced with the encoded target.
 
-1. In GitHub: **Settings → Secrets and variables → Actions → Variables → New
-   repository variable**:
+1. In GitHub: **Settings → Secrets and variables → Actions**, then add
+   `VITE_CORS_PROXY` under **either** the **Variables** tab (recommended — it's a
+   public URL, not a secret) **or** the **Secrets** tab (fine too, and consistent
+   with the Firebase config). The deploy workflow reads from both, so whichever
+   you pick works:
 
    - **Name:** `VITE_CORS_PROXY`
    - **Value:** `https://<your-worker>.workers.dev/?url={url}`
-
-   (It's a public URL, so a _Variable_ is fine — it doesn't need to be a Secret.)
 
 2. Re-run the **Deploy to GitHub Pages** workflow (Actions → _Deploy to GitHub
    Pages_ → _Run workflow_). The new build bakes the proxy URL in, and the app
