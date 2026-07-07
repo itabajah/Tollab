@@ -1,0 +1,6 @@
+# Cloudflare Worker config for the Tollab CORS proxy.
+# Deploy with:  npx wrangler deploy   (run from this folder)
+# See README.md for the dashboard (no-CLI) alternative.
+name = "tollab-cors-proxy"
+main = "worker.js"
+compatibility_date = "2024-11-01"

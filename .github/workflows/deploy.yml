@@ -55,6 +55,12 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+          # Your own CORS proxy for imports (Cheesefork / YouTube / Panopto), so
+          # the site doesn't depend on flaky public proxies. Optional: unset →
+          # empty → the app falls back to the public proxy chain. Deploy the
+          # worker in workers/cors-proxy/ and set this repo *Variable* to
+          # `https://<worker>.workers.dev/?url={url}`.
+          VITE_CORS_PROXY: ${{ vars.VITE_CORS_PROXY }}
 
       - name: Verify deployable artifact
         run: |

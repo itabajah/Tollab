@@ -43,6 +43,15 @@ export interface IcsImportResult {
   enrichedCount: number
 }
 
+/**
+ * A real Cheesefork calendar always opens with the VCALENDAR envelope. A public
+ * proxy that has rate-limited us or wants an API key answers 200 with its OWN
+ * HTML page instead — this guards against parsing that as an empty schedule and
+ * silently "succeeding" with zero courses; the fetch falls through to the next
+ * proxy instead.
+ */
+const looksLikeIcs = (body: string): boolean => body.includes('BEGIN:VCALENDAR')
+
 /** Strips the trailing `<name>.ics` to get the folder URL the batch derives from. */
 export function deriveIcsBaseUrl(url: string): string | null {
   const match = url.match(/^(.*\/)[^/]+\.ics$/i)
@@ -148,6 +157,7 @@ export async function runIcsImport(
   options: IcsImportOptions,
 ): Promise<IcsImportResult> {
   const text = await fetchViaProxies(icsUrl, {
+    validate: looksLikeIcs,
     ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
     ...(options.delayFn ? { delayFn: options.delayFn } : {}),
   })
