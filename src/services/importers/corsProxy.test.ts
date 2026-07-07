@@ -198,6 +198,35 @@ describe('fetchViaProxies', () => {
     expect(delays).toEqual([])
   })
 
+  it('short-circuits on a 404 (not found) without trying the other proxies', async () => {
+    const { impl, calls } = makeFetchStub([new Response('nope', { status: 404 })])
+    const { delayFn } = makeDelaySpy()
+
+    const error = await expectProxyFetchError(
+      fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES }),
+    )
+
+    expect(error.notFound).toBe(true)
+    expect(error.attempts).toBe(1)
+    // A 404 is authoritative — it must not fall through to proxies 2 and 3.
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.url).toBe(TEST_PROXIES[0]?.(TARGET))
+  })
+
+  it('treats a 200 carrying X-Proxy-Status:404 as not found (the worker signal)', async () => {
+    const { impl, calls } = makeFetchStub([
+      new Response('', { status: 200, headers: { 'X-Proxy-Status': '404' } }),
+    ])
+    const { delayFn } = makeDelaySpy()
+
+    const error = await expectProxyFetchError(
+      fetchViaProxies(TARGET, { fetchImpl: impl, delayFn, proxies: TEST_PROXIES }),
+    )
+
+    expect(error.notFound).toBe(true)
+    expect(calls).toHaveLength(1)
+  })
+
   it('retries the same proxy after a 429 with a rate-limit delay, then succeeds', async () => {
     const { impl, calls } = makeFetchStub([
       new Response('slow down', { status: 429 }),
@@ -291,7 +320,7 @@ describe('fetchViaProxies', () => {
 
   it('counts attempts correctly across mixed failure modes', async () => {
     const { impl } = makeFetchStub([
-      new Response('', { status: 404 }), // proxy 1: skip after one attempt
+      new Response('', { status: 403 }), // proxy 1: skip after one attempt
       new TypeError('fetch failed'), // proxy 2, attempt 1
       new TypeError('fetch failed'), // proxy 2, attempt 2
       new Response('', { status: 502 }), // proxy 3, attempt 1

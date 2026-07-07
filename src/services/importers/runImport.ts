@@ -32,6 +32,17 @@ export interface IcsImportOptions {
   enrich?: boolean
   /** A pre-fetched catalog to enrich from, so a batch downloads it only once. */
   catalog?: Map<string, CatalogEntry>
+  /** Batch only: called as each semester is processed, so the UI can show real progress. */
+  onProgress?: (progress: BatchProgress) => void
+}
+
+export interface BatchProgress {
+  /** Semesters finished (imported or skipped) so far. */
+  completed: number
+  /** Total semesters in the requested range. */
+  total: number
+  /** The semester currently being fetched, or a `Preparing…`/`Done` label. */
+  current: string
 }
 
 export interface IcsImportResult {
@@ -102,6 +113,7 @@ export async function runBatchIcsImport(
   // Download the (large) Technion catalog once and reuse it for every semester in
   // the range, rather than re-fetching it per import. Best-effort: a failure
   // yields an empty catalog and the schedules still import un-enriched.
+  options.onProgress?.({ completed: 0, total: range.length, current: 'Preparing…' })
   const catalog =
     options.enrich === false
       ? new Map<string, CatalogEntry>()
@@ -113,6 +125,11 @@ export async function runBatchIcsImport(
 
   for (const ref of range) {
     const name = semesterName(ref.season, ref.year)
+    options.onProgress?.({
+      completed: imported.length + skipped.length,
+      total: range.length,
+      current: name,
+    })
     try {
       const result = await runIcsImport(current, base + icsFileName(ref), {
         semesterName: name,
@@ -142,6 +159,7 @@ export async function runBatchIcsImport(
     }
   }
 
+  options.onProgress?.({ completed: range.length, total: range.length, current: 'Done' })
   return { data: current, imported, skipped }
 }
 

@@ -71,9 +71,18 @@ function corsDevProxy(): Plugin {
             upstreamHeaders.Cookie = 'SOCS=CAI; CONSENT=YES+cb.20210328-17-p0.en+FX+678'
           }
           const upstream = await fetch(target, { redirect: 'follow', headers: upstreamHeaders })
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.setHeader('Access-Control-Expose-Headers', 'X-Proxy-Status')
+          // Report not-found as a 200 + header, not a 4xx, so the browser doesn't
+          // log a console error for an expected miss (see workers/cors-proxy).
+          if (upstream.status === 404) {
+            res.statusCode = 200
+            res.setHeader('X-Proxy-Status', '404')
+            res.end()
+            return
+          }
           const body = Buffer.from(await upstream.arrayBuffer())
           res.statusCode = upstream.status
-          res.setHeader('Access-Control-Allow-Origin', '*')
           res.setHeader(
             'Content-Type',
             upstream.headers.get('content-type') ?? 'text/plain; charset=utf-8',

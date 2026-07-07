@@ -67,6 +67,8 @@ function corsHeaders(origin) {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': '*',
+    // So the client can read the not-found signal (see the 404 handling below).
+    'Access-Control-Expose-Headers': 'X-Proxy-Status',
     Vary: 'Origin',
   }
 }
@@ -155,6 +157,16 @@ export default {
       }
     } catch {
       return new Response('Upstream returned an unparseable url', { status: 502, headers: cors })
+    }
+
+    // Report an upstream "not found" as a 200 carrying `X-Proxy-Status: 404`,
+    // not a bare 404: a 4xx makes the browser log a console error, even though a
+    // missing file (e.g. a semester that doesn't exist in a batch import) is
+    // expected. The client reads this header and skips the resource quietly.
+    if (upstream.status === 404) {
+      const notFound = new Headers(cors)
+      notFound.set('X-Proxy-Status', '404')
+      return new Response(null, { status: 200, headers: notFound })
     }
 
     const headers = new Headers(cors)

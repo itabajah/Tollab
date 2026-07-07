@@ -78,11 +78,18 @@ const BACKOFF_MULTIPLIER = 2
 
 export class ProxyFetchError extends Error {
   readonly attempts: number
+  /**
+   * True when a proxy authoritatively reported the target as *not found* (a 404,
+   * or the worker's `X-Proxy-Status: 404` signal). Callers use this to skip a
+   * missing resource quietly — a batch import expects semesters that don't exist.
+   */
+  readonly notFound: boolean
 
-  constructor(message: string, attempts: number) {
+  constructor(message: string, attempts: number, notFound = false) {
     super(message)
     this.name = 'ProxyFetchError'
     this.attempts = attempts
+    this.notFound = notFound
   }
 }
 
@@ -150,6 +157,17 @@ export async function fetchViaProxies(
           headers: { Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' },
         })
 
+        // Authoritative "not found": the target was reached and has no such
+        // resource (a missing semester in a batch, a mistyped link). Every proxy
+        // would return the same, so stop the whole chain and flag it notFound so
+        // the caller can skip it quietly — otherwise the fallback proxies get
+        // tried and spray the console with CORS errors for a file that isn't
+        // there. Our worker reports this as a 200 + `X-Proxy-Status: 404` (a bare
+        // 404 status makes the browser log its own error); public proxies 404.
+        if (response.status === 404 || response.headers.get('X-Proxy-Status') === '404') {
+          throw new ProxyFetchError(`Target not found (404): ${url}`, attempts, true)
+        }
+
         if (response.ok) {
           const body = await response.text()
           if (validate && !validate(body)) {
@@ -177,6 +195,8 @@ export async function fetchViaProxies(
         errors.push(`Proxy ${proxyIndex + 1}: HTTP ${response.status}`)
         break
       } catch (error) {
+        // A terminal "not found" short-circuits the whole chain (thrown above).
+        if (error instanceof ProxyFetchError && error.notFound) throw error
         const message = error instanceof Error ? error.message : String(error)
         errors.push(`Proxy ${proxyIndex + 1}, attempt ${retry + 1}: ${message}`)
       } finally {
