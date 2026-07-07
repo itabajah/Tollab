@@ -48,6 +48,11 @@ function hostAllowed(hostname) {
   return ALLOWED_HOST_SUFFIXES.some((suffix) => h === suffix || h.endsWith('.' + suffix))
 }
 
+function isYouTubeHost(hostname) {
+  const h = hostname.toLowerCase()
+  return ['youtube.com', 'youtu.be'].some((s) => h === s || h.endsWith('.' + s))
+}
+
 function corsHeaders(origin) {
   // Open to all when no origins are configured; otherwise echo an allowed
   // caller and fall back to the first configured origin for anyone else (so a
@@ -100,6 +105,21 @@ export default {
       return new Response('Host not allowed: ' + targetUrl.hostname, { status: 403, headers: cors })
     }
 
+    const upstreamHeaders = {
+      // A desktop UA so pages like YouTube return their full ytInitialData.
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+    }
+    // Skip YouTube's EU/UK "before you continue" consent interstitial
+    // (consent.youtube.com/m…), which otherwise 3xx's the fetch away from the
+    // playlist page to a cookie wall. SOCS=CAI satisfies the current consent
+    // flow; CONSENT=YES+ the older /m interstitial. Harmless to non-EU regions.
+    if (isYouTubeHost(targetUrl.hostname)) {
+      upstreamHeaders.Cookie = 'SOCS=CAI; CONSENT=YES+cb.20210328-17-p0.en+FX+678'
+    }
+
     let upstream
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS)
@@ -107,13 +127,7 @@ export default {
       upstream = await fetch(targetUrl.toString(), {
         redirect: 'follow',
         signal: controller.signal,
-        headers: {
-          // A desktop UA so pages like YouTube return their full ytInitialData.
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
+        headers: upstreamHeaders,
       })
     } catch (err) {
       const timedOut = err && err.name === 'AbortError'
