@@ -285,6 +285,17 @@
   animation: highlight-pulse 1.4s ease-out;
 }
 
+/* Indeterminate progress: a segment sweeps across the track while work of an
+   unknown duration is in flight (e.g. a single schedule fetch). */
+@keyframes progress-sweep {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

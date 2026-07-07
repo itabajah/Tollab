@@ -5,8 +5,10 @@ import { useAppState, useSession } from '@/hooks/session'
 import { useNow } from '@/hooks/useNow'
 import { Button } from '@/components/ui/Button'
 import { Field, Input, Select } from '@/components/ui/Field'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useToast } from '@/components/ui/Toast'
 import { reconcileImport } from '@/services/importers/applyImport'
+import type { BatchProgress } from '@/services/importers/runImport'
 import { SectionTitle } from './SectionTitle'
 
 const BATCH_SEASONS = ['Winter', 'Spring', 'Summer'] as const
@@ -28,6 +30,7 @@ export function FetchDataTab() {
   const [icsUrl, setIcsUrl] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<BatchProgress | null>(null)
   const [batch, setBatch] = useState(false)
   const years = useMemo(() => batchYearOptions(now), [now])
   const [startSeason, setStartSeason] = useState<BatchSeason>('Winter')
@@ -50,6 +53,7 @@ export function FetchDataTab() {
       return
     }
     setBusy(true)
+    setProgress(null)
     setStatus('Fetching semesters and course details…')
     const { runBatchIcsImport, BatchIcsError } = await import('@/services/importers/runImport')
     const snapshot = session.appStore.getState().data
@@ -59,7 +63,7 @@ export function FetchDataTab() {
         icsUrl.trim(),
         { season: startSeason, year: startYear },
         { season: endSeason, year: endYear },
-        { semesterName: '', nowIso: now.toISOString() },
+        { semesterName: '', nowIso: now.toISOString(), onProgress: setProgress },
       )
       applyResult(snapshot, result.data)
       if (result.imported.length === 0) {
@@ -85,6 +89,7 @@ export function FetchDataTab() {
       toast.error('Batch import failed')
     } finally {
       setBusy(false)
+      setProgress(null)
     }
   }
 
@@ -277,10 +282,29 @@ export function FetchDataTab() {
         </div>
       ) : null}
 
-      {status ? (
-        <p role="status" aria-live="polite" className="text-xs text-ink-muted">
-          {status}
-        </p>
+      {busy || status ? (
+        <div className="flex flex-col gap-1.5">
+          {busy ? (
+            progress ? (
+              <ProgressBar
+                value={progress.completed}
+                max={progress.total}
+                label="Import progress"
+              />
+            ) : (
+              <ProgressBar label="Working" />
+            )
+          ) : null}
+          {busy && progress ? (
+            <p role="status" aria-live="polite" className="text-xs text-ink-muted">
+              {progress.current} · {progress.completed}/{progress.total}
+            </p>
+          ) : status ? (
+            <p role="status" aria-live="polite" className="text-xs text-ink-muted">
+              {status}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   )

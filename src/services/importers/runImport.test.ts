@@ -7,6 +7,7 @@ import {
   deriveIcsBaseUrl,
   icsFileName,
   BatchIcsError,
+  type BatchProgress,
 } from './runImport'
 import { appDataSchema, type AppData } from '@/domain/model'
 import { createCourse, type CourseInput } from '@/domain/course'
@@ -267,6 +268,36 @@ describe('runBatchIcsImport', () => {
       'Summer 2024',
       'Winter 2024-2025',
     ])
+  })
+
+  it('reports progress for the range (Preparing → each semester → Done)', async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('winter-2024-2025'))
+        return new Response(ICS_FOR('קורס חורף'), { status: 200 })
+      if (url.includes('summer-2024')) return new Response(ICS_FOR('קורס קיץ'), { status: 200 })
+      return new Response('', { status: 404 }) // spring-2024 + catalog
+    })
+    const seen: BatchProgress[] = []
+
+    await runBatchIcsImport(
+      baseData(),
+      'https://cheesefork.cf/ical/winter-2024-2025.ics',
+      { season: 'Winter', year: 2024 },
+      { season: 'Summer', year: 2024 },
+      {
+        semesterName: '',
+        nowIso: NOW,
+        fetchImpl,
+        delayFn: async () => {},
+        onProgress: (p) => seen.push(p),
+      },
+    )
+
+    expect(seen[0]).toEqual({ completed: 0, total: 3, current: 'Preparing…' })
+    expect(seen.at(-1)).toEqual({ completed: 3, total: 3, current: 'Done' })
+    expect(seen.map((p) => p.current)).toContain('Winter 2024-2025')
+    expect(seen.every((p) => p.total === 3)).toBe(true)
   })
 
   it('throws when the sample url is not an .ics link', async () => {
