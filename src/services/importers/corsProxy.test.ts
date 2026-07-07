@@ -64,13 +64,14 @@ async function expectProxyFetchError(promise: Promise<string>): Promise<ProxyFet
 }
 
 describe('CORS_PROXIES', () => {
-  it('lists the surviving public proxies, allorigins first', () => {
+  it('lists the surviving public proxies, proxy.cors.sh first', () => {
     const url = 'https://example.com/path?a=1&b=2'
     const encoded = encodeURIComponent(url)
     expect(CORS_PROXIES).toHaveLength(2)
     expect(CORS_PROXIES.map((make) => make(url))).toEqual([
+      // proxy.cors.sh takes the raw target as a path (not query-encoded).
+      `https://proxy.cors.sh/${url}`,
       `https://api.allorigins.win/raw?url=${encoded}`,
-      `https://api.codetabs.com/v1/proxy?quest=${encoded}`,
     ])
   })
 })

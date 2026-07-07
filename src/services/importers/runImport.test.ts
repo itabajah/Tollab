@@ -95,6 +95,29 @@ describe('runIcsImport', () => {
     ).rejects.toThrow()
   })
 
+  it('skips a proxy that answers 200 with its own (non-ICS) page and uses the next', async () => {
+    let call = 0
+    const fetchImpl = vi.fn(async () => {
+      call += 1
+      // First proxy: a rate-limit / API-key landing page that is NOT an ICS. It
+      // must be rejected (not parsed as an empty schedule) so the next proxy runs.
+      if (call === 1) {
+        return new Response('<html>proxy: please request an API key</html>', { status: 200 })
+      }
+      return new Response(ICS, { status: 200 })
+    })
+    const result = await runIcsImport(baseData(), 'https://cheesefork.cf/calendar.ics', {
+      semesterName: 'Spring 2026',
+      nowIso: NOW,
+      fetchImpl,
+      delayFn: async () => {},
+      enrich: false,
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    const semester = result.data.semesters.find((s) => s.id === result.semesterId)!
+    expect(semester.courses.some((c) => c.name.includes('אלגוריתמים'))).toBe(true)
+  })
+
   it('auto-enriches the imported semester from the Technion catalog', async () => {
     const result = await runIcsImport(baseData(), 'https://cheesefork.cf/calendar.ics', {
       semesterName: 'Spring 2026',

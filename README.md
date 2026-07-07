@@ -119,7 +119,7 @@ Quality is gated in CI on every push and PR:
 Tollab is a personal, per-user app; your schedule lives in your browser and (optionally) in your own Firebase project.
 
 - **Cloud sync** is scoped per user by Realtime Database rules — each account can read/write only `tollab/users/<uid>/data`.
-- **Imports** (Cheesefork ICS, YouTube playlists, Panopto folders) run through a CORS proxy because those hosts don't send permissive CORS headers. In development this is a same-origin dev-server proxy restricted to the specific import hosts; the production build falls back to public proxies (allorigins / codetabs), so a link you paste to import transits a third-party proxy. Catalog enrichment fetches the public Technion dataset from GitHub directly.
+- **Imports** (Cheesefork ICS, YouTube playlists, Panopto folders) run through a CORS proxy because those hosts don't send permissive CORS headers. In development this is a same-origin dev-server proxy restricted to the specific import hosts. In production, point `VITE_CORS_PROXY` at your own [Cloudflare Worker](workers/cors-proxy/) — a free, host-allowlisted proxy you control; a link you paste to import then transits only that. If it isn't configured, imports fall back to free **public** proxies, which are unreliable (they rot without notice) and mean your link transits a third party — so configuring your own proxy is strongly recommended. Catalog enrichment fetches the public Technion dataset from GitHub directly (no proxy).
 
 ## Deployment
 

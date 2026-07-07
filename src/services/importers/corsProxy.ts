@@ -6,19 +6,26 @@
 
 /**
  * Public CORS proxies, most-reliable-first. Free proxies rot without notice, so
- * this list is a best-effort *fallback*: the runtime chain (see
- * {@link resolveProxies}) prefers a same-origin proxy when one is available —
- * the Vite dev middleware in development, or a VITE_CORS_PROXY you point at your
- * own worker in production.
+ * this list is a best-effort *fallback of last resort*: the runtime chain (see
+ * {@link resolveProxies}) prefers a proxy you control — the Vite dev middleware
+ * in development, or a VITE_CORS_PROXY pointed at your own Cloudflare Worker in
+ * production (see workers/cors-proxy/). For a site that must import reliably,
+ * configure VITE_CORS_PROXY; do not depend on the entries below.
  *
- * History: the original trio (codetabs, corsproxy.org, allorigins) all rotted —
- * corsproxy.org now 301-redirects to an unrelated VPN page and codetabs answers
- * 522s, while allorigins still serves target HTML — so allorigins leads and
- * corsproxy.org was dropped entirely.
+ * History (checked 2026-07): the free proxies keep rotting. corsproxy.org
+ * 301-redirects to an unrelated VPN page; codetabs now hangs then answers 522;
+ * corsproxy.io returns 403 without an API key; allorigins flip-flops between a
+ * slow 200 and 408/500 from one request to the next. proxy.cors.sh was the only
+ * one returning the exact upstream body cleanly, so it now leads, allorigins is
+ * kept as a second chance, and the dead-and-slow codetabs entry was dropped.
+ * A proxy's own challenge/landing page can still come back as a 200, so callers
+ * that know their payload shape should pass `validate` (see runIcsImport).
  */
 export const CORS_PROXIES: Array<(url: string) => string> = [
+  // proxy.cors.sh takes the full target as a raw path and echoes the upstream
+  // body with `Access-Control-Allow-Origin: *`.
+  (url) => `https://proxy.cors.sh/${url}`,
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ]
 
 /**
@@ -58,7 +65,11 @@ export function resolveProxies(): Array<(url: string) => string> {
   return chain
 }
 
-const DEFAULT_TIMEOUT_MS = 15000
+// A proxy that is actually going to answer does so in a few seconds (the
+// working ones measured 1–5s); anything past this is a proxy that has silently
+// died, so we abort and move on rather than make the user wait — batch imports
+// run these serially, so a slow dead proxy is felt once per semester.
+const DEFAULT_TIMEOUT_MS = 12000
 const DEFAULT_RETRIES_PER_PROXY = 2
 const INITIAL_RETRY_DELAY_MS = 500
 const RATE_LIMIT_DELAY_MS = 2000
