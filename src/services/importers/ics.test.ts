@@ -307,6 +307,11 @@ describe('parseIcs — semester hint', () => {
     expect(parseIcs(text).semesterHint).toBe('Summer 2025')
   })
 
+  it('reads the RFC 7986 NAME property (what Cheesefork actually sends)', () => {
+    const text = ics(['NAME:אביב 2026'])
+    expect(parseIcs(text).semesterHint).toBe('Spring 2026')
+  })
+
   it('returns null when a season appears without a year', () => {
     const text = ics(['X-WR-CALNAME:סמסטר אביב'])
     expect(parseIcs(text).semesterHint).toBeNull()

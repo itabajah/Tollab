@@ -91,7 +91,11 @@ function collectEvents(lines: string[]): { events: IcsEvent[]; calendarName: str
       else if (key === 'LOCATION') current.location = unescapeIcsText(value)
       else if (key === 'DTSTART') current.dtstart = value
       else if (key === 'DTEND') current.dtend = value
-    } else if (key === 'X-WR-CALNAME' && current === null) {
+    } else if ((key === 'X-WR-CALNAME' || key === 'NAME') && current === null && !calendarName) {
+      // Cheesefork names the calendar with the RFC 7986 `NAME` property, not the
+      // older `X-WR-CALNAME`; accept either (first non-empty wins) so the imported
+      // semester is named from the file (e.g. "Spring 2026") rather than falling
+      // back to a generic "Imported Semester".
       calendarName = unescapeIcsText(value)
     }
   }
