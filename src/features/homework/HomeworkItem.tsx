@@ -106,8 +106,11 @@ function SidebarRow({
         >
           {homework.title}
         </p>
+        {/* Course names are Technion data and usually Hebrew. <bdi> resolves the
+            name as its own directional run so the bidi algorithm can't drag the
+            badge's leading digit across it ("8 · <hebrew> d left"). See lib/bidi. */}
         <p className="truncate text-xs text-ink-muted">
-          {courseName}
+          <bdi>{courseName}</bdi>
           {badge ? <span className={cn('ml-1.5', badge.tone)}>· {badge.text}</span> : null}
         </p>
       </div>

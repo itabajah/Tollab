@@ -7,6 +7,7 @@ import { createMemoryStorage } from '@/services/storage/localStore'
 import { createCourse, type CourseInput } from '@/domain/course'
 
 const NOW = new Date('2026-07-04T12:00:00')
+const HEBREW_COURSE = 'מערכות ספרתיות ומבנה המחשב'
 
 const baseInput: CourseInput = {
   name: 'Course',
@@ -109,5 +110,21 @@ describe('HomeworkList', () => {
     expect(screen.getByText(/overdue/i)).toBeInTheDocument()
     const row = screen.getByText('Essay').closest('[data-homework-id]')
     expect(row).toHaveAttribute('data-overdue', 'true')
+  })
+
+  // Regression: a Hebrew course name used to swallow the badge's leading digit and
+  // render the subtitle as "8 · <hebrew> d left" — the number torn off "d left".
+  it('isolates an RTL course name so the due badge cannot be reordered into it', () => {
+    setup((s) => {
+      const id = addCourse(s, HEBREW_COURSE)
+      s.appStore.getState().addHomework(id, 'Wet 1', '2026-07-12') // 8 days out
+    })
+
+    // The name resolves as its own bidi run, so the badge that follows it stays a
+    // whole, unreordered LTR string.
+    const name = screen.getByText(HEBREW_COURSE)
+    expect(name.tagName).toBe('BDI')
+    expect(getComputedStyle(name).unicodeBidi).toMatch(/isolate/)
+    expect(screen.getByText(/8d left/)).toBeInTheDocument()
   })
 })
