@@ -139,6 +139,16 @@
   text-transform: uppercase;
 }
 
+/* A scroll field with no scrollbar chrome. Wheel, touch, and keyboard scrolling
+   all still work; only the bar itself is hidden, so a pane can scroll without a
+   rule down its edge. */
+@utility scrollbar-hidden {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   body {
     @apply bg-surface text-ink antialiased;

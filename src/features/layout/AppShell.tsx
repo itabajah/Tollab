@@ -17,7 +17,9 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
  *   appears, persisted via autoSaveId ('tollab-split-v3').
  * - ≤ 1023px: the panes stack into one scrolling column.
  *
- * Both panes cap their content at max-w-4xl and scroll independently.
+ * Both panes cap their content at max-w-4xl and fill the viewport height; each
+ * owns its scrolling internally (see LeftPane/RightPane), so their headers stay
+ * pinned while only the content below them scrolls.
  */
 export function AppShell({ left, right }: { left: ReactNode; right: ReactNode }) {
   const stacked = useMediaQuery('(max-width: 1023px)')
@@ -36,8 +38,12 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
   // the window edge instead of running flush to it. Shared by both desktop
   // branches so the fixed and draggable splits are pixel-identical apart from the
   // handle.
+  //
+  // The right pane gets no bottom padding here: it is a full-height column whose
+  // own scroll field (inside RightPane) carries the bottom breathing room, so the
+  // padding scrolls with the content rather than clipping the pinned view switch.
   const leftInner = <div className="mx-auto h-full w-full max-w-4xl p-8">{left}</div>
-  const rightInner = <div className="mx-auto w-full max-w-4xl px-6 pt-8 pb-16">{right}</div>
+  const rightInner = <div className="mx-auto h-full w-full max-w-4xl px-6 pt-8">{right}</div>
 
   if (roomy) {
     return (
@@ -46,7 +52,7 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
         style={{ gridTemplateColumns: 'minmax(0, 55fr) minmax(0, 45fr)' }}
       >
         <div className="overflow-hidden">{leftInner}</div>
-        <div className="overflow-y-auto [scrollbar-gutter:stable]">{rightInner}</div>
+        <div className="overflow-hidden">{rightInner}</div>
       </div>
     )
   }
@@ -65,7 +71,7 @@ export function AppShell({ left, right }: { left: ReactNode; right: ReactNode })
           <span className="size-[3px] rounded-full bg-ink-faint" />
         </div>
       </PanelResizeHandle>
-      <Panel defaultSize={45} minSize={25} className="!overflow-y-auto [scrollbar-gutter:stable]">
+      <Panel defaultSize={45} minSize={25} className="!overflow-hidden">
         {rightInner}
       </Panel>
     </PanelGroup>
