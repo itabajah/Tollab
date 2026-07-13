@@ -95,24 +95,30 @@ function RightPane() {
   const view = resolveExamViewMode(semester, now)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+    // Mirrors LeftPane: on desktop the pane fills its height and only the content
+    // below the view switch scrolls. On mobile (stacked, one page-long scroll) the
+    // switch sticks to the top of the viewport while this column is in view, so it
+    // is reachable from anywhere in the schedule/exams content either way.
+    <div className="flex flex-col lg:h-full">
+      <div className="sticky top-0 z-20 flex justify-end bg-surface pt-2 pb-3 lg:static lg:pt-0 lg:pb-4">
         <ViewToggle />
       </div>
-      {view === 'exam' ? (
-        <ExamRoadmap />
-      ) : (
-        <>
-          <WeekCalendar />
-          <section id="homework-list">
-            <h3 className="mb-2 text-[13px] font-semibold tracking-[0.5px] text-ink-faint uppercase">
-              Homework
-            </h3>
-            <HomeworkList />
-          </section>
-          <ScrollToHomeworkButton />
-        </>
-      )}
+      <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-16 scrollbar-hidden">
+        {view === 'exam' ? (
+          <ExamRoadmap />
+        ) : (
+          <>
+            <WeekCalendar />
+            <section id="homework-list" className="scroll-mt-16">
+              <h3 className="mb-2 text-[13px] font-semibold tracking-[0.5px] text-ink-faint uppercase">
+                Homework
+              </h3>
+              <HomeworkList />
+            </section>
+            <ScrollToHomeworkButton />
+          </>
+        )}
+      </div>
     </div>
   )
 }
