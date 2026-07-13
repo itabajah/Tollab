@@ -35,6 +35,7 @@ pnpm format         # Prettier --write
 - **Keep `domain/` pure and deterministic.** No `new Date()`/`Math.random()` in logic — take `now`/`today` as parameters and let the injected clock flow in. Zod schemas in `domain/model.ts` are the single source of truth; derive types from them.
 - **Tests live next to code** (`*.test.ts[x]`). Add or update tests with every change; coverage floors are strictest in `domain/`. Prefer driving behavior through public APIs over asserting internals.
 - **Accessibility & theming.** New UI must work in both light and dark themes, keep the monochrome identity (color only via course hues / status tokens), be keyboard-operable, and honor `prefers-reduced-motion`.
+- **Isolate user text (bidi).** Course names, locations and titles come from the Technion catalog and are usually Hebrew (RTL); the UI around them is LTR English. Dropping one into app text unisolated lets the bidi algorithm reorder across the boundary and tear the app's own string apart. Render such values inside a `<bdi>`, or — in plain-text strings like a `title` tooltip — wrap them with `isolate()` from `src/lib/bidi.ts`.
 - **Formatting is automated.** Don't hand-format; run `pnpm format`.
 
 ## Commits & PRs

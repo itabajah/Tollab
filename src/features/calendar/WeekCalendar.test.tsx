@@ -9,6 +9,11 @@ import { createCourse, type CourseInput } from '@/domain/course'
 // 2026-07-01 is a Wednesday.
 const NOW = new Date('2026-07-01T10:30:00')
 
+const HEBREW_COURSE = 'מבוא למדעי המחשב'
+// The Unicode isolates that fence an RTL run off from its LTR neighbors.
+const FSI = '\u2068'
+const PDI = '\u2069'
+
 const input: CourseInput = {
   name: 'Algorithms 1',
   number: '',
@@ -172,6 +177,41 @@ describe('WeekCalendar', () => {
     await user.click(screen.getByRole('button', { name: /today only/i }))
     expect(screen.getByText('Sun')).toBeInTheDocument()
     expect(screen.getByText('Wed')).toBeInTheDocument()
+  })
+
+  // Regression: next to a Hebrew course name the tooltip's time range was pulled
+  // across it and came back reversed — "12:00–10:00" for a 10:00–12:00 class.
+  it('isolates an RTL course name in the class-block tooltip so the time range keeps its order', () => {
+    setup((s) =>
+      s.appStore.getState().addCourse(createCourse({ ...input, name: HEBREW_COURSE }, 'colorful')),
+    )
+    const block = screen.getByRole('button', { name: /10:00.*12:00/ })
+    expect(block).toHaveAttribute(
+      'title',
+      `${FSI}${HEBREW_COURSE}${PDI} 10:00–12:00 · ${FSI}Taub 2${PDI}`,
+    )
+    // Assistive tech reads logically, so the accessible name stays free of controls.
+    expect(block).toHaveAttribute('aria-label', `${HEBREW_COURSE} 10:00–12:00`)
+  })
+
+  it('isolates the RTL course name and title in an all-day chip tooltip', () => {
+    setup((s) => {
+      const course = createCourse({ ...input, name: HEBREW_COURSE }, 'colorful')
+      course.homework.push({
+        id: 'h1',
+        title: 'Wet 1',
+        dueDate: '2026-07-03',
+        completed: false,
+        notes: '',
+        links: [],
+      })
+      s.appStore.getState().addCourse(course)
+    })
+    const chip = within(screen.getByTestId('all-day-row')).getByText(/Wet 1/)
+    expect(chip.closest('button')).toHaveAttribute(
+      'title',
+      `${FSI}${HEBREW_COURSE}${PDI}: ${FSI}Wet 1${PDI}`,
+    )
   })
 
   it('collapses and expands the grid', async () => {

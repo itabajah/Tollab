@@ -16,6 +16,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { IconButton } from '@/components/ui/IconButton'
 import { ChevronDownIcon } from '@/components/ui/icons'
 import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
+import { isolate } from '@/lib/bidi'
 import { cn } from '@/lib/cn'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -189,7 +190,11 @@ export function WeekCalendar({ now: nowProp }: { now?: Date }) {
                       key={`${slot.courseId}-${slot.day}-${i}`}
                       type="button"
                       onClick={() => openCourse({ courseId: slot.courseId })}
-                      title={`${slot.courseName} ${slot.start}–${slot.end}${slot.location ? ` · ${slot.location}` : ''}`}
+                      // A tooltip is plain text, so the Hebrew course name is fenced off with
+                      // isolate() rather than <bdi> — otherwise it swallows the time range and
+                      // spits it back out reversed ("12:00–10:00"). The aria-label is read in
+                      // logical order and needs no isolation.
+                      title={`${isolate(slot.courseName)} ${slot.start}–${slot.end}${slot.location ? ` · ${isolate(slot.location)}` : ''}`}
                       aria-label={`${slot.courseName} ${slot.start}–${slot.end}`}
                       className="z-10 overflow-hidden rounded-control px-1 py-0.5 text-left text-[10px] leading-tight text-white/95 shadow-xs transition-[filter,box-shadow] duration-150 [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] hover:z-20 hover:shadow-md hover:brightness-110 focus-visible:z-20 focus-visible:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:brightness-95"
                       style={{
@@ -275,7 +280,11 @@ function AllDayRow({
                   backgroundColor: event.kind === 'exam' ? 'var(--error-bg)' : 'var(--success-bg)',
                   textDecoration: event.completed ? 'line-through' : undefined,
                 }}
-                title={event.kind === 'exam' ? event.title : `${event.courseName}: ${event.title}`}
+                title={
+                  event.kind === 'exam'
+                    ? event.title
+                    : `${isolate(event.courseName)}: ${isolate(event.title)}`
+                }
               >
                 {event.kind === 'homework' ? (
                   <span
