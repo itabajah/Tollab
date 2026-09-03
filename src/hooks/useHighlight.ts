@@ -4,7 +4,7 @@ import { useEffect, type RefObject } from 'react'
  * Briefly draws attention to a deep-linked element: when `active` becomes true
  * the referenced node scrolls into view and gets a `data-highlight` attribute
  * (styled as a short pulse in theme.css, disabled under reduced motion) that
- * clears itself after ~1.5s. Used by the ticker/calendar deep-links to point at
+ * clears itself after ~1.5s. Used by the radar/calendar deep-links to point at
  * the specific homework item or exam field they opened.
  */
 export function useHighlight(ref: RefObject<HTMLElement | null>, active: boolean): void {

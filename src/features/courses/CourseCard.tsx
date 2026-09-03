@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { Course } from '@/domain/model'
 import { courseMetaParts, courseProgress } from '@/domain/course'
 import { IconButton } from '@/components/ui/IconButton'
+import { CheckIcon } from '@/components/ui/icons'
 
 function PlayIcon() {
   return (
@@ -26,24 +27,6 @@ function ScreenIcon() {
     >
       <rect x="3" y="4" width="18" height="12" rx="1" />
       <path d="M8 20h8M12 16v4" />
-    </svg>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M20 6 9 17l-5-5" />
     </svg>
   )
 }
@@ -128,7 +111,7 @@ export function CourseCard({
           ) : null}
           {progress.homework.total > 0 ? (
             <ProgressStat
-              icon={<CheckIcon />}
+              icon={<CheckIcon width={13} height={13} strokeWidth={2.5} />}
               label="Homework completed"
               value={`${progress.homework.completed}/${progress.homework.total}`}
             />

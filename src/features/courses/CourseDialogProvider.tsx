@@ -22,7 +22,7 @@ const CourseDialogContext = createContext<CourseDialogApi | null>(null)
 
 /**
  * A single course dialog shared by every surface that opens a course
- * (course cards, calendar blocks/events, the exam roadmap, and the ticker
+ * (course cards, calendar blocks/events, the exam roadmap, and the radar
  * deep-links). Centralizing it removes the duplicated dialog state each of
  * those surfaces used to own and gives them a common `openCourse({ courseId,
  * tab, highlight })` entry point.

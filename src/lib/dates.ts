@@ -27,6 +27,12 @@ export function todayYmd(now: Date): string {
   return formatYmd(now)
 }
 
+/** Minutes since midnight for an `HH:MM` string (no validation; see `hhmmSchema`). */
+export function hhmmToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':')
+  return Number(h) * 60 + Number(m)
+}
+
 function atMidnight(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
 }
