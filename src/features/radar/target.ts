@@ -1,13 +1,13 @@
-import type { TickerTarget } from '@/domain/ticker'
-import type { OpenCourseRequest } from './CourseDialogProvider'
+import type { RadarTarget } from '@/domain/radar'
+import type { OpenCourseRequest } from '@/features/courses/CourseDialogProvider'
 
 /**
- * Maps a clicked ticker item to a course-dialog open request (or null when it
- * has no course to open): homework/exam items deep-link to the specific item,
- * recordings/class items just open the relevant tab. Pure so it can be unit
- * tested without rendering the app.
+ * Maps a radar signal's target to a course-dialog open request (or null when
+ * there is no course to open): homework/exam signals deep-link to the specific
+ * item, recordings/class signals just open the relevant tab. Pure so it can be
+ * unit tested without rendering the app.
  */
-export function tickerTargetToRequest(target: TickerTarget): OpenCourseRequest | null {
+export function radarTargetToRequest(target: RadarTarget): OpenCourseRequest | null {
   if (!target.courseId) return null
   switch (target.type) {
     case 'homework':

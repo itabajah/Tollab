@@ -89,7 +89,7 @@ export function positionSlot(
   const startMin = toMinutes(slot.start)
   // A slot that ends before it starts crosses midnight (e.g. an ICS event
   // 23:00–01:00). Render its visible pre-midnight portion (up to the end of the
-  // grid) instead of dropping it entirely, mirroring the ticker's overnight wrap.
+  // grid) instead of dropping it entirely, mirroring the radar's overnight wrap.
   const endMin = toMinutes(slot.end) < startMin ? gridEnd : toMinutes(slot.end)
   if (endMin <= gridStart || startMin >= gridEnd) return null
 

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
  * A single ticking clock shared through context. Mounting one `NowProvider`
  * near the app root means only the components that actually read the time
  * (`useNow()` consumers: the calendar now-line, exam urgency, homework due
- * labels, the ticker) re-render on each tick — the rest of the tree (e.g. the
+ * labels, the radar) re-render on each tick — the rest of the tree (e.g. the
  * course list) is untouched. Previously a `useNow()` at the app root re-rendered
  * everything every minute.
  */

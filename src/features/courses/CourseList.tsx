@@ -12,7 +12,7 @@ export function CourseList() {
   const { moveCourse } = useAppActions()
   const { openCourse } = useCourseDialog()
   // A local dialog for ADD only; editing an existing course goes through the
-  // shared CourseDialogProvider so the ticker/calendar/roadmap all reuse it.
+  // shared CourseDialogProvider so the radar/calendar/roadmap all reuse it.
   const [addOpen, setAddOpen] = useState(false)
 
   return (

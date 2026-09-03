@@ -9,7 +9,7 @@ test.describe('onboarding', () => {
     await page.getByRole('button', { name: 'Create Semester' }).click()
 
     // The semester now exists; the weekly schedule pane appears and courses empty-state shows.
-    // (Exact text — the header ticker can also render a "No courses yet" nudge.)
+    // (Exact text — the radar card also renders a "No courses yet" nudge.)
     await expect(page.getByRole('heading', { name: 'Weekly Schedule' })).toBeVisible()
     await expect(page.getByText('No courses yet in this semester.')).toBeVisible()
   })

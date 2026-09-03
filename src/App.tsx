@@ -1,17 +1,14 @@
 import { useState } from 'react'
 import { resolveExamViewMode } from '@/domain/examMode'
-import type { TickerTarget } from '@/domain/ticker'
 import { useAppState } from '@/hooks/session'
 import { useNow } from '@/hooks/useNow'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { AppShell } from '@/features/layout/AppShell'
 import { Header } from '@/features/layout/Header'
-import { HeaderTicker } from '@/features/ticker/HeaderTicker'
+import { RadarCard } from '@/features/radar/RadarCard'
 import { SemesterControls, AddSemesterDialog } from '@/features/semesters/SemesterControls'
 import { SettingsDialog } from '@/features/settings/SettingsDialog'
 import { CourseList } from '@/features/courses/CourseList'
-import { useCourseDialog } from '@/features/courses/CourseDialogProvider'
-import { tickerTargetToRequest } from '@/features/courses/tickerTarget'
 import { WeekCalendar } from '@/features/calendar/WeekCalendar'
 import { HomeworkList } from '@/features/homework/HomeworkList'
 import { ExamRoadmap } from '@/features/exam-mode/ExamRoadmap'
@@ -58,24 +55,18 @@ function NoSemesterYet() {
 }
 
 // LeftPane's heavy child — the course list — does not read the clock, so it does
-// not re-render on the minute tick; only the HeaderTicker and the (dormant)
+// not re-render on the minute tick; only the RadarCard and the (dormant)
 // Add-Semester date picker, both `useNow` consumers, do.
 function LeftPane() {
   const hasSemester = useAppState((s) => s.currentSemesterId !== null)
-  const { openCourse } = useCourseDialog()
-
-  const onSelect = (target: TickerTarget) => {
-    const request = tickerTargetToRequest(target)
-    if (request) openCourse(request)
-  }
 
   return (
     // On desktop the pane fills its height and only the course list scrolls, so
-    // the header/ticker/semester controls stay put no matter how many courses
+    // the header/radar/semester controls stay put no matter how many courses
     // there are. On mobile (stacked) it's normal flow and the page scrolls.
     <div className="flex flex-col gap-6 lg:h-full">
       <Header />
-      <HeaderTicker onSelect={onSelect} />
+      <RadarCard />
       <SemesterControls />
       <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-4 lg:[scrollbar-gutter:stable]">
         {hasSemester ? <CourseList /> : <NoSemesterYet />}

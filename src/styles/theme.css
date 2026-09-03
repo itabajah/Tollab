@@ -217,6 +217,19 @@
   }
 }
 
+/* Radar headline / quip entrance: a short fade with a 3px rise, so a new
+   signal or flavor line settles in rather than snapping. */
+@keyframes radar-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* A calm fade + a barely-there scale, in place (no slide). The full
    translate(-50%, …) is constant so the dialog stays centered while it fades;
    scale sits close to 1 so it settles rather than pops. The overlay's blur is
