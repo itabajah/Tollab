@@ -9,6 +9,7 @@ import {
   isYmdInWeek,
   formatShortDate,
   todayYmd,
+  hhmmToMinutes,
 } from './dates'
 
 describe('parseYmd / formatYmd', () => {
@@ -93,6 +94,14 @@ describe('weekRangeFor / isYmdInWeek', () => {
     expect(isYmdInWeek('2026-07-04', now)).toBe(true)
     expect(isYmdInWeek('2026-07-05', now)).toBe(false)
     expect(isYmdInWeek('', now)).toBe(false)
+  })
+})
+
+describe('hhmmToMinutes', () => {
+  it('converts HH:MM to minutes since midnight', () => {
+    expect(hhmmToMinutes('00:00')).toBe(0)
+    expect(hhmmToMinutes('10:30')).toBe(630)
+    expect(hhmmToMinutes('23:59')).toBe(1439)
   })
 })
 

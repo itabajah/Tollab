@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createMemoryStorage, type StorageLike } from '@/services/storage/localStore'
 import {
   loadSnoozes,
@@ -35,6 +35,8 @@ export interface RadarSnooze {
  * Device-local "hide until tomorrow" state for radar signals. `today` is the
  * local calendar day (YYYY-MM-DD); when it rolls over, yesterday's snoozes
  * expire automatically because only entries stamped with today survive a load.
+ * Device-local by design: a snooze made in another tab shows up there on its
+ * next load, not live.
  */
 export function useRadarSnooze(today: string, storageOverride?: StorageLike): RadarSnooze {
   const storage = useMemo(() => storageOverride ?? resolveStorage(), [storageOverride])
@@ -45,24 +47,20 @@ export function useRadarSnooze(today: string, storageOverride?: StorageLike): Ra
     setLoadedFor(today)
     setMap(loadSnoozes(storage, today))
   }
-  // The handlers read the latest map through a ref so they stay stable and
-  // never write from inside a state updater (StrictMode runs those twice).
-  const mapRef = useRef(map)
-  mapRef.current = map
 
-  const commit = useCallback(
-    (next: SnoozeMap) => {
-      mapRef.current = next
-      saveSnoozes(storage, next)
-      setMap(next)
-    },
-    [storage],
-  )
-  const snooze = useCallback(
-    (id: string) => commit(snoozeSignal(mapRef.current, id, today)),
-    [commit, today],
-  )
-  const unsnooze = useCallback((id: string) => commit(unsnoozeSignal(mapRef.current, id)), [commit])
+  // Persist every change (the first run re-saves the pruned map, which also
+  // clears yesterday's entries from storage). A full or read-only origin must
+  // not turn a click into an error: the snooze then simply lasts the session.
+  useEffect(() => {
+    try {
+      saveSnoozes(storage, map)
+    } catch {
+      // keep the in-memory snooze
+    }
+  }, [storage, map])
+
+  const snooze = useCallback((id: string) => setMap((m) => snoozeSignal(m, id, today)), [today])
+  const unsnooze = useCallback((id: string) => setMap((m) => unsnoozeSignal(m, id)), [])
 
   const snoozedIds = useMemo(() => Object.keys(map), [map])
   return { snoozedIds, snooze, unsnooze }

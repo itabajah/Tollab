@@ -1,16 +1,12 @@
 import type { Course, Homework, ScheduleSlot, Semester } from '@/domain/model'
 import { collectExams as collectExamNodes } from '@/domain/examMode'
-import { daysBetween, daysUntil, parseYmd } from '@/lib/dates'
+import { daysBetween, daysUntil, hhmmToMinutes, parseYmd } from '@/lib/dates'
 import { EXAM_WINDOW_DAYS, HOMEWORK_WINDOW_DAYS } from './constants'
 import type { RadarStats } from './types'
 
 // ---------------------------------------------------------------------------
 // Classes
 // ---------------------------------------------------------------------------
-
-export function toMinutes(hhmm: string): number {
-  return Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5))
-}
 
 export interface ClassHit {
   course: Course
@@ -22,6 +18,19 @@ export interface ClassHit {
 }
 
 const DAY_MINUTES = 24 * 60
+
+/**
+ * Normalised start/end minutes of a slot on its own day: an end before the
+ * start wraps past midnight. A zero-length slot (start === end, which the
+ * editor rejects but an importer can produce) is not a class at all — treating
+ * it as overnight would pin a 24-hour "LIVE" headline — so it yields null.
+ */
+function slotSpan(slot: ScheduleSlot): { startMin: number; endMin: number } | null {
+  const startMin = hhmmToMinutes(slot.start)
+  const rawEnd = hhmmToMinutes(slot.end)
+  if (rawEnd === startMin) return null
+  return { startMin, endMin: rawEnd < startMin ? rawEnd + DAY_MINUTES : rawEnd }
+}
 
 /**
  * The class in session right now (start <= now < end, overnight slots wrap
@@ -40,22 +49,25 @@ export function findCurrentAndNextClass(
 
   for (const course of semester.courses) {
     for (const slot of course.schedule) {
-      const startMin = toMinutes(slot.start)
-      const rawEnd = toMinutes(slot.end)
-      const overnight = rawEnd <= startMin
+      const span = slotSpan(slot)
+      if (!span) continue
+      const { startMin, endMin } = span
+      const overnight = endMin > DAY_MINUTES
 
       if (slot.day === nowDay) {
-        const endMin = overnight ? rawEnd + DAY_MINUTES : rawEnd
         if (!current && startMin <= nowMin && nowMin < endMin) {
           current = { course, slot, startMin, endMin }
         }
         if (startMin > nowMin && (!next || startMin < next.startMin)) {
           next = { course, slot, startMin, endMin }
         }
-      } else if (overnight && slot.day === yesterdayDay && nowMin < rawEnd && !current) {
+      } else if (overnight && slot.day === yesterdayDay && !current) {
         // The post-midnight tail of an overnight slot that began yesterday
         // (e.g. a Sun 23:00–01:00 class is still live at Mon 00:30).
-        current = { course, slot, startMin: startMin - DAY_MINUTES, endMin: rawEnd }
+        const tailEnd = endMin - DAY_MINUTES
+        if (nowMin < tailEnd) {
+          current = { course, slot, startMin: startMin - DAY_MINUTES, endMin: tailEnd }
+        }
       }
     }
   }
@@ -74,25 +86,20 @@ export function findTomorrowClasses(
   for (const course of semester.courses) {
     for (const slot of course.schedule) {
       if (slot.day !== tomorrowDay) continue
+      const span = slotSpan(slot)
+      if (!span) continue
       count++
-      const startMin = toMinutes(slot.start)
-      if (!first || startMin < first.startMin) {
-        const rawEnd = toMinutes(slot.end)
-        first = {
-          course,
-          slot,
-          startMin,
-          endMin: rawEnd <= startMin ? rawEnd + DAY_MINUTES : rawEnd,
-        }
-      }
+      if (!first || span.startMin < first.startMin) first = { course, slot, ...span }
     }
   }
   return { first, count }
 }
 
-/** Whether any course has a slot on the given weekday. */
+/** Whether any course has a (non-empty) slot on the given weekday. */
 export function hasClassOn(semester: Semester, day: number): boolean {
-  return semester.courses.some((course) => course.schedule.some((slot) => slot.day === day))
+  return semester.courses.some((course) =>
+    course.schedule.some((slot) => slot.day === day && slotSpan(slot) !== null),
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -138,16 +145,17 @@ export function pickHomework(candidates: readonly HomeworkCandidate[]): Homework
   return second ? [first, second] : [first]
 }
 
-/** The first incomplete homework without a due date. */
-export function findHomeworkWithoutDueDate(
+/** Every incomplete homework without a due date, in course/list order. */
+export function listHomeworkWithoutDueDate(
   semester: Semester,
-): { course: Course; hw: Homework } | null {
+): Array<{ course: Course; hw: Homework }> {
+  const out: Array<{ course: Course; hw: Homework }> = []
   for (const course of semester.courses) {
     for (const hw of course.homework) {
-      if (!hw.completed && !hw.dueDate) return { course, hw }
+      if (!hw.completed && !hw.dueDate) out.push({ course, hw })
     }
   }
-  return null
+  return out
 }
 
 /** Incomplete homework count and how many courses it is spread across. */
@@ -207,16 +215,16 @@ export function unwatchedCount(course: Course): number {
   return n
 }
 
-/** The course with the biggest unwatched-recordings backlog, if any. */
-export function findRecordingsBacklog(
+/** Every course with an unwatched backlog, biggest first (stable on ties). */
+export function listRecordingsBacklogs(
   semester: Semester,
-): { course: Course; backlog: number } | null {
-  let best: { course: Course; backlog: number } | null = null
+): Array<{ course: Course; backlog: number }> {
+  const out: Array<{ course: Course; backlog: number }> = []
   for (const course of semester.courses) {
     const backlog = unwatchedCount(course)
-    if (backlog > 0 && (!best || backlog > best.backlog)) best = { course, backlog }
+    if (backlog > 0) out.push({ course, backlog })
   }
-  return best
+  return out.sort((a, b) => b.backlog - a.backlog)
 }
 
 // ---------------------------------------------------------------------------

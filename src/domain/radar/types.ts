@@ -59,7 +59,7 @@ export interface RadarTarget {
 export interface MetaPart {
   text: string
   user?: boolean
-  tone?: 'critical' | 'warn' | 'calm'
+  tone?: 'critical' | 'warn'
 }
 
 export interface RadarSignal {
@@ -114,8 +114,6 @@ export interface RadarSnapshot {
   live: RadarSignal[]
   /** Calm signals in rotation order; never empty (a tip is always available). */
   calm: RadarSignal[]
-  /** Semester progress counters, or null without a usable semester. */
-  stats: RadarStats | null
   /** How many live signals were hidden by a snooze. */
   snoozedCount: number
 }

@@ -1,6 +1,6 @@
 import type { Course, ScheduleSlot } from '@/domain/model'
 import type { Moed } from '@/domain/ids'
-import { parseYmd, weekRangeFor } from '@/lib/dates'
+import { hhmmToMinutes, parseYmd, weekRangeFor } from '@/lib/dates'
 
 /**
  * Pure math for the weekly schedule grid.
@@ -59,11 +59,6 @@ export interface PositionedSlot {
   laneCount: number
 }
 
-function toMinutes(hhmm: string): number {
-  const [h, m] = hhmm.split(':')
-  return Number(h) * 60 + Number(m)
-}
-
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }
@@ -86,11 +81,11 @@ export function positionSlot(
 
   const gridStart = cfg.startHour * 60
   const gridEnd = cfg.endHour * 60
-  const startMin = toMinutes(slot.start)
+  const startMin = hhmmToMinutes(slot.start)
   // A slot that ends before it starts crosses midnight (e.g. an ICS event
   // 23:00–01:00). Render its visible pre-midnight portion (up to the end of the
   // grid) instead of dropping it entirely, mirroring the radar's overnight wrap.
-  const endMin = toMinutes(slot.end) < startMin ? gridEnd : toMinutes(slot.end)
+  const endMin = hhmmToMinutes(slot.end) < startMin ? gridEnd : hhmmToMinutes(slot.end)
   if (endMin <= gridStart || startMin >= gridEnd) return null
 
   const rowStart = clamp(Math.floor((startMin - gridStart) / MINUTES_PER_ROW) + 1, 1, rowCount)

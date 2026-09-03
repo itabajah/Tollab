@@ -1,6 +1,8 @@
-import type { Course } from '@/domain/model'
+import type { Course, Homework } from '@/domain/model'
 import { formatYmd } from '@/lib/dates'
 import {
+  CLASS_NEAR_BONUS,
+  CLASS_NEAR_MINUTES,
   CLASS_SOON_MINUTES,
   CLASS_TOMORROW_FROM_HOUR,
   FREE_TIME_MIN_MINUTES,
@@ -14,10 +16,10 @@ import {
   collectUpcomingExams,
   countOpenHomework,
   findCurrentAndNextClass,
-  findHomeworkWithoutDueDate,
-  findRecordingsBacklog,
   findTomorrowClasses,
   hasClassOn,
+  listHomeworkWithoutDueDate,
+  listRecordingsBacklogs,
   pickHomework,
   semesterStats,
   unwatchedCount,
@@ -55,7 +57,9 @@ import type {
  * - `live`: ranked signals that deserve attention — the running/next class,
  *   urgent homework, the nearest exam, a recordings backlog, setup nudges. The
  *   UI pins the top one, offers the rest as chips, and lets the user act (mark
- *   done, snooze, open) in place. Snoozed ids are filtered out here.
+ *   done, snooze, open) in place. Snoozed signals are skipped *before* each
+ *   collector caps its picks, so snoozing the top homework reveals the next one
+ *   rather than hiding the whole category.
  * - `calm`: what to say when nothing is live — time-of-day vibes, a free day,
  *   the all-clear with progress stats, a course roast, a study tip. The UI
  *   rotates through these; rotation is reserved for moments where nothing is
@@ -79,6 +83,19 @@ export type {
   RadarTarget,
   RadarTone,
 } from './types'
+
+// ---------------------------------------------------------------------------
+// Signal ids — stable for the whole day so a snooze "until tomorrow" holds
+// even as a signal moves between kinds (class_next -> class_soon -> class_now,
+// or homework sliding from "soon" to "tomorrow" at midnight).
+// ---------------------------------------------------------------------------
+
+const classId = (course: Course, slot: ClassHit['slot']) =>
+  `class:${course.id}:${slot.day}:${slot.start}`
+const homeworkId = (course: Course, hw: Homework) => `hw:${course.id}:${hw.id}`
+const undatedId = (course: Course, hw: Homework) => `hw_nodate:${course.id}:${hw.id}`
+const examId = (course: Course, moed: 'A' | 'B') => `exam:${course.id}:${moed}`
+const recordingsId = (course: Course) => `recordings:${course.id}`
 
 // ---------------------------------------------------------------------------
 // Signal construction helpers
@@ -130,13 +147,7 @@ function setupSignal(kind: 'no_semester' | 'no_courses' | 'no_schedule', title: 
   }
 }
 
-function calmSignal(
-  kind: RadarKind,
-  badge: string,
-  title: string,
-  meta: MetaPart[] = [],
-  vars?: Vars,
-): Draft {
+function calmSignal(kind: RadarKind, badge: string, title: string, meta: MetaPart[] = []): Draft {
   return {
     id: kind,
     kind,
@@ -148,7 +159,6 @@ function calmSignal(
     titleIsUser: false,
     meta,
     brief: '',
-    ...(vars ? { vars } : {}),
     target: { type: 'none' },
     snoozable: false,
   }
@@ -177,15 +187,17 @@ function classSignal(hit: ClassHit, kind: RadarKind, nowMin: number, vars: Vars)
     brief = `starts in ${formatDuration(hit.startMin - nowMin)}`
     meta.push({ text: brief, tone: 'warn' }, plain(range))
   } else {
-    // class_next: sooner ranks higher; the penalty is capped so even a class
-    // many hours away still outranks backlogs and setup nudges.
+    // class_next: sooner ranks higher (one point per half hour, capped so even a
+    // class many hours away still outranks backlogs and setup nudges), and a
+    // class within the hour jumps above the tomorrow-homework / 3-day-exam tier.
     const minutes = hit.startMin - nowMin
-    score = SCORE.class_next - Math.min(16, Math.floor(minutes / 30))
+    const near = minutes <= CLASS_NEAR_MINUTES ? CLASS_NEAR_BONUS : 0
+    score = SCORE.class_next + near - Math.min(16, Math.floor(minutes / 30))
     brief = `at ${slot.start}`
     meta.push(plain(brief), plain(`in ${formatDuration(minutes)}`))
   }
   return {
-    id: `${kind}:${course.id}:${slot.day}:${slot.start}`,
+    id: classId(course, slot),
     kind,
     mode: 'live',
     tone,
@@ -236,7 +248,7 @@ function homeworkSignal(candidate: HomeworkCandidate, free: string): Draft {
   const score = kind === 'hw_soon' ? SCORE.hw_soon - 2 * diff : SCORE[kind]
   const due = dueMeta(diff)
   return {
-    id: `hw:${course.id}:${hw.id}`,
+    id: homeworkId(course, hw),
     kind,
     mode: 'live',
     tone,
@@ -247,6 +259,25 @@ function homeworkSignal(candidate: HomeworkCandidate, free: string): Draft {
     meta: [user(course.name), due],
     brief: due.text,
     vars: { days: String(Math.abs(diff)), free },
+    target: { type: 'homework', courseId: course.id, homeworkId: hw.id },
+    courseColor: course.color,
+    homework: { courseId: course.id, homeworkId: hw.id },
+    snoozable: true,
+  }
+}
+
+function undatedSignal(course: Course, hw: Homework): Draft {
+  return {
+    id: undatedId(course, hw),
+    kind: 'hw_nodate',
+    mode: 'live',
+    tone: 'info',
+    badge: 'HW',
+    score: SCORE.hw_nodate,
+    title: hw.title,
+    titleIsUser: true,
+    meta: [user(course.name), plain('no due date')],
+    brief: 'no due date',
     target: { type: 'homework', courseId: course.id, homeworkId: hw.id },
     courseColor: course.color,
     homework: { courseId: course.id, homeworkId: hw.id },
@@ -269,7 +300,7 @@ function examSignal(exam: ExamCandidate): Draft {
   if (unwatched > 0) meta.push(plain(`${unwatched} unwatched`))
   if (pace && diff > 0) meta.push(plain(pace))
   return {
-    id: `exam:${course.id}:${moed}`,
+    id: examId(course, moed),
     kind,
     mode: 'live',
     tone,
@@ -289,7 +320,7 @@ function examSignal(exam: ExamCandidate): Draft {
 function recordingsSignal(course: Course, backlog: number): Draft {
   const big = backlog >= RECORDINGS_BIG_THRESHOLD
   return {
-    id: `recordings:${course.id}`,
+    id: recordingsId(course),
     kind: big ? 'recordings_big' : 'recordings_backlog',
     mode: 'live',
     tone: 'info',
@@ -315,7 +346,7 @@ function statsMeta(stats: RadarStats, snoozedCount: number): MetaPart[] {
     parts.push(plain(`${stats.recordings.watched}/${stats.recordings.total} recordings watched`))
   }
   if (stats.exams.total > 0) {
-    parts.push(plain(`${stats.exams.passed}/${stats.exams.total} exams passed`))
+    parts.push(plain(`${stats.exams.passed}/${stats.exams.total} exams behind you`))
   }
   if (parts.length === 0) parts.push(plain('nothing pending'))
   if (snoozedCount > 0) parts.push(plain(`${snoozedCount} snoozed`))
@@ -330,7 +361,6 @@ function empty(draft: Draft, calm: Draft[], common: Vars): RadarSnapshot {
   return {
     live: [finalize(draft, common)],
     calm: calm.map((c) => finalize(c, common)),
-    stats: null,
     snoozedCount: 0,
   }
 }
@@ -356,12 +386,20 @@ export function buildRadar(ctx: RadarContext): RadarSnapshot {
   const nowDay = now.getDay()
   const nowMin = hour * 60 + now.getMinutes()
   const snoozed = new Set(ctx.snoozedIds ?? [])
+  let snoozedCount = 0
+  /** Drops snoozed candidates before a collector caps its picks, counting them. */
+  const unsnoozed = <T>(items: readonly T[], idOf: (item: T) => string): T[] =>
+    items.filter((item) => {
+      if (!snoozed.has(idOf(item))) return true
+      snoozedCount++
+      return false
+    })
   const live: Draft[] = []
 
   // 1) Classes: the one running now, the next one today, tomorrow's preview.
   const { current, next } = findCurrentAndNextClass(semester, nowDay, nowMin)
   const hasSchedule = semester.courses.some((course) => course.schedule.length > 0)
-  const hwCandidates = collectHomework(semester, now)
+  const hwCandidates = unsnoozed(collectHomework(semester, now), (c) => homeworkId(c.course, c.hw))
   // "Free for X" — the gap until the next class, when it's long enough to use.
   const gap = next && !current ? next.startMin - nowMin : 0
   const free = gap >= FREE_TIME_MIN_MINUTES ? formatDuration(gap) : ''
@@ -398,42 +436,28 @@ export function buildRadar(ctx: RadarContext): RadarSnapshot {
       snoozable: true,
     })
   }
-  const undated = findHomeworkWithoutDueDate(semester)
-  if (undated) {
-    live.push({
-      id: `hw_nodate:${undated.course.id}:${undated.hw.id}`,
-      kind: 'hw_nodate',
-      mode: 'live',
-      tone: 'info',
-      badge: 'HW',
-      score: SCORE.hw_nodate,
-      title: undated.hw.title,
-      titleIsUser: true,
-      meta: [user(undated.course.name), plain('no due date')],
-      brief: 'no due date',
-      target: { type: 'homework', courseId: undated.course.id, homeworkId: undated.hw.id },
-      courseColor: undated.course.color,
-      homework: { courseId: undated.course.id, homeworkId: undated.hw.id },
-      snoozable: true,
-    })
-  }
+  const undated = unsnoozed(listHomeworkWithoutDueDate(semester), (u) =>
+    undatedId(u.course, u.hw),
+  )[0]
+  if (undated) live.push(undatedSignal(undated.course, undated.hw))
 
   // 3) The nearest exam (an exam today is always the nearest).
-  const exam = collectUpcomingExams(semester, now)[0]
+  const exam = unsnoozed(collectUpcomingExams(semester, now), (e) => examId(e.course, e.moed))[0]
   if (exam) live.push(examSignal(exam))
 
   // 4) The biggest recordings backlog.
-  const backlog = findRecordingsBacklog(semester)
+  const backlog = unsnoozed(listRecordingsBacklogs(semester), (b) => recordingsId(b.course))[0]
   if (backlog) live.push(recordingsSignal(backlog.course, backlog.backlog))
 
   // Rank: score descending; the insertion order above breaks ties (it is
-  // already most-urgent-first within each collector).
+  // already most-urgent-first within each collector). Uncapped kinds (classes,
+  // the pile nudge, the setup nudge) are snooze-filtered here.
   const ranked = live
     .map((draft, index) => ({ draft, index }))
     .sort((a, b) => b.draft.score - a.draft.score || a.index - b.index)
     .map(({ draft }) => draft)
   const visible = ranked.filter((draft) => !snoozed.has(draft.id))
-  const snoozedCount = ranked.length - visible.length
+  snoozedCount += ranked.length - visible.length
 
   // 5) Calm rotation: only shown when nothing live remains.
   const calm: Draft[] = []
@@ -450,13 +474,12 @@ export function buildRadar(ctx: RadarContext): RadarSnapshot {
     calm.push(calmSignal('done_today', 'DONE', 'Classes done for today'))
   }
 
-  const stats = semesterStats(semester, now)
   calm.push(
     calmSignal(
       'all_clear',
       'OK',
       snoozedCount > 0 ? 'Quiet for now' : 'All clear',
-      statsMeta(stats, snoozedCount),
+      statsMeta(semesterStats(semester, now), snoozedCount),
     ),
   )
 
@@ -483,7 +506,6 @@ export function buildRadar(ctx: RadarContext): RadarSnapshot {
   return {
     live: visible.map((draft) => finalize(draft, common)),
     calm: calm.map((draft) => finalize(draft, common)),
-    stats,
     snoozedCount,
   }
 }

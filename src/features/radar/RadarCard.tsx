@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FocusEvent } from 'react'
 import {
   RADAR_CHIP_LIMIT,
   RADAR_ROTATE_MS,
@@ -43,7 +43,6 @@ const chipBadgeTone: Record<RadarTone, string> = {
 const metaTone: Record<NonNullable<MetaPart['tone']>, string> = {
   critical: 'font-medium text-error-text',
   warn: 'font-medium text-warning-text',
-  calm: 'text-success-text',
 }
 
 const enter = 'animate-[radar-in_var(--duration-base)_var(--ease-standard)]'
@@ -147,14 +146,15 @@ export function RadarCard({ now }: { now?: Date }) {
   // hovering/focusing the card (so nothing rotates out from under the pointer).
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [hidden, setHidden] = useState(false)
-  const [interacting, setInteracting] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
   useEffect(() => {
     const sync = () => setHidden(document.hidden)
     sync()
     document.addEventListener('visibilitychange', sync)
     return () => document.removeEventListener('visibilitychange', sync)
   }, [])
-  const paused = hidden || reducedMotion || interacting
+  const paused = hidden || reducedMotion || hovered || focused
 
   const [tick, setTick] = useState(0)
   const [pinnedId, setPinnedId] = useState<string | null>(null)
@@ -183,6 +183,28 @@ export function RadarCard({ now }: { now?: Date }) {
     return () => clearInterval(id)
   }, [paused, rotates])
 
+  // Focus restoration. An action can unmount the very control that had focus:
+  // a chip promotes its signal and leaves the rail, "Done" on the last homework
+  // or "Snooze" on the last snoozable signal takes its button away. A removed
+  // node fires no blur, so focus would silently fall to <body> and the card
+  // would stay paused. Whenever the headline changes while focus was inside
+  // the card but no longer is, bring it back to the headline.
+  const sectionRef = useRef<HTMLElement>(null)
+  const mainRef = useRef<HTMLElement | null>(null)
+  const setMain = (el: HTMLElement | null) => {
+    mainRef.current = el
+  }
+  useEffect(() => {
+    if (!focused) return
+    const section = sectionRef.current
+    if (!section || section.contains(document.activeElement)) return
+    mainRef.current?.focus()
+  }, [focused, current.id, current.kind])
+
+  const onBlur = (event: FocusEvent<HTMLElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false)
+  }
+
   const open = (signal: RadarSignal) => {
     const request = radarTargetToRequest(signal.target)
     if (request) openCourse(request)
@@ -210,6 +232,9 @@ export function RadarCard({ now }: { now?: Date }) {
   const shownChips = chips.slice(0, RADAR_CHIP_LIMIT)
   const hiddenChips = chips.length - shownChips.length
   const animate = !reducedMotion
+  // Keyed on id + kind so a signal that changes phase (next -> soon -> live)
+  // re-enters like a new headline even though its id — and its snooze — hold.
+  const headlineKey = `${current.id}:${current.kind}`
 
   const headline = (
     <span className="flex min-w-0 items-center gap-2">
@@ -236,15 +261,17 @@ export function RadarCard({ now }: { now?: Date }) {
       data-testid="radar-quip"
       className={cn('mt-1 block truncate text-xs text-ink-faint', animate && enter)}
     >
-      {quip}
+      {/* A few quips are Hebrew-only; isolating keeps their final punctuation on
+          the correct side inside this LTR block. */}
+      <bdi>{quip}</bdi>
     </span>
   )
 
   const mainClasses = cn(
-    'min-w-0 flex-1 px-3 py-2.5 text-left',
+    'min-w-0 flex-1 rounded-card px-3 py-2.5 text-left',
+    'focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none focus-visible:ring-inset',
     animate && enter,
-    actionable &&
-      'rounded-card transition-colors hover:bg-inset/60 focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none focus-visible:ring-inset',
+    actionable && 'cursor-pointer transition-colors hover:bg-inset/60',
   )
 
   return (
@@ -252,32 +279,42 @@ export function RadarCard({ now }: { now?: Date }) {
     // interrupting screen-reader users; the headline is the button's accessible
     // name (read on focus) and rotation pauses while the card has focus.
     <section
+      ref={sectionRef}
       aria-label="Radar"
       data-testid="radar"
       data-mode={liveMode ? 'live' : 'calm'}
       data-kind={current.kind}
       data-signal-id={current.id}
-      onMouseEnter={() => setInteracting(true)}
-      onMouseLeave={() => setInteracting(false)}
-      onFocus={() => setInteracting(true)}
-      onBlur={() => setInteracting(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={onBlur}
       className="overflow-hidden rounded-card border border-line bg-panel shadow-sm"
     >
       <div className="flex items-start">
         {actionable ? (
           <button
-            key={current.id}
+            key={headlineKey}
+            ref={setMain}
             type="button"
             data-testid="radar-main"
             title={describe(current)}
             onClick={() => open(current)}
-            className={cn(mainClasses, 'cursor-pointer')}
+            className={mainClasses}
           >
             {headline}
             {quipLine}
           </button>
         ) : (
-          <div key={current.id} data-testid="radar-main" className={mainClasses}>
+          // Nothing to open: not a button, but still focusable programmatically
+          // so restored focus has somewhere inside the card to land.
+          <div
+            key={headlineKey}
+            ref={setMain}
+            tabIndex={-1}
+            data-testid="radar-main"
+            className={mainClasses}
+          >
             {headline}
             {quipLine}
           </div>

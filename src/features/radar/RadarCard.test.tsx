@@ -200,6 +200,82 @@ describe('RadarCard', () => {
     expect(chips).toHaveTextContent('+2 more')
   })
 
+  it('falls back to the top of the queue when a pinned signal is marked done', async () => {
+    const user = userEvent.setup()
+    const session = makeSession()
+    session.appStore.getState().addSemester('Spring 2026')
+    const a = addCourse(session, { name: 'Physics' })
+    const b = addCourse(session, { name: 'Chemistry' })
+    session.appStore.getState().addHomework(a, 'Lab 1', '2026-03-01')
+    session.appStore.getState().addHomework(b, 'Report', '2026-03-04')
+    renderRadar(session)
+
+    await user.click(screen.getByRole('button', { name: 'Show Report' }))
+    expect(title()).toBe('Report')
+    await user.click(screen.getByRole('button', { name: 'Mark Report done' }))
+    expect(title()).toBe('Lab 1')
+    expect(screen.queryByRole('button', { name: 'Show Report' })).not.toBeInTheDocument()
+  })
+
+  it('keeps keyboard focus inside the card when the activated control unmounts', async () => {
+    const user = userEvent.setup()
+    const session = makeSession()
+    session.appStore.getState().addSemester('Spring 2026')
+    // Both courses have class times (on another day) so no setup nudge lingers.
+    const wed = [{ day: 3, start: '10:00', end: '12:00' }]
+    const a = addCourse(session, { name: 'Physics', schedule: wed })
+    const b = addCourse(session, { name: 'Chemistry', schedule: wed })
+    session.appStore.getState().addHomework(a, 'Lab 1', '2026-03-01')
+    session.appStore.getState().addHomework(b, 'Report', '2026-03-04')
+    renderRadar(session)
+    const focus = (name: string) => act(() => screen.getByRole('button', { name }).focus())
+
+    // Focus the "Report" chip and promote it: the chip disappears from the rail.
+    focus('Show Report')
+    await user.keyboard('{Enter}')
+    expect(title()).toBe('Report')
+    expect(radar()).toContainElement(document.activeElement as HTMLElement)
+    expect(document.activeElement).toBe(screen.getByTestId('radar-main'))
+
+    // Mark it done from the keyboard: the Done button goes away with it.
+    focus('Mark Report done')
+    await user.keyboard('{Enter}')
+    expect(title()).toBe('Lab 1')
+    expect(radar()).toContainElement(document.activeElement as HTMLElement)
+
+    // Snooze the last live signal: the card turns calm and loses its controls,
+    // but focus still lands on the (non-button) headline.
+    focus('Snooze until tomorrow')
+    await user.keyboard('{Enter}')
+    expect(radar()).toHaveAttribute('data-mode', 'calm')
+    expect(document.activeElement).toBe(screen.getByTestId('radar-main'))
+
+    // Tabbing away releases the card (rotation may resume).
+    await user.tab()
+    expect(radar()).not.toContainElement(document.activeElement as HTMLElement)
+  })
+
+  it('expires a snooze when the day rolls over', () => {
+    const session = makeSession()
+    session.appStore.getState().addSemester('Spring 2026')
+    const id = addCourse(session)
+    const hwId = session.appStore.getState().addHomework(id, 'Wet 1', '2026-03-03')!
+    localStorage.setItem(
+      STORAGE_KEYS.RADAR_SNOOZE,
+      JSON.stringify({ [`hw:${id}:${hwId}`]: '2026-03-02' }),
+    )
+    const view = renderRadar(session)
+    expect(radar()).toHaveAttribute('data-kind', 'no_schedule')
+
+    view.rerender(
+      <Providers session={session}>
+        <RadarCard now={new Date('2026-03-03T09:00:00')} />
+      </Providers>,
+    )
+    expect(title()).toBe('Wet 1')
+    expect(radar()).toHaveAttribute('data-kind', 'hw_today')
+  })
+
   it('deep-links the headline into the course dialog on the right tab', async () => {
     const user = userEvent.setup()
     const session = makeSession()

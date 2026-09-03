@@ -57,6 +57,19 @@ describe('useRadarSnooze', () => {
     expect(result.current.snoozedIds).toEqual(['x'])
   })
 
+  it('keeps the snooze for the session when the write itself throws', () => {
+    const storage = createMemoryStorage()
+    const throwing = {
+      ...storage,
+      setItem: () => {
+        throw new Error('QuotaExceededError')
+      },
+    }
+    const { result } = renderHook(() => useRadarSnooze(TODAY, throwing))
+    act(() => result.current.snooze('a'))
+    expect(result.current.snoozedIds).toEqual(['a'])
+  })
+
   it('falls back to memory when localStorage is unusable', () => {
     const original = Object.getOwnPropertyDescriptor(window, 'localStorage')!
     Object.defineProperty(window, 'localStorage', {

@@ -76,7 +76,6 @@ describe('buildRadar — setup nudges', () => {
     expect(nudge.brief).toBe('')
     expect(RADAR_QUIPS.no_semester).toEqual(expect.arrayContaining(nudge.quips))
     expect(kinds(snap.calm)).toEqual(['tip'])
-    expect(snap.stats).toBeNull()
     expect(snap.snoozedCount).toBe(0)
   })
 
@@ -165,9 +164,80 @@ describe('buildRadar — classes', () => {
     expect(metaTexts(early)).toEqual(['at 10:30', 'in 2 h 30 min'])
     expect(early?.brief).toBe('at 10:30')
     expect(early?.score).toBe(SCORE.class_next - 5)
-    const later = live(build(withSlot(), MON(10, 0)), 'class_next')
-    expect(later?.score).toBe(SCORE.class_next - 1)
+    const later = live(build(withSlot(), MON(9, 0)), 'class_next')
+    expect(later?.score).toBe(SCORE.class_next - 3)
     expect(later!.score).toBeGreaterThan(early!.score)
+  })
+
+  it('lifts a class within the hour above tomorrow-homework and 3-day-exam signals', () => {
+    const s = sem([
+      course({
+        schedule: [{ day: 1, start: '10:30', end: '12:30' }],
+        homework: [hw('h1', '2026-03-02'), hw('h2', '2026-03-03')],
+        exams: { moedA: '2026-03-05', moedB: '' },
+      }),
+    ])
+    // 45 minutes out: bonus applies, one half-hour step deducted.
+    const snap = build(s, MON(9, 45))
+    expect(live(snap, 'class_next')?.score).toBe(SCORE.class_next + 16 - 1)
+    expect(kinds(snap.live)).toEqual(['hw_today', 'class_next', 'exam_soon', 'hw_tomorrow'])
+    // 61 minutes out: no bonus, so the class waits behind the urgent tiers.
+    expect(kinds(build(s, MON(9, 29)).live)).toEqual([
+      'hw_today',
+      'exam_soon',
+      'hw_tomorrow',
+      'class_next',
+    ])
+  })
+
+  it('interleaves the long-horizon tiers by distance, as documented', () => {
+    const s = sem([
+      course({
+        id: 'c1',
+        schedule: [{ day: 1, start: '18:00', end: '20:00' }],
+        exams: { moedA: '2026-03-11', moedB: '' },
+      }),
+      course({ id: 'c2', name: 'Physics', homework: [hw('h1', '2026-03-04')] }),
+    ])
+    // Class in 8 h (54), exam in 9 days (55), homework in 2 days (54): the exam
+    // edges ahead, then the class and the homework tie in insertion order.
+    const snap = build(s, MON(10))
+    expect(snap.live.map((x) => [x.kind, x.score])).toEqual([
+      ['exam', 55],
+      ['class_next', 54],
+      ['hw_soon', 54],
+    ])
+  })
+
+  it('never treats a zero-length slot as a class', () => {
+    const s = sem([course({ schedule: [{ day: 1, start: '10:30', end: '10:30' }] })])
+    for (const now of [MON(10, 30), MON(0, 5), MON(23, 55), MON(17)]) {
+      const snap = build(s, now)
+      expect(kinds(snap.live).some((k) => k.startsWith('class'))).toBe(false)
+    }
+    // It counts as a schedule (the user did enter it) but not as a class today.
+    expect(live(build(s, MON(11)), 'no_schedule')).toBeUndefined()
+    expect(calm(build(s, MON(11)), 'no_classes_today')).toBeDefined()
+    // Nor as tomorrow's first class.
+    const tomorrowZero = sem([
+      course({
+        schedule: [
+          { day: 2, start: '09:00', end: '09:00' },
+          { day: 2, start: '11:00', end: '13:00' },
+        ],
+      }),
+    ])
+    const preview = live(build(tomorrowZero, MON(17)), 'class_tomorrow')
+    expect(metaTexts(preview)).toEqual(['tomorrow at 11:00'])
+  })
+
+  it('previews Sunday from Saturday evening and never in the small hours', () => {
+    const s = sem([course({ schedule: [{ day: 0, start: '10:30', end: '12:30' }] })])
+    const sat = new Date(2026, 2, 7, 18, 0)
+    expect(live(build(s, sat), 'class_tomorrow')?.brief).toBe('tomorrow at 10:30')
+    const sunSmallHours = new Date(2026, 2, 8, 0, 30)
+    expect(live(build(s, sunSmallHours), 'class_tomorrow')).toBeUndefined()
+    expect(live(build(s, sunSmallHours), 'class_next')).toBeDefined()
   })
 
   it('caps the distance penalty so a far-off class still outranks backlogs and nudges', () => {
@@ -535,6 +605,55 @@ describe('buildRadar — ranking, snoozing, determinism', () => {
     expect(metaTexts(clear)).toContain('2 snoozed')
   })
 
+  it('reveals the next candidate when a capped pick is snoozed', () => {
+    const s = sem([
+      course({
+        id: 'c1',
+        homework: [hw('h1', '2026-03-01'), hw('h2', '2026-03-02'), hw('h3', '2026-03-03')],
+        exams: { moedA: '2026-03-03', moedB: '2026-03-06' },
+        recordings: recTabs(4),
+      }),
+      course({ id: 'c2', name: 'Physics', recordings: recTabs(2), homework: [hw('h4', '')] }),
+      course({ id: 'c3', name: 'Chemistry', homework: [hw('h5', '')] }),
+    ])
+    const snap = build(s, MON(11), [
+      'hw:c1:h1',
+      'hw:c1:h2',
+      'exam:c1:A',
+      'recordings:c1',
+      'hw_nodate:c2:h4',
+    ])
+    const ids = snap.live.map((x) => x.id)
+    expect(ids).toContain('hw:c1:h3')
+    expect(ids).toContain('exam:c1:B')
+    expect(ids).toContain('recordings:c2')
+    expect(ids).toContain('hw_nodate:c3:h5')
+    expect(ids).not.toContain('hw:c1:h1')
+    expect(ids).not.toContain('exam:c1:A')
+    expect(snap.snoozedCount).toBe(5)
+  })
+
+  it('keeps a class snoozed for the whole day as it moves from next to soon to live', () => {
+    const snoozed = ['class:c1:1:10:30']
+    for (const now of [MON(8), MON(10, 20), MON(11)]) {
+      const snap = build(withSlot(), now, snoozed)
+      expect(kinds(snap.live).some((k) => k.startsWith('class'))).toBe(false)
+      expect(snap.snoozedCount).toBe(1)
+    }
+    // Another class on the same day is unaffected, and so is tomorrow's preview.
+    const two = sem([
+      course({
+        schedule: [
+          { day: 1, start: '10:30', end: '12:30' },
+          { day: 1, start: '14:00', end: '16:00' },
+        ],
+      }),
+    ])
+    expect(live(build(two, MON(11), snoozed), 'class_next')?.id).toBe('class:c1:1:14:00')
+    const tomorrow = sem([course({ schedule: [{ day: 2, start: '10:30', end: '12:30' }] })])
+    expect(live(build(tomorrow, MON(17), snoozed), 'class_tomorrow')).toBeDefined()
+  })
+
   it('ignores snoozed ids that do not match anything', () => {
     const snap = build(busy(), MON(11), ['nope'])
     expect(snap.live).toHaveLength(4)
@@ -625,13 +744,8 @@ describe('buildRadar — calm rotation', () => {
     expect(metaTexts(clear)).toEqual([
       '2/3 homework done',
       '1/2 recordings watched',
-      '1/2 exams passed',
+      '1/2 exams behind you',
     ])
-    expect(snap.stats).toEqual({
-      homework: { done: 2, total: 3 },
-      recordings: { watched: 1, total: 2 },
-      exams: { passed: 1, total: 2 },
-    })
     const roast = calm(snap, 'roast')
     expect(roast?.title).toBe('Algebra')
     expect(roast?.titleIsUser).toBe(true)
@@ -641,6 +755,17 @@ describe('buildRadar — calm rotation', () => {
     expect(tip?.title).toBe('Study tip')
     expect(tip?.badge).toBe('NOTE')
     expect(tip?.quips).toEqual([...RADAR_QUIPS.tip])
+  })
+
+  it('counts hidden and custom exams in the all-clear stats', () => {
+    const s = semesterSchema.parse({
+      id: 's1',
+      name: 'Spring 2026',
+      courses: [course({ exams: { moedA: '2026-02-20', moedB: '' } })],
+      hiddenExamIds: ['c1:A'],
+      customExams: [{ id: 'x1', name: 'Lab exam', date: '2026-03-20' }],
+    })
+    expect(metaTexts(calm(build(s, MON(11)), 'all_clear'))).toEqual(['1/2 exams behind you'])
   })
 
   it('reads "nothing pending" for a course with no content yet', () => {
