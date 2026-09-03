@@ -1,5 +1,5 @@
 import type { Course, Homework, ScheduleSlot, Semester } from '@/domain/model'
-import { collectExams as collectExamNodes } from '@/domain/examMode'
+import { collectExams as collectExamNodes, getExamWindow, type ExamNode } from '@/domain/examMode'
 import { daysBetween, daysUntil, hhmmToMinutes, parseYmd } from '@/lib/dates'
 import { EXAM_WINDOW_DAYS, HOMEWORK_WINDOW_DAYS } from './constants'
 import type { RadarStats } from './types'
@@ -176,30 +176,53 @@ export function countOpenHomework(semester: Semester): { open: number; courses: 
 // ---------------------------------------------------------------------------
 
 export interface ExamCandidate {
-  course: Course
-  moed: 'A' | 'B'
-  date: string
+  node: ExamNode
+  /** The course this exam belongs to; null for a custom exam. */
+  course: Course | null
   /** Calendar days until the exam (0 = today). */
   diff: number
 }
 
-/** Upcoming Moed A/B exams within the window, soonest first (A before B on a tie). */
+/**
+ * Upcoming exams from the user's exam plan, soonest first.
+ *
+ * Reads the same nodes as the exam roadmap (`collectExams`), so an exam the
+ * user hid from the plan is skipped and their custom exams are included — the
+ * radar and the roadmap always name the same "next exam". Reading
+ * `course.exams` directly instead would alert on a Moed A the user has
+ * deliberately dropped in favour of Moed B (issue #144).
+ */
 export function collectUpcomingExams(semester: Semester, now: Date): ExamCandidate[] {
+  const byCourseId = new Map(semester.courses.map((course) => [course.id, course]))
   const out: ExamCandidate[] = []
-  for (const course of semester.courses) {
-    const moeds: Array<['A' | 'B', string]> = [
-      ['A', course.exams.moedA],
-      ['B', course.exams.moedB],
-    ]
-    for (const [moed, date] of moeds) {
-      const parsed = parseYmd(date)
-      if (!parsed) continue
-      const diff = daysBetween(now, parsed)
-      if (diff < 0 || diff > EXAM_WINDOW_DAYS) continue
-      out.push({ course, moed, date, diff })
-    }
+  // collectExams is already sorted ascending by date, so filtering keeps that order.
+  for (const node of collectExamNodes(semester)) {
+    const parsed = parseYmd(node.date)
+    if (!parsed) continue
+    const diff = daysBetween(now, parsed)
+    if (diff < 0 || diff > EXAM_WINDOW_DAYS) continue
+    out.push({ node, course: node.courseId ? (byCourseId.get(node.courseId) ?? null) : null, diff })
   }
-  return out.sort((a, b) => a.diff - b.diff)
+  return out
+}
+
+/**
+ * Whether the exam period is actually underway: the first exam in the user's
+ * plan is today or behind us, and the last has not passed. From that point the
+ * weekly schedule is over for the semester, so its recurring slots are stale
+ * and the radar stops announcing classes from them (issue #144).
+ *
+ * Deliberately NOT Exam Mode (`resolveExamViewMode`), which activates 14 days
+ * before the first exam: during that lead-in — and around a mid-semester exam
+ * the user added themselves — classes are usually still running.
+ */
+export function isExamPeriodUnderway(semester: Semester, now: Date): boolean {
+  const window = getExamWindow(collectExamNodes(semester))
+  if (!window) return false
+  const first = parseYmd(window.first)
+  const last = parseYmd(window.last)
+  if (!first || !last) return false
+  return daysBetween(now, first) <= 0 && daysBetween(now, last) >= 0
 }
 
 // ---------------------------------------------------------------------------
@@ -231,7 +254,11 @@ export function listRecordingsBacklogs(
 // Stats
 // ---------------------------------------------------------------------------
 
-/** Semester-wide progress counters (exams count every dated node, hidden ones included). */
+/**
+ * Semester-wide progress counters. Exams count the user's plan — the same
+ * non-hidden nodes the roadmap shows — so the radar's "N/M exams behind you"
+ * and the roadmap's "N/M passed" never disagree.
+ */
 export function semesterStats(semester: Semester, now: Date): RadarStats {
   let hwDone = 0
   let hwTotal = 0
@@ -249,7 +276,7 @@ export function semesterStats(semester: Semester, now: Date): RadarStats {
       }
     }
   }
-  const nodes = collectExamNodes(semester, { includeHidden: true })
+  const nodes = collectExamNodes(semester)
   const passed = nodes.filter((node) => (daysUntil(node.date, now) ?? 0) < 0).length
   return {
     homework: { done: hwDone, total: hwTotal },

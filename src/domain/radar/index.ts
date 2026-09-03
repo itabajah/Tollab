@@ -1,4 +1,5 @@
 import type { Course, Homework } from '@/domain/model'
+import { cssColor } from '@/domain/examMode'
 import { formatYmd } from '@/lib/dates'
 import {
   CLASS_NEAR_BONUS,
@@ -18,6 +19,7 @@ import {
   findCurrentAndNextClass,
   findTomorrowClasses,
   hasClassOn,
+  isExamPeriodUnderway,
   listHomeworkWithoutDueDate,
   listRecordingsBacklogs,
   pickHomework,
@@ -55,7 +57,9 @@ import type {
  * "randomness" is a stable hash):
  *
  * - `live`: ranked signals that deserve attention — the running/next class,
- *   urgent homework, the nearest exam, a recordings backlog, setup nudges. The
+ *   urgent homework, the next exam in the user's plan, a recordings backlog,
+ *   setup nudges. Exams and their progress counters read the same nodes as the
+ *   roadmap, so a Moed the user dropped from the plan is never announced. The
  *   UI pins the top one, offers the rest as chips, and lets the user act (mark
  *   done, snooze, open) in place. Snoozed signals are skipped *before* each
  *   collector caps its picks, so snoozing the top homework reveals the next one
@@ -94,7 +98,6 @@ const classId = (course: Course, slot: ClassHit['slot']) =>
   `class:${course.id}:${slot.day}:${slot.start}`
 const homeworkId = (course: Course, hw: Homework) => `hw:${course.id}:${hw.id}`
 const undatedId = (course: Course, hw: Homework) => `hw_nodate:${course.id}:${hw.id}`
-const examId = (course: Course, moed: 'A' | 'B') => `exam:${course.id}:${moed}`
 const recordingsId = (course: Course) => `recordings:${course.id}`
 
 // ---------------------------------------------------------------------------
@@ -286,33 +289,49 @@ function undatedSignal(course: Course, hw: Homework): Draft {
 }
 
 function examSignal(exam: ExamCandidate): Draft {
-  const { course, moed, date, diff } = exam
+  const { node, course, diff } = exam
   const kind: RadarKind =
     diff === 0 ? 'exam_today' : diff === 1 ? 'exam_tomorrow' : diff <= 3 ? 'exam_soon' : 'exam'
   const tone: RadarTone = diff === 0 ? 'critical' : diff <= 3 ? 'warn' : 'info'
   const badge = diff === 0 ? 'EXAM!!' : diff <= 3 ? 'EXAM!' : 'EXAM'
   const score = kind === 'exam' ? SCORE.exam - (diff - 4) : SCORE[kind]
   const countdown = examMeta(diff)
-  const meta: MetaPart[] = [plain(`Moed ${moed}`), plain(formatWeekdayDate(date)), countdown]
+  const meta: MetaPart[] = []
+  // "Moed A" for a course exam; a custom exam carries the user's own label
+  // (often Hebrew, and often absent entirely).
+  if (node.moed) meta.push(plain(`Moed ${node.moed}`))
+  else if (node.label) meta.push(user(node.label))
+  meta.push(plain(formatWeekdayDate(node.date)), countdown)
   // Pacing insight: spread the course's unwatched recordings over the days left.
-  const unwatched = unwatchedCount(course)
+  const unwatched = course ? unwatchedCount(course) : 0
   const pace = formatPace(unwatched, diff)
   if (unwatched > 0) meta.push(plain(`${unwatched} unwatched`))
   if (pace && diff > 0) meta.push(plain(pace))
   return {
-    id: examId(course, moed),
+    // node.id is `${courseId}:${moed}` for a course exam, the custom exam's own
+    // id otherwise — so a snooze keys off the same identity the roadmap hides by.
+    id: `exam:${node.id}`,
     kind,
     mode: 'live',
     tone,
     badge,
     score,
-    title: course.name,
+    title: node.name,
     titleIsUser: true,
     meta,
-    brief: `Moed ${moed} ${countdown.text}`,
-    vars: { days: String(diff), examType: moed, date: formatWeekdayDate(date) },
-    target: { type: 'exam', courseId: course.id, moed },
-    courseColor: course.color,
+    // The chip needs one fact; a custom exam's label is user text, so only the
+    // countdown goes in this plain string (the name is isolated on its own).
+    brief: node.moed ? `Moed ${node.moed} ${countdown.text}` : countdown.text,
+    vars: { days: String(diff), examType: node.moed ?? '', date: formatWeekdayDate(node.date) },
+    // Course exams deep-link to the moed field; a custom exam lives only on the
+    // roadmap, which the radar cannot open, so it stays non-actionable.
+    target:
+      course && node.moed
+        ? { type: 'exam', courseId: course.id, moed: node.moed }
+        : { type: 'none' },
+    // Sanitized like the roadmap does: a custom exam's color can arrive from an
+    // imported file, and it lands in an inline style.
+    courseColor: cssColor(node.color),
     snoozable: true,
   }
 }
@@ -397,7 +416,12 @@ export function buildRadar(ctx: RadarContext): RadarSnapshot {
   const live: Draft[] = []
 
   // 1) Classes: the one running now, the next one today, tomorrow's preview.
-  const { current, next } = findCurrentAndNextClass(semester, nowDay, nowMin)
+  // Once the exam period is underway the weekly slots no longer describe a
+  // running semester, so nothing is derived from the schedule at all.
+  const examPeriod = isExamPeriodUnderway(semester, now)
+  const { current, next } = examPeriod
+    ? { current: null, next: null }
+    : findCurrentAndNextClass(semester, nowDay, nowMin)
   const hasSchedule = semester.courses.some((course) => course.schedule.length > 0)
   const hwCandidates = unsnoozed(collectHomework(semester, now), (c) => homeworkId(c.course, c.hw))
   // "Free for X" — the gap until the next class, when it's long enough to use.
@@ -410,11 +434,11 @@ export function buildRadar(ctx: RadarContext): RadarSnapshot {
     // The free-time quip only makes sense when there is homework to spend it on.
     live.push(classSignal(next, kind, nowMin, { free: hwCandidates.length > 0 ? free : '' }))
   }
-  if (!current && !next && hour >= CLASS_TOMORROW_FROM_HOUR) {
+  if (!examPeriod && !current && !next && hour >= CLASS_TOMORROW_FROM_HOUR) {
     const tomorrow = findTomorrowClasses(semester, nowDay)
     if (tomorrow.first) live.push(tomorrowSignal(tomorrow.first, tomorrow.count))
   }
-  if (!hasSchedule) live.push(setupSignal('no_schedule', 'No class times yet'))
+  if (!hasSchedule && !examPeriod) live.push(setupSignal('no_schedule', 'No class times yet'))
 
   // 2) Homework: up to two urgent items, a pile nudge, an undated nudge.
   for (const candidate of pickHomework(hwCandidates)) live.push(homeworkSignal(candidate, free))
@@ -441,8 +465,8 @@ export function buildRadar(ctx: RadarContext): RadarSnapshot {
   )[0]
   if (undated) live.push(undatedSignal(undated.course, undated.hw))
 
-  // 3) The nearest exam (an exam today is always the nearest).
-  const exam = unsnoozed(collectUpcomingExams(semester, now), (e) => examId(e.course, e.moed))[0]
+  // 3) The next exam in the user's plan (an exam today is always the nearest).
+  const exam = unsnoozed(collectUpcomingExams(semester, now), (e) => `exam:${e.node.id}`)[0]
   if (exam) live.push(examSignal(exam))
 
   // 4) The biggest recordings backlog.
@@ -466,8 +490,10 @@ export function buildRadar(ctx: RadarContext): RadarSnapshot {
   else if (weekend) calm.push(calmSignal('weekend', 'WEEKEND', 'Weekend mode'))
   else if (hour >= 5 && hour < 10) calm.push(calmSignal('morning', 'AM', 'Good morning'))
 
-  const classToday = hasClassOn(semester, nowDay)
-  if (hasSchedule && !classToday && !late) {
+  // Both of these describe the teaching week, so they say nothing useful once
+  // the exam period has started.
+  const classToday = !examPeriod && hasClassOn(semester, nowDay)
+  if (!examPeriod && hasSchedule && !classToday && !late) {
     calm.push(calmSignal('no_classes_today', 'FREE', 'No classes today'))
   }
   if (classToday && !current && !next && !late) {

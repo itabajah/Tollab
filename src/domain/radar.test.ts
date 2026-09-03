@@ -541,6 +541,145 @@ describe('buildRadar — exams', () => {
   })
 })
 
+describe('buildRadar — the exam plan (issue #144)', () => {
+  // The reported scenario: Moed A of one course was dropped from the plan in
+  // favour of its Moed B, so the alert must name the course whose exam is
+  // actually next — not the earlier date the user is no longer sitting.
+  const planned = (hiddenExamIds: string[] = []) =>
+    semesterSchema.parse({
+      id: 's1',
+      name: 'Spring 2026',
+      hiddenExamIds,
+      courses: [
+        course({ id: 'c1', name: 'ODE', exams: { moedA: '2026-03-10', moedB: '2026-04-05' } }),
+        course({ id: 'c2', name: 'Calculus 2', exams: { moedA: '2026-03-15', moedB: '' } }),
+      ],
+    })
+
+  it('skips an exam hidden from the plan and names the next one that is in it', () => {
+    const signal = live(build(planned(['c1:A']), MON(11)), 'exam')
+    expect(signal?.id).toBe('exam:c2:A')
+    expect(signal?.title).toBe('Calculus 2')
+    expect(metaTexts(signal)).toEqual(['Moed A', 'Sun, Mar 15', 'in 13 days'])
+    expect(signal?.target).toEqual({ type: 'exam', courseId: 'c2', moed: 'A' })
+  })
+
+  it('still names the earlier exam while it is part of the plan', () => {
+    const signal = live(build(planned(), MON(11)), 'exam')
+    expect(signal?.id).toBe('exam:c1:A')
+    expect(signal?.title).toBe('ODE')
+  })
+
+  it('surfaces a custom exam from the plan, with its label and no deep-link', () => {
+    const s = semesterSchema.parse({
+      id: 's1',
+      name: 'Spring 2026',
+      courses: [course()],
+      customExams: [{ id: 'x1', name: 'Systems lab', label: 'Practical', date: '2026-03-05' }],
+    })
+    const signal = live(build(s, MON(11)), 'exam_soon')
+    expect(signal?.id).toBe('exam:x1')
+    expect(signal?.title).toBe('Systems lab')
+    expect(signal?.titleIsUser).toBe(true)
+    expect(signal?.meta).toEqual([
+      { text: 'Practical', user: true },
+      { text: 'Thu, Mar 5' },
+      { text: 'in 3 days', tone: 'warn' },
+    ])
+    // The roadmap owns custom exams; the radar has no dialog to open for one.
+    expect(signal?.target).toEqual({ type: 'none' })
+    expect(signal?.brief).toBe('in 3 days')
+    expect(signal?.snoozable).toBe(true)
+    // An unset custom color falls back to the accent, sanitized like the roadmap.
+    expect(signal?.courseColor).toBe('var(--accent)')
+  })
+
+  it('omits the label line from a custom exam that has none', () => {
+    const s = semesterSchema.parse({
+      id: 's1',
+      name: 'Spring 2026',
+      courses: [course()],
+      customExams: [{ id: 'x1', name: 'Retake', date: '2026-03-05', color: '#123456' }],
+    })
+    const signal = live(build(s, MON(11)), 'exam_soon')
+    expect(metaTexts(signal)).toEqual(['Thu, Mar 5', 'in 3 days'])
+    expect(signal?.courseColor).toBe('#123456')
+  })
+
+  it('counts the plan — not hidden exams — in the all-clear stats, like the roadmap', () => {
+    const s = semesterSchema.parse({
+      id: 's1',
+      name: 'Spring 2026',
+      courses: [course({ exams: { moedA: '2026-02-20', moedB: '' } })],
+      hiddenExamIds: ['c1:A'],
+      customExams: [{ id: 'x1', name: 'Lab exam', date: '2026-03-20' }],
+    })
+    expect(metaTexts(calm(build(s, MON(11)), 'all_clear'))).toEqual(['0/1 exams behind you'])
+  })
+})
+
+describe('buildRadar — the exam period (issue #144)', () => {
+  const withExams = (moedA: string, moedB = '', schedule: unknown = undefined) =>
+    sem([
+      course({
+        exams: { moedA, moedB },
+        schedule: schedule ?? [{ day: 1, start: '10:30', end: '12:30' }],
+      }),
+    ])
+
+  it('stops announcing classes once the first exam has arrived', () => {
+    // Moed A was yesterday, Moed B is ahead: the teaching weeks are over, so the
+    // recurring 10:30 slot is stale even though it is "live" by the clock.
+    const snap = build(withExams('2026-03-01', '2026-03-10'), MON(11))
+    expect(kinds(snap.live).some((k) => k.startsWith('class'))).toBe(false)
+    expect(live(snap, 'exam')?.id).toBe('exam:c1:B')
+  })
+
+  it('keeps announcing classes during the 14-day lead-in before the first exam', () => {
+    // Exam Mode has already flipped the right pane, but classes still run.
+    const snap = build(withExams('2026-03-05'), MON(11))
+    expect(live(snap, 'class_now')).toBeDefined()
+    expect(live(snap, 'exam_soon')).toBeDefined()
+  })
+
+  it('suppresses classes only for the day of a one-off mid-semester exam', () => {
+    expect(live(build(withExams('2026-03-02'), MON(11)), 'class_now')).toBeUndefined()
+    // The day after, the schedule is meaningful again.
+    expect(live(build(withExams('2026-03-01'), MON(11)), 'class_now')).toBeDefined()
+  })
+
+  it('drops the schedule nudges that describe a teaching week', () => {
+    const running = build(withExams('2026-03-01', '2026-03-10'), MON(11))
+    expect(calm(running, 'done_today')).toBeUndefined()
+    // A schedule on another day would normally read "No classes today".
+    const elsewhere = build(
+      withExams('2026-03-01', '2026-03-10', [{ day: 3, start: '09:00', end: '11:00' }]),
+      MON(11),
+    )
+    expect(calm(elsewhere, 'no_classes_today')).toBeUndefined()
+    // And a semester with no class times at all is not nagged to add them.
+    expect(
+      live(build(withExams('2026-03-01', '2026-03-10', []), MON(11)), 'no_schedule'),
+    ).toBeUndefined()
+  })
+
+  it('ignores hidden exams when deciding the period has started', () => {
+    const s = semesterSchema.parse({
+      id: 's1',
+      name: 'Spring 2026',
+      hiddenExamIds: ['c1:A'],
+      courses: [
+        course({
+          exams: { moedA: '2026-03-01', moedB: '2026-03-10' },
+          schedule: [{ day: 1, start: '10:30', end: '12:30' }],
+        }),
+      ],
+    })
+    // Only Moed B remains in the plan, and it is still ahead: classes stand.
+    expect(live(build(s, MON(11)), 'class_now')).toBeDefined()
+  })
+})
+
 describe('buildRadar — recordings', () => {
   it('flags a small backlog and upgrades 10+ to recordings_big', () => {
     const small = live(
@@ -755,17 +894,6 @@ describe('buildRadar — calm rotation', () => {
     expect(tip?.title).toBe('Study tip')
     expect(tip?.badge).toBe('NOTE')
     expect(tip?.quips).toEqual([...RADAR_QUIPS.tip])
-  })
-
-  it('counts hidden and custom exams in the all-clear stats', () => {
-    const s = semesterSchema.parse({
-      id: 's1',
-      name: 'Spring 2026',
-      courses: [course({ exams: { moedA: '2026-02-20', moedB: '' } })],
-      hiddenExamIds: ['c1:A'],
-      customExams: [{ id: 'x1', name: 'Lab exam', date: '2026-03-20' }],
-    })
-    expect(metaTexts(calm(build(s, MON(11)), 'all_clear'))).toEqual(['1/2 exams behind you'])
   })
 
   it('reads "nothing pending" for a course with no content yet', () => {
